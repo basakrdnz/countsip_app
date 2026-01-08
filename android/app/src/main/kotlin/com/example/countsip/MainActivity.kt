@@ -1,5 +1,6 @@
-package com.example.cheerlog
+package com.example.countsip
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity()
+

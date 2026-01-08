@@ -1,4 +1,4 @@
-# CheerLog – Product Requirements Document (PRD)
+# CountSip – Product Requirements Document (PRD)
 
 **Version:** v1.0  
 **Status:** Locked (Core)  
@@ -91,7 +91,7 @@
 - **Profile:** Your stats + settings
 
 ### 6.2 Top Bar
-- Home: "CheerLog" title + notification bell (friend requests)
+- Home: "CountSip" title + notification bell (friend requests)
 - Leaderboard: Time filter toggle (Week / Month / All Time)
 - Profile: Settings gear icon
 
@@ -132,7 +132,7 @@
 
 **Custom Drink Request:**
 - "Request New Drink" button at bottom of drink picker
-- Opens email compose: `cheerlog.feedback@gmail.com`
+- Opens email compose: `countsip.feedback@gmail.com`
 - Subject: "New Drink Request"
 - Body template: "I'd like to add: [drink name]"
 
@@ -303,11 +303,11 @@
 - Android: Mature 17+ (Alcohol and Tobacco)
 
 ### 15.2 App Store Copy
-- **Name:** CheerLog - Social Drink Tracker
+- **Name:** CountSip - Social Drink Tracker
 - **Subtitle:** Track drinks with friends
 - **Keywords:** drink tracker, alcohol log, social drinking, party app, leaderboard
 - **Description:** 
-  > "CheerLog is a fun, social way to track your drinks with friends. Compete on weekly leaderboards, see what your crew is drinking, and relive epic nights. No judgment, just friendly competition! 🍻"
+  > "CountSip is a fun, social way to track your drinks with friends. Compete on weekly leaderboards, see what your crew is drinking, and relive epic nights. No judgment, just friendly competition! 🍻"
 
 ### 15.3 Screenshots
 - Home feed (with sample entries: "John: 2x Beer at O'Malley's")
@@ -325,7 +325,7 @@
 ## 16. Legal Disclaimers
 
 ### 16.1 In-App Warnings
-- First launch: "CheerLog is for entertainment only. Drink responsibly. Must be 18+ to use."
+- First launch: "CountSip is for entertainment only. Drink responsibly. Must be 18+ to use."
 - No health advice, no BAC calculation, no "safe limit" claims
 
 ### 16.2 Terms of Service

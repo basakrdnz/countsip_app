@@ -6,11 +6,11 @@ import 'ui/screens/placeholder_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: CheerlogApp()));
+  runApp(const ProviderScope(child: CountSipApp()));
 }
 
-class CheerlogApp extends StatelessWidget {
-  const CheerlogApp({super.key});
+class CountSipApp extends StatelessWidget {
+  const CountSipApp({super.key});
 
   @override
   Widget build(BuildContext context) {

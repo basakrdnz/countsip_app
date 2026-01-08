@@ -1,4 +1,4 @@
-# CheerLog – 14 Günlük Geliştirme Planı
+# CountSip – 14 Günlük Geliştirme Planı
 
 **Proje Kuralları:**
 1. Her gün tek ana hedef. Yan hedef yok.
@@ -69,7 +69,7 @@ integration_test/
 ## Gün 1: Proje İskeleti ve Firebase Setup
 
 ### Yapılacaklar
-- Flutter projesi oluştur: `flutter create cheerlog`
+- Flutter projesi oluştur: `flutter create countsip`
 - Klasör yapısını kur (yukarıdaki şemaya göre)
 - `pubspec.yaml` düzenle (Tech Stack'e göre)
 - `.env` dosyası hazırla (template)
@@ -196,7 +196,7 @@ integration_test/
   - Bottom: "Request New Drink" text button
 - **"Request New Drink" button:**
   - Opens email compose (url_launcher)
-  - To: `cheerlog.feedback@gmail.com`
+  - To: `countsip.feedback@gmail.com`
   - Subject: "New Drink Request"
   - Body: "I'd like to add: [your drink here]"
 - Quantity stepper (iOS-style: - | number | +), default: 1, max: 20

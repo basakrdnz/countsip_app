@@ -1,4 +1,4 @@
-# CheerLog – UI Design Guide
+# CountSip – UI Design Guide
 
 **Inspiration:** iOS Calendar, Apple Reminders  
 **Design Philosophy:** Clean, minimal, functional
@@ -243,7 +243,7 @@ TextField(
 
 ```
 ┌─────────────────────────────────────┐
-│  CheerLog              [🔔] (bell)  │ ← Navigation bar (white bg, shadow)
+│  CountSip              [🔔] (bell)  │ ← Navigation bar (white bg, shadow)
 ├─────────────────────────────────────┤
 │                                     │
 │  ┌───────────────────────────────┐ │

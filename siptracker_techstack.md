@@ -1,4 +1,4 @@
-# Tech Stack – CheerLog
+# Tech Stack – CountSip
 
 **Status:** Locked (MVP)  
 **Last Updated:** January 2025  
@@ -102,7 +102,7 @@
 # Firebase (from Firebase Console)
 FIREBASE_API_KEY_IOS=AIzaSy...
 FIREBASE_API_KEY_ANDROID=AIzaSy...
-FIREBASE_PROJECT_ID=cheerlog-prod
+FIREBASE_PROJECT_ID=countsip-prod
 FIREBASE_MESSAGING_SENDER_ID=123456789
 
 # AdMob
