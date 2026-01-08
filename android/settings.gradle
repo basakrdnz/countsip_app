@@ -1,0 +1,4 @@
+// This project uses Kotlin DSL (settings.gradle.kts). This Groovy file exists
+// only to satisfy tooling that expects android/settings.gradle.
+// Gradle will use settings.gradle.kts for the actual build configuration.
+

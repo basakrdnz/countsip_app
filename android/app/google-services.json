@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "166195293260",
+    "project_id": "countsip-prod",
+    "storage_bucket": "countsip-prod.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:166195293260:android:8485793cd651eba467d8e9",
+        "android_client_info": {
+          "package_name": "com.example.countsip"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeax0UcD_tuoSWIeO_ZtMJZMiU353WMyo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
