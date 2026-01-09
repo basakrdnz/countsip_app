@@ -1,8 +1,9 @@
-# CountSip – Kısa İlerleme Notları
+# CountSip
+Özet; ne yaptık, neden yaptık, hangi sorunlar çıktı, nasıl çözdük, alternatifler ve sıradaki adımlar.
 
-Basit ve teknik olmayan özet; ne yaptık, neden yaptık, hangi sorunlar çıktı, nasıl çözdük, alternatifler ve sıradaki adımlar.
+> Tarih: 2026-01-08
 
-## Ne yaptık? (kronolojik)
+## Ne yaptık?
 - Uygulama adını ve kimliklerini **CountSip** olarak sabitledik (Android/iOS paket/bundle id’leri güncellendi).
 - Firebase proje dosyaları eklendi: `google-services.json` (Android) ve `GoogleService-Info.plist` (iOS).
 - FlutterFire ile **`lib/firebase_options.dart`** üretildi; uygulama Firebase’e bağlanabilir hale geldi.

@@ -1,16 +1,33 @@
 # CountSip
 
-A new Flutter project.
+Kısa kurulum notları (Flutter + Firebase)
 
-## Getting Started
+## Önkoşullar
+- Flutter 3.38.5 / Dart 3.10.4 (PATH’te `C:\tools\flutter\bin` vb. olmalı)
+- Firebase CLI (login: `firebase login`)
+- FlutterFire CLI (global)
 
-This project is a starting point for a Flutter application.
+## Firebase kurulum özeti
+- Proje: `countsip-prod`
+- Android paket: `com.example.countsip`
+- iOS bundle: `com.example.countsip`
+- Dosyalar:
+  - `android/app/google-services.json`
+  - `ios/Runner/GoogleService-Info.plist`
+  - `lib/firebase_options.dart` (FlutterFire configure ile üretildi)
 
-A few resources to get you started if this is your first Flutter project:
+## Ortam değişkeni örneği
+`env.example` dosyasını kopyalayıp doldurun (gerçek anahtarları eklemeyin):
+```
+cp env.example .env
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Çalıştırma
+- Normal: `flutter run`
+- Emulator (Firestore/Auth):  
+  `flutter run --dart-define=USE_FIREBASE_EMULATOR=true`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Test
+- Widget smoke: `flutter test`
+- Emulator smoke (isteğe bağlı):  
+  `flutter test test/integration/firebase_emulator_smoke_test.dart --dart-define=RUN_FIREBASE_EMULATOR_TEST=true`
