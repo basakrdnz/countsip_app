@@ -1,6 +1,42 @@
-// This project uses Kotlin DSL (build.gradle.kts). This Groovy file exists
-// only to satisfy tooling that expects android/app/build.gradle.
-// Gradle will use build.gradle.kts for the actual build configuration.
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
+}
 
-// Do not add build logic here; keep changes in build.gradle.kts.
+android {
+    namespace "com.example.countsip"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    defaultConfig {
+        applicationId "com.example.countsip"
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}

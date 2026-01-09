@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:countsip/firebase_options.dart';
@@ -15,8 +18,13 @@ const int _authEmulatorPort =
     int.fromEnvironment('FIREBASE_AUTH_EMULATOR_PORT', defaultValue: 9099);
 
 void main() {
-  if (!_runEmulatorTest) {
-    test('Firebase emulator smoke test (skipped)', () {}, skip: true);
+  final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  if (!_runEmulatorTest || !isMobile) {
+    test(
+      'Firebase emulator smoke test (skipped)',
+      () {},
+      skip: 'Enable RUN_FIREBASE_EMULATOR_TEST=true and run on Android/iOS emulator/device with Firebase Emulator Suite.',
+    );
     return;
   }
 

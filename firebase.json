@@ -1,1 +1,34 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"countsip-prod","appId":"1:166195293260:android:8485793cd651eba467d8e9","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"countsip-prod","configurations":{"android":"1:166195293260:android:8485793cd651eba467d8e9","ios":"1:166195293260:ios:093cf61eaf251bef67d8e9"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "countsip-prod",
+          "appId": "1:166195293260:android:8485793cd651eba467d8e9",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "countsip-prod",
+          "configurations": {
+            "android": "1:166195293260:android:8485793cd651eba467d8e9",
+            "ios": "1:166195293260:ios:093cf61eaf251bef67d8e9"
+          }
+        }
+      }
+    }
+  },
+  "emulators": {
+    "singleProjectMode": true,
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true
+    }
+  }
+}

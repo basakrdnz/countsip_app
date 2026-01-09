@@ -29,5 +29,6 @@ cp env.example .env
 
 ## Test
 - Widget smoke: `flutter test`
-- Emulator smoke (isteğe bağlı):  
+- Emulator smoke (isteğe bağlı, Android/iOS emulator/device + Firebase Emulator Suite):  
   `flutter test test/integration/firebase_emulator_smoke_test.dart --dart-define=RUN_FIREBASE_EMULATOR_TEST=true`
+  - Destekli ortam: Android/iOS emulator veya cihaz. Desktop host’ta çalışmaz.

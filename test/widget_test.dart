@@ -11,9 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('App renders placeholder screen', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: CountSipApp()));
+    await tester.pumpWidget(ProviderScope(child: CountSipApp()));
 
-    expect(find.text('CountSip is ready'), findsOneWidget);
-    expect(find.text('CountSip'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Home Feed placeholder'), findsOneWidget);
   });
 }
