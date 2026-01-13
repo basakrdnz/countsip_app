@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 import '../../../core/errors/app_exception.dart';
+import '../../../core/services/analytics_service.dart';
+import '../../../core/services/connectivity_service.dart';
+import '../../../core/services/preferences_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/email_validator.dart';
 import '../providers/auth_controller.dart';
+import '../../../core/providers/preferences_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,7 +29,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _rememberMe = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  void _loadSavedEmail() {
+    final prefsService = ref.read(preferencesServiceProvider);
+    final savedEmail = prefsService.getSavedEmail();
+    final rememberMe = prefsService.getRememberMe();
+    
+    if (savedEmail != null && rememberMe) {
+      _emailController.text = savedEmail;
+      _rememberMe = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -36,28 +61,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Check network connectivity
+    final connectivityService = ref.read(connectivityServiceProvider);
+    final hasConnection = await connectivityService.hasConnection();
+    
+    if (!hasConnection) {
+      setState(() {
+        _errorMessage = l10n.networkError;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
+      final email = EmailValidator.normalize(_emailController.text);
+      
       await ref.read(authControllerProvider.notifier).signInWithEmail(
-        email: _emailController.text,
+        email: email,
         password: _passwordController.text,
       );
-      // Navigation will be handled by router based on auth state
+      
+      // Save email if remember me is checked
+      final prefsService = ref.read(preferencesServiceProvider);
+      await prefsService.setRememberMe(_rememberMe);
+      if (_rememberMe) {
+        await prefsService.setSavedEmail(email);
+      } else {
+        await prefsService.clearSavedEmail();
+      }
+      
+      // Log analytics event
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logLogin('email');
+      
+      // Show success (navigation handled by router)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.loginSuccess),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } on AuthException catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError(e.code ?? 'unknown', e.message ?? 'Unknown error');
+      
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = _mapAuthErrorToMessage(e.code ?? 'unknown', l10n);
           _isLoading = false;
         });
       }
     } catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError('unknown', e.toString());
+      
       if (mounted) {
         setState(() {
-          _errorMessage = 'An unexpected error occurred';
+          _errorMessage = l10n.unexpectedError;
           _isLoading = false;
         });
       }
@@ -65,6 +134,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Check network connectivity
+    final connectivityService = ref.read(connectivityServiceProvider);
+    final hasConnection = await connectivityService.hasConnection();
+    
+    if (!hasConnection) {
+      setState(() {
+        _errorMessage = l10n.networkError;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -72,50 +154,93 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       await ref.read(authControllerProvider.notifier).signInWithGoogle();
-      // Navigation will be handled by router based on auth state
+      
+      // Log analytics event
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logLogin('google');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.loginSuccess),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } on AuthException catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError(e.code ?? 'unknown', e.message ?? 'Unknown error');
+      
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = _mapAuthErrorToMessage(e.code ?? 'unknown', l10n);
           _isLoading = false;
         });
       }
     } catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError('unknown', e.toString());
+      
       if (mounted) {
         setState(() {
-          _errorMessage = 'An unexpected error occurred';
+          _errorMessage = l10n.unexpectedError;
           _isLoading = false;
         });
       }
     }
   }
 
+  String _mapAuthErrorToMessage(String code, AppLocalizations l10n) {
+    switch (code) {
+      case 'user-not-found':
+        return l10n.userNotFound;
+      case 'wrong-password':
+        return l10n.wrongPassword;
+      case 'invalid-credential':
+        return l10n.invalidCredentials;
+      case 'too-many-requests':
+        return l10n.tooManyAttempts;
+      default:
+        return l10n.unexpectedError;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppSpacing.xxl),
-                // Logo/Title
-                Text(
-                  'CountSip',
-                  style: AppTextStyles.largeTitle,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Track drinks with friends 🍻',
-                  style: AppTextStyles.subheadline,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                // Error message
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/bgwglass.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.xxl),
+                  // Logo/Title
+                  Text(
+                    l10n.appName,
+                    style: AppTextStyles.largeTitle,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.loginSubtitle,
+                    style: AppTextStyles.subheadline,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  // Error message
                 if (_errorMessage != null)
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -137,6 +262,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ),
+                        if (_errorMessage == l10n.networkError)
+                          TextButton(
+                            onPressed: _handleLogin,
+                            child: Text(l10n.tryAgain),
+                          ),
                       ],
                     ),
                   ),
@@ -145,17 +275,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'your@email.com',
-                    prefixIcon: Icon(Icons.email_outlined),
+                  autofillHints: const [AutofillHints.email],
+                  decoration: InputDecoration(
+                    labelText: l10n.email,
+                    hintText: l10n.emailHint,
+                    prefixIcon: const Icon(Icons.email_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return l10n.emailRequired;
                     }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email';
+                    if (!EmailValidator.isValid(value)) {
+                      return l10n.emailInvalid;
                     }
                     return null;
                   },
@@ -166,10 +297,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
                   onFieldSubmitted: (_) => _handleLogin(),
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: '••••••••',
+                    labelText: l10n.password,
+                    hintText: l10n.passwordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -186,36 +318,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return l10n.passwordRequired;
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return l10n.passwordTooShort;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                // Forgot password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            // TODO: Implement password reset
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Password reset feature coming soon'),
-                              ),
-                            );
-                          },
-                    child: Text(
-                      'Forgot password?',
-                      style: AppTextStyles.footnote.copyWith(
-                        color: AppColors.primary,
+                // Remember me & Forgot password
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberMe,
+                      onChanged: _isLoading
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _rememberMe = value ?? false;
+                              });
+                            },
+                    ),
+                    Text(
+                      l10n.rememberMe,
+                      style: AppTextStyles.footnote,
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              // TODO: Implement password reset
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${l10n.forgotPassword} - Coming soon'),
+                                ),
+                              );
+                            },
+                      child: Text(
+                        l10n.forgotPassword,
+                        style: AppTextStyles.footnote.copyWith(
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 // Login button
@@ -230,7 +378,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Log In'),
+                      : Text(l10n.login),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 // Divider
@@ -240,7 +388,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: Text(
-                        'or',
+                        l10n.or,
                         style: AppTextStyles.subheadline,
                       ),
                     ),
@@ -252,7 +400,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
                   icon: const Icon(Icons.g_mobiledata, size: 24),
-                  label: const Text('Continue with Google'),
+                  label: Text(l10n.continueWithGoogle),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   ),
@@ -263,7 +411,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Don't have an account? ",
+                      l10n.dontHaveAccount,
                       style: AppTextStyles.body,
                     ),
                     TextButton(
@@ -273,7 +421,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               context.push('/signup');
                             },
                       child: Text(
-                        'Sign Up',
+                        l10n.signUp,
                         style: AppTextStyles.body.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -287,6 +435,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
+
 }
+

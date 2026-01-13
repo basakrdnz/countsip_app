@@ -1,12 +1,18 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/providers/preferences_provider.dart';
+import 'core/services/analytics_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_controller.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
+import 'features/splash/splash_screen.dart';
 import 'firebase_options.dart';
 import 'ui/screens/add_entry_screen.dart';
 import 'ui/screens/home_screen.dart';
@@ -14,14 +20,28 @@ import 'ui/screens/leaderboard_screen.dart';
 import 'ui/screens/profile_screen.dart';
 import 'ui/screens/root_shell_page.dart';
 
+// Import generated l10n from lib/l10n (not flutter_gen)
+import 'l10n/app_localizations.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  runApp(const ProviderScope(child: CountSipApp()));
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const CountSipApp(),
+    ),
+  );
 }
 
 class CountSipApp extends ConsumerWidget {
@@ -29,35 +49,53 @@ class CountSipApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final prefsService = ref.watch(preferencesServiceProvider);
+    final savedLocale = prefsService.getLocale();
+    
     return MaterialApp.router(
       title: 'CountSip',
       theme: AppTheme.light,
       routerConfig: _router(ref),
+      
+      // Localization
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', ''), // English
+        Locale('tr', ''), // Turkish
+      ],
+      // Use saved locale or system locale
+      locale: savedLocale != null ? Locale(savedLocale) : null,
     );
   }
 
   GoRouter _router(WidgetRef ref) {
     return GoRouter(
-      initialLocation: '/login',
+      initialLocation: '/splash',
       redirect: (context, state) {
         final authState = ref.read(authControllerProvider);
         final isAuthenticated = authState.value != null;
-        final isLoggingIn = state.matchedLocation == '/login' ||
-            state.matchedLocation == '/signup';
+        final isAuthRoute = state.matchedLocation == '/login' ||
+            state.matchedLocation == '/signup' ||
+            state.matchedLocation == '/splash';
 
         // Debug print
         // ignore: avoid_print
         print('Redirect check: auth=${authState.value != null}, loc=${state.matchedLocation}');
 
-        // If not authenticated and not on login/signup, redirect to login
-        if (!isAuthenticated && !isLoggingIn) {
+        // If not authenticated and not on auth routes, redirect to login
+        if (!isAuthenticated && !isAuthRoute) {
           // ignore: avoid_print
           print('Redirecting to /login');
           return '/login';
         }
 
-        // If authenticated and on login/signup, redirect to home
-        if (isAuthenticated && isLoggingIn) {
+        // If authenticated and on login/signup (not splash), redirect to home
+        if (isAuthenticated && (state.matchedLocation == '/login' || state.matchedLocation == '/signup')) {
           // ignore: avoid_print
           print('Redirecting to /home');
           return '/home';
@@ -70,6 +108,12 @@ class CountSipApp extends ConsumerWidget {
         ref.watch(authControllerProvider.future),
       ),
       routes: [
+        // Splash screen
+        GoRoute(
+          path: '/splash',
+          name: 'splash',
+          builder: (context, state) => const SplashScreen(),
+        ),
         // Auth routes
         GoRoute(
           path: '/login',

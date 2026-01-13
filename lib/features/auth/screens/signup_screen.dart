@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 import '../../../core/errors/app_exception.dart';
+import '../../../core/services/analytics_service.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/email_validator.dart';
+import '../../../ui/widgets/password_strength_indicator.dart';
 import '../providers/auth_controller.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -39,28 +45,63 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return;
     }
 
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Check network connectivity
+    final connectivityService = ref.read(connectivityServiceProvider);
+    final hasConnection = await connectivityService.hasConnection();
+    
+    if (!hasConnection) {
+      setState(() {
+        _errorMessage = l10n.networkError;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
+      final email = EmailValidator.normalize(_emailController.text);
+      
       await ref.read(authControllerProvider.notifier).signUpWithEmail(
-        email: _emailController.text,
+        email: email,
         password: _passwordController.text,
       );
-      // Navigation will be handled by router based on auth state
+      
+      // Log analytics event
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logSignUp('email');
+      
+      // Show success
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.signupSuccess),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } on AuthException catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError(e.code ?? 'unknown', e.message ?? 'Unknown error');
+      
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = _mapAuthErrorToMessage(e.code ?? 'unknown', l10n);
           _isLoading = false;
         });
       }
     } catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError('unknown', e.toString());
+      
       if (mounted) {
         setState(() {
-          _errorMessage = 'An unexpected error occurred';
+          _errorMessage = l10n.unexpectedError;
           _isLoading = false;
         });
       }
@@ -68,6 +109,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Check network connectivity
+    final connectivityService = ref.read(connectivityServiceProvider);
+    final hasConnection = await connectivityService.hasConnection();
+    
+    if (!hasConnection) {
+      setState(() {
+        _errorMessage = l10n.networkError;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -75,66 +129,108 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     try {
       await ref.read(authControllerProvider.notifier).signInWithGoogle();
-      // Navigation will be handled by router based on auth state
+      
+      // Log analytics event
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logSignUp('google');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.signupSuccess),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } on AuthException catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError(e.code ?? 'unknown', e.message ?? 'Unknown error');
+      
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = _mapAuthErrorToMessage(e.code ?? 'unknown', l10n);
           _isLoading = false;
         });
       }
     } catch (e) {
+      final analyticsService = ref.read(analyticsServiceProvider);
+      await analyticsService.logAuthError('unknown', e.toString());
+      
       if (mounted) {
         setState(() {
-          _errorMessage = 'An unexpected error occurred';
+          _errorMessage = l10n.unexpectedError;
           _isLoading = false;
         });
       }
     }
   }
 
+  String _mapAuthErrorToMessage(String code, AppLocalizations l10n) {
+    switch (code) {
+      case 'email-already-in-use':
+        return l10n.emailAlreadyInUse;
+      case 'too-many-requests':
+        return l10n.tooManyAttempts;
+      default:
+        return l10n.unexpectedError;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppSpacing.lg),
-                // Title
-                Text(
-                  'Create Account',
-                  style: AppTextStyles.largeTitle,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Join CountSip and start tracking 🍻',
-                  style: AppTextStyles.subheadline,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                // Error message
-                if (_errorMessage != null)
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(color: AppColors.error),
-                    ),
-                    child: Row(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/bgwglass.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  // Title
+                  Text(
+                    l10n.createAccount,
+                    style: AppTextStyles.largeTitle,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.createAccountSubtitle,
+                    style: AppTextStyles.subheadline,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  // Error message
+                  if (_errorMessage != null)
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: AppColors.error),
+                      ),
+                      child: Row(
                       children: [
                         Icon(Icons.error_outline, color: AppColors.error, size: 20),
                         const SizedBox(width: AppSpacing.sm),
@@ -146,6 +242,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             ),
                           ),
                         ),
+                        if (_errorMessage == l10n.networkError)
+                          TextButton(
+                            onPressed: _handleSignUp,
+                            child: Text(l10n.tryAgain),
+                          ),
                       ],
                     ),
                   ),
@@ -154,17 +255,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'your@email.com',
-                    prefixIcon: Icon(Icons.email_outlined),
+                  autofillHints: const [AutofillHints.email],
+                  decoration: InputDecoration(
+                    labelText: l10n.email,
+                    hintText: l10n.emailHint,
+                    prefixIcon: const Icon(Icons.email_outlined),
                   ),
-                  validator: (value) {
+                 validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return l10n.emailRequired;
                     }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email';
+                    if (!EmailValidator.isValid(value)) {
+                      return l10n.emailInvalid;
                     }
                     return null;
                   },
@@ -175,9 +277,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.newPassword],
+                  onChanged: (_) => setState(() {}), // Rebuild for strength indicator
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: '••••••••',
+                    labelText: l10n.password,
+                    hintText: l10n.passwordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -194,12 +298,26 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
+                      return l10n.passwordRequired;
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return l10n.passwordTooShort;
                     }
                     return null;
+                  },
+                ),
+                // Password strength indicator
+                PasswordStrengthIndicator(
+                  password: _passwordController.text,
+                  getStrengthLabel: (strength) {
+                    switch (strength) {
+                      case PasswordStrength.weak:
+                        return l10n.passwordWeak;
+                      case PasswordStrength.medium:
+                        return l10n.passwordMedium;
+                      case PasswordStrength.strong:
+                        return l10n.passwordStrong;
+                    }
                   },
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -208,10 +326,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.newPassword],
                   onFieldSubmitted: (_) => _handleSignUp(),
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    hintText: '••••••••',
+                    labelText: l10n.confirmPassword,
+                    hintText: l10n.passwordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -228,10 +347,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return l10n.confirmPasswordRequired;
                     }
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return l10n.passwordsDontMatch;
                     }
                     return null;
                   },
@@ -249,7 +368,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Sign Up'),
+                      : Text(l10n.signUp),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 // Divider
@@ -259,7 +378,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: Text(
-                        'or',
+                        l10n.or,
                         style: AppTextStyles.subheadline,
                       ),
                     ),
@@ -271,7 +390,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
                   icon: const Icon(Icons.g_mobiledata, size: 24),
-                  label: const Text('Continue with Google'),
+                  label: Text(l10n.continueWithGoogle),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   ),
@@ -282,7 +401,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already have an account? ',
+                      l10n.alreadyHaveAccount,
                       style: AppTextStyles.body,
                     ),
                     TextButton(
@@ -292,7 +411,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               context.pop();
                             },
                       child: Text(
-                        'Log In',
+                        l10n.login,
                         style: AppTextStyles.body.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -306,6 +425,30 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
+  }
+}
+
+String _mapAuthErrorToMessage(String code, AppLocalizations l10n) {
+  switch (code) {
+    case 'user-not-found':
+    case 'wrong-password':
+    case 'invalid-credential':
+      return l10n.invalidCredentials;
+    case 'email-already-in-use':
+      return l10n.emailAlreadyInUse;
+    case 'weak-password':
+      return l10n.passwordTooShort;
+    case 'invalid-email':
+      return l10n.emailInvalid;
+    case 'network-request-failed':
+      return l10n.networkError;
+    case 'user-disabled':
+      return l10n.unexpectedError;
+    case 'too-many-requests':
+      return l10n.tooManyAttempts;
+    default:
+      return l10n.unexpectedError;
   }
 }
