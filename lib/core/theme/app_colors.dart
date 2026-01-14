@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary
-  static const primary = Color(0xFFFF6B35);
-  static const primaryLight = Color(0xFFFF8A5B);
-  static const primaryDark = Color(0xFFE65525);
+  // Primary - Coffee/Brown tones
+  static const primary = Color(0xFF8B5A3C);      // Coffee brown
+  static const primaryLight = Color(0xFFA67B5B); // Light coffee
+  static const primaryDark = Color(0xFF6B4226);  // Dark coffee
 
   // Background
   static const background = Color(0xFFfdf8f6); // Light beige/cream

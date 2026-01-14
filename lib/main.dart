@@ -12,6 +12,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_controller.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'firebase_options.dart';
 import 'ui/screens/add_entry_screen.dart';
@@ -81,6 +82,7 @@ class CountSipApp extends ConsumerWidget {
         final isAuthenticated = authState.value != null;
         final isAuthRoute = state.matchedLocation == '/login' ||
             state.matchedLocation == '/signup' ||
+            state.matchedLocation == '/onboarding' ||
             state.matchedLocation == '/splash';
 
         // Debug print
@@ -94,8 +96,10 @@ class CountSipApp extends ConsumerWidget {
           return '/login';
         }
 
-        // If authenticated and on login/signup (not splash), redirect to home
-        if (isAuthenticated && (state.matchedLocation == '/login' || state.matchedLocation == '/signup')) {
+        // If authenticated and on login/signup/onboarding, redirect to home
+        if (isAuthenticated && (state.matchedLocation == '/login' || 
+            state.matchedLocation == '/signup' || 
+            state.matchedLocation == '/onboarding')) {
           // ignore: avoid_print
           print('Redirecting to /home');
           return '/home';
@@ -113,6 +117,12 @@ class CountSipApp extends ConsumerWidget {
           path: '/splash',
           name: 'splash',
           builder: (context, state) => const SplashScreen(),
+        ),
+        // Onboarding screen
+        GoRoute(
+          path: '/onboarding',
+          name: 'onboarding',
+          builder: (context, state) => const OnboardingScreen(),
         ),
         // Auth routes
         GoRoute(

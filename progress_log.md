@@ -287,3 +287,93 @@ flutter run
 - Analytics ✅
 - Error handling ✅
 - Success animations ✅
+
+---
+
+> Tarih: 2026-01-14
+
+## Ne yaptık? (bugün - Build düzeltme + UI tasarım + Promil özelliği planı)
+
+### Build Sorunları Çözüldü ✅
+- Flutter SDK cache temizlendi ve yeniden indirildi
+- Kotlin 2.1.0'a güncellendi (Flutter'ın gereksinimine uygun)
+- AGP 8.9.2'ye güncellendi
+- Gradle 8.11.1'e güncellendi
+- JVM heap 4GB'a çıkarıldı (OutOfMemoryError çözüldü)
+- **Uygulama artık başarıyla derleniyor ve çalışıyor**
+
+### UI/UX İyileştirmeleri
+- Renkler turuncudan kahverengiye çevrildi (#8B5A3C)
+- Arka plan görselleri `bgwglass.png` olarak güncellendi
+- Onboarding/Welcome ekranı eklendi (Glassmorphism tasarım)
+- `GlassContainer` widget oluşturuldu (tekrar kullanılabilir)
+- Splash screen video entegrasyonu (tam ekran loading animasyonu)
+
+### Yeni Dosyalar
+- `lib/ui/widgets/glass_container.dart` - Cam efektli container widget
+- `lib/features/onboarding/onboarding_screen.dart` - Hoş geldin sayfası
+
+---
+
+## 🆕 Yeni Özellik Planı: BAC (Promil) Takip Sistemi
+
+### Özellik Özeti
+Kullanıcının anlık kan alkol seviyesini (BAC/Promil) hesaplayan ve gösteren dinamik bir sistem.
+
+### Teknik Detaylar
+
+#### Widmark Formülü:
+```
+BAC = (Alkol Gramı / (Kilo × r)) - (0.015 × Geçen Saat)
+r = 0.68 (erkek) veya 0.55 (kadın)
+Alkol Gramı = ml × Alkol% × 0.789
+```
+
+#### UI Bileşenleri:
+1. **Merkez FAB Butonu** - Alt navigasyonda ortada, hafif yukarı çıkık
+   - İçinde anlık promil değeri
+   - Renk: yeşil(ayık) → sarı → turuncu → kırmızı(yüksek)
+   - Doluluk animasyonu
+
+2. **BAC Detay Sayfası** (`/bac-details`)
+   - Büyük promil göstergesi
+   - Ayıklaşma tahmini
+   - Son 24 saatte içilen alkollerin listesi
+
+3. **İçecek Ekleme Formu**
+   - Saat seçici (varsayılan: anlık)
+   - Alkol miktarı ve türü
+
+#### Dosya Yapısı:
+```
+lib/features/bac/
+├── models/bac_calculation.dart
+├── services/bac_calculator_service.dart
+├── providers/bac_provider.dart
+├── screens/bac_details_screen.dart
+└── widgets/bac_indicator_fab.dart
+```
+
+#### Kullanıcı Profili Gereksinimleri:
+- Cinsiyet (r değeri için)
+- Kilo (kg)
+
+### Uygulama Adımları:
+- [ ] DrinkEntry modeline `timestamp` ekle
+- [ ] BACCalculation modeli oluştur
+- [ ] BACCalculatorService - Widmark formülü
+- [ ] BACProvider - Riverpod state
+- [ ] BACIndicatorFAB widget
+- [ ] RootShellPage'e FAB ekle
+- [ ] BACDetailsScreen oluştur
+- [ ] İçecek formuna saat seçici ekle
+- [ ] `/bac-details` rotası ekle
+
+---
+
+## Sıradaki Adımlar (Öncelik Sırası)
+1. **Welcome ekranı tasarımı** - Kullanıcı beğenmedi, revize edilecek
+2. **BAC özelliği implementasyonu** - Yukarıdaki plan takip edilecek
+3. **Ana ekran (Home)** - İçecek listesi ve istatistikler
+4. **Profil sayfası** - Cinsiyet/kilo bilgileri (BAC için gerekli)
+

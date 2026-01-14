@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 
-/// Splash screen with loading video animation
+/// Splash screen - Video plays as the main loading animation
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -14,7 +14,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
-  bool _isVideoReady = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -30,34 +30,35 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       await _controller.initialize();
       _controller.setLooping(false);
-      _controller.play();
       
-      setState(() {
-        _isVideoReady = true;
-      });
+      // Video yüklenince hemen oynat
+      if (mounted) {
+        setState(() {});
+        _controller.play();
+      }
       
-      // Video bitince login'e git
+      // Video bitince onboarding'e git
       _controller.addListener(() {
-        if (_controller.value.position >= _controller.value.duration) {
-          _navigateToLogin();
+        if (_controller.value.position >= _controller.value.duration &&
+            _controller.value.duration > Duration.zero) {
+          _navigateToOnboarding();
         }
       });
       
-      // Fallback: 3 saniye sonra git (video çok uzunsa veya hata varsa)
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          _navigateToLogin();
-        }
+      // Fallback: 4 saniye sonra git (video uzunsa veya hata varsa)
+      Future.delayed(const Duration(seconds: 4), () {
+        _navigateToOnboarding();
       });
     } catch (e) {
       // Video yüklenemezse direkt git
-      _navigateToLogin();
+      _navigateToOnboarding();
     }
   }
 
-  void _navigateToLogin() {
-    if (mounted) {
-      context.go('/login');
+  void _navigateToOnboarding() {
+    if (mounted && !_hasNavigated) {
+      _hasNavigated = true;
+      context.go('/onboarding');
     }
   }
 
@@ -71,22 +72,25 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/onlybg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Center(
-          child: _isVideoReady
-              ? AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
+      body: _controller.value.isInitialized
+          ? SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller.value.size.width,
+                  height: _controller.value.size.height,
                   child: VideoPlayer(_controller),
-                )
-              : const CircularProgressIndicator(),
-        ),
-      ),
+                ),
+              ),
+            )
+          : Container(
+              color: AppColors.background,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
     );
   }
 }

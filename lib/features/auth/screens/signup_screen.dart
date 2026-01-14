@@ -12,6 +12,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/email_validator.dart';
+import '../../../ui/widgets/glass_container.dart';
 import '../../../ui/widgets/password_strength_indicator.dart';
 import '../providers/auth_controller.dart';
 
@@ -194,239 +195,219 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/bgwglass.png'),
+            image: AssetImage('assets/images/onlybg.png'),
             fit: BoxFit.cover,
           ),
         ),
-        child: SafeArea(
+        child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
-                  // Title
-                  Text(
-                    l10n.createAccount,
-                    style: AppTextStyles.largeTitle,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    l10n.createAccountSubtitle,
-                    style: AppTextStyles.subheadline,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  // Error message
-                  if (_errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: AppColors.error),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: GlassContainer(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppSpacing.lg),
+                    // Title
+                    Text(
+                      l10n.createAccount,
+                      style: AppTextStyles.largeTitle,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      l10n.createAccountSubtitle,
+                      style: AppTextStyles.subheadline,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    // Error message
+                    if (_errorMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          border: Border.all(color: AppColors.error),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: AppTextStyles.footnote.copyWith(
+                                  color: AppColors.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Row(
+                    
+                    // Email field
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.email,
+                        prefixIcon: const Icon(Icons.email_outlined),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.7),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return l10n.emailRequired;
+                        }
+                        return null; // Add stronger validation if needed
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    
+                    // Password field
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: l10n.password,
+                        prefixIcon: const Icon(Icons.lock_outlined),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.7),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return l10n.passwordRequired;
+                        }
+                        return null;
+                      },
+                    ),
+                    
+                    // Password Strength
+                    PasswordStrengthIndicator(
+                      password: _passwordController.text,
+                      getStrengthLabel: (strength) {
+                        switch (strength) {
+                          case PasswordStrength.weak:
+                            return l10n.passwordWeak;
+                          case PasswordStrength.medium:
+                            return l10n.passwordMedium;
+                          case PasswordStrength.strong:
+                            return l10n.passwordStrong;
+                        }
+                      },
+                    ),
+                    
+                    const SizedBox(height: AppSpacing.md),
+                    
+                    // Confirm Password
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscureConfirmPassword,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleSignUp(),
+                      decoration: InputDecoration(
+                        labelText: l10n.confirmPassword,
+                        prefixIcon: const Icon(Icons.lock_outlined),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.7),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value != _passwordController.text) {
+                          return l10n.passwordsDontMatch;
+                        }
+                        return null;
+                      },
+                    ),
+                    
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    // Sign Up Button
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleSignUp,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(l10n.signUp),
+                    ),
+                    
+                    const SizedBox(height: AppSpacing.md),
+                    
+                    // Google Sign Up
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _handleGoogleSignIn,
+                      icon: const Icon(Icons.g_mobiledata, size: 24),
+                      label: Text(l10n.continueWithGoogle),
+                    ),
+                    
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    // Login Link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
+                        Text(
+                          l10n.alreadyHaveAccount,
+                          style: AppTextStyles.body,
+                        ),
+                        TextButton(
+                          onPressed: () => context.pop(),
                           child: Text(
-                            _errorMessage!,
-                            style: AppTextStyles.footnote.copyWith(
-                              color: AppColors.error,
+                            l10n.login,
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        if (_errorMessage == l10n.networkError)
-                          TextButton(
-                            onPressed: _handleSignUp,
-                            child: Text(l10n.tryAgain),
-                          ),
                       ],
                     ),
-                  ),
-                // Email field
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: InputDecoration(
-                    labelText: l10n.email,
-                    hintText: l10n.emailHint,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                  ),
-                 validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.emailRequired;
-                    }
-                    if (!EmailValidator.isValid(value)) {
-                      return l10n.emailInvalid;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Password field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.newPassword],
-                  onChanged: (_) => setState(() {}), // Rebuild for strength indicator
-                  decoration: InputDecoration(
-                    labelText: l10n.password,
-                    hintText: l10n.passwordHint,
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.passwordRequired;
-                    }
-                    if (value.length < 6) {
-                      return l10n.passwordTooShort;
-                    }
-                    return null;
-                  },
-                ),
-                // Password strength indicator
-                PasswordStrengthIndicator(
-                  password: _passwordController.text,
-                  getStrengthLabel: (strength) {
-                    switch (strength) {
-                      case PasswordStrength.weak:
-                        return l10n.passwordWeak;
-                      case PasswordStrength.medium:
-                        return l10n.passwordMedium;
-                      case PasswordStrength.strong:
-                        return l10n.passwordStrong;
-                    }
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Confirm password field
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.newPassword],
-                  onFieldSubmitted: (_) => _handleSignUp(),
-                  decoration: InputDecoration(
-                    labelText: l10n.confirmPassword,
-                    hintText: l10n.passwordHint,
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.confirmPasswordRequired;
-                    }
-                    if (value != _passwordController.text) {
-                      return l10n.passwordsDontMatch;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                // Sign up button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSignUp,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(l10n.signUp),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Divider
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(
-                        l10n.or,
-                        style: AppTextStyles.subheadline,
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                // Google Sign In button
-                OutlinedButton.icon(
-                  onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  icon: const Icon(Icons.g_mobiledata, size: 24),
-                  label: Text(l10n.continueWithGoogle),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                // Login link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      l10n.alreadyHaveAccount,
-                      style: AppTextStyles.body,
-                    ),
-                    TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              context.pop();
-                            },
-                      child: Text(
-                        l10n.login,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+
   }
 }
 
