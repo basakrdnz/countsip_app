@@ -30,11 +30,11 @@ class AuthController extends AsyncNotifier<User?> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final credential = await _repository.signInWithEmail(
+      await _repository.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return credential.user;
+      return _repository.currentUser;
     });
   }
 
@@ -45,11 +45,11 @@ class AuthController extends AsyncNotifier<User?> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final credential = await _repository.signUpWithEmail(
+      await _repository.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return credential.user;
+      return _repository.currentUser;
     });
   }
 
@@ -58,7 +58,7 @@ class AuthController extends AsyncNotifier<User?> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final credential = await _repository.signInWithGoogle();
-      return credential.user;
+      return credential?.user;
     });
   }
 

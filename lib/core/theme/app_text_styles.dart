@@ -3,33 +3,28 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
-  // Title styles with HalloAlmond font
   static const largeTitle = TextStyle(
-    fontFamily: 'HalloAlmond',
     fontSize: 34,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: 0.4,
   );
 
   static const title1 = TextStyle(
-    fontFamily: 'HalloAlmond',
     fontSize: 28,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
   static const title2 = TextStyle(
-    fontFamily: 'HalloAlmond',
     fontSize: 22,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
   static const title3 = TextStyle(
-    fontFamily: 'HalloAlmond',
     fontSize: 20,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 

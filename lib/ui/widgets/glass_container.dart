@@ -1,7 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_radius.dart';
 
 class GlassContainer extends StatelessWidget {
   final Widget child;
@@ -24,7 +22,7 @@ class GlassContainer extends StatelessWidget {
     this.margin,
     this.opacity = 0.6, 
     this.blur = 12.0,
-    this.borderRadius = 16.0, // Sharper corners
+    this.borderRadius = 16.0,
     this.color,
     this.border,
   });
@@ -40,9 +38,9 @@ class GlassContainer extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
-            padding: padding,
+            padding: padding ?? const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: (color ?? AppColors.surface).withOpacity(opacity),
+              color: (color ?? Colors.white).withOpacity(opacity),
               borderRadius: BorderRadius.circular(borderRadius),
               border: border ?? Border.all(
                 color: Colors.white.withOpacity(0.5),
