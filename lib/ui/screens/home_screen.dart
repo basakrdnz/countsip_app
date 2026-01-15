@@ -7,11 +7,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Ana Sayfa'),
         centerTitle: true,
       ),
       body: const Center(
-        child: Text('Home Feed placeholder'),
+        child: Text('İçerik Akışı'),
       ),
     );
   }

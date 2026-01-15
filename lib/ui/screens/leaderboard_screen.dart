@@ -7,11 +7,11 @@ class LeaderboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Leaderboard'),
+        title: const Text('Sıralama'),
         centerTitle: true,
       ),
       body: const Center(
-        child: Text('Leaderboard placeholder'),
+        child: Text('Sıralama Listesi'),
       ),
     );
   }

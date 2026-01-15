@@ -7,11 +7,11 @@ class AddEntryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Drink'),
+        title: const Text('İçecek Ekle'),
         centerTitle: true,
       ),
       body: const Center(
-        child: Text('Add entry modal placeholder'),
+        child: Text('İçecek ekleme ekranı'),
       ),
     );
   }
