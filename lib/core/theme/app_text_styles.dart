@@ -6,6 +6,7 @@ class AppTextStyles {
   static const largeTitle = TextStyle(
     fontSize: 34,
     fontWeight: FontWeight.w700,
+    fontFamily: 'Rosaline',
     color: AppColors.textPrimary,
     letterSpacing: 0.4,
   );
@@ -13,18 +14,21 @@ class AppTextStyles {
   static const title1 = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w600,
+    fontFamily: 'Rosaline',
     color: AppColors.textPrimary,
   );
 
   static const title2 = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w600,
+    fontFamily: 'Rosaline',
     color: AppColors.textPrimary,
   );
 
   static const title3 = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
+    fontFamily: 'Rosaline',
     color: AppColors.textPrimary,
   );
 

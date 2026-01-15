@@ -15,6 +15,7 @@ import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
+import 'ui/screens/splash_screen.dart';
 import 'ui/screens/add_entry_screen.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/screens/leaderboard_screen.dart';
@@ -59,7 +60,6 @@ Future<void> main() async {
   } catch (e, stackTrace) {
     debugPrint('Firebase initialization error: $e');
     debugPrint('Stack trace: $stackTrace');
-    // Continue anyway - app might work without Firebase in some cases
   }
   
   // Configure Firebase UI Auth providers
@@ -109,29 +109,26 @@ Future<void> _configureFirebaseEmulator() async {
 
 GoRouter _createRouter() {
   return GoRouter(
-    initialLocation: '/welcome',
-    // Listen to Auth State changes to refresh router
+    initialLocation: '/splash',
     refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
     
-    // Global Redirect Logic
     redirect: (context, state) {
       final isLoggedIn = FirebaseAuth.instance.currentUser != null;
       final isLoggingIn = state.matchedLocation == '/login';
       final isSigningUp = state.matchedLocation == '/signup';
       final isWelcome = state.matchedLocation == '/welcome';
-      final isProfileSetup = state.matchedLocation == '/profile-setup';
-
       final isForgotPw = state.matchedLocation == '/forgot-password';
+      final isSplash = state.matchedLocation == '/splash';
 
-      // If not logged in, only allow auth-related screens
+      if (isSplash) return null;
+
       if (!isLoggedIn) {
         if (isLoggingIn || isSigningUp || isWelcome || isForgotPw) {
-          return null; // Allow easy access
+          return null;
         }
-        return '/welcome'; // Default to welcome for unauthenticated
+        return '/welcome';
       }
 
-      // If logged in, prevent access to auth screens (except profile setup check)
       if (isLoggedIn) {
         if (isLoggingIn || isSigningUp || isWelcome) {
           return '/home';
@@ -142,7 +139,11 @@ GoRouter _createRouter() {
     },
     
     routes: [
-      // Auth routes
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/welcome',
         name: 'welcome',
@@ -151,35 +152,43 @@ GoRouter _createRouter() {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/bgwglass.png'),
-              fit: BoxFit.cover,
+        builder: (context, state) => Stack(
+          children: [
+            // Background layer
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/bgwglass.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Container(
+                  color: Colors.white.withOpacity(0.75),
+                ),
+              ),
             ),
-          ),
-          child: Container(
-            color: Colors.white.withOpacity(0.5),
-            child: Theme(
+            // Auth content with transparent background
+            Theme(
               data: Theme.of(context).copyWith(
                 scaffoldBackgroundColor: Colors.transparent,
               ),
               child: SignInScreen(
                 providers: FirebaseUIAuth.providersFor(FirebaseAuth.instance.app),
                 headerBuilder: (context, constraints, shrinkOffset) {
-                  return Container(
-                    padding: const EdgeInsets.only(top: 60, bottom: 20),
-                    alignment: Alignment.center,
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 8),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.local_bar_rounded, size: 48, color: AppColors.primary),
-                        const SizedBox(height: 8),
+                        Icon(Icons.local_bar_rounded, size: 40, color: AppColors.primary),
+                        const SizedBox(height: 4),
                         Text(
                           'CountSip',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 24,
                             fontWeight: FontWeight.w900,
+                            fontFamily: 'Rosaline',
                             letterSpacing: -1,
                             color: AppColors.primary,
                           ),
@@ -202,7 +211,7 @@ GoRouter _createRouter() {
                 ],
                 footerBuilder: (context, action) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.only(bottom: 16),
                     child: TextButton.icon(
                       onPressed: () => context.go('/welcome'),
                       icon: const Icon(Icons.arrow_back),
@@ -212,41 +221,49 @@ GoRouter _createRouter() {
                 },
               ),
             ),
-          ),
+          ],
         ),
       ),
       GoRoute(
         path: '/signup',
         name: 'signup',
-        builder: (context, state) => Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/bgwglass.png'),
-              fit: BoxFit.cover,
+        builder: (context, state) => Stack(
+          children: [
+            // Background layer
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/bgwglass.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Container(
+                  color: Colors.white.withOpacity(0.75),
+                ),
+              ),
             ),
-          ),
-          child: Container(
-            color: Colors.white.withOpacity(0.5),
-            child: Theme(
+            // Auth content with transparent background
+            Theme(
               data: Theme.of(context).copyWith(
                 scaffoldBackgroundColor: Colors.transparent,
               ),
               child: RegisterScreen(
                 providers: FirebaseUIAuth.providersFor(FirebaseAuth.instance.app),
                 headerBuilder: (context, constraints, shrinkOffset) {
-                  return Container(
-                    padding: const EdgeInsets.only(top: 60, bottom: 20),
-                    alignment: Alignment.center,
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 8),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.person_add_rounded, size: 48, color: AppColors.primary),
-                        const SizedBox(height: 8),
+                        Icon(Icons.person_add_rounded, size: 40, color: AppColors.primary),
+                        const SizedBox(height: 4),
                         Text(
                           'CountSip',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 24,
                             fontWeight: FontWeight.w900,
+                            fontFamily: 'Rosaline',
                             letterSpacing: -1,
                             color: AppColors.primary,
                           ),
@@ -262,7 +279,7 @@ GoRouter _createRouter() {
                 ],
                 footerBuilder: (context, action) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.only(bottom: 16),
                     child: TextButton.icon(
                       onPressed: () => context.go('/welcome'),
                       icon: const Icon(Icons.arrow_back),
@@ -272,7 +289,7 @@ GoRouter _createRouter() {
                 },
               ),
             ),
-          ),
+          ],
         ),
       ),
       GoRoute(
@@ -280,35 +297,43 @@ GoRouter _createRouter() {
         name: 'forgot-password',
         builder: (context, state) {
           final email = state.uri.queryParameters['email'];
-          return Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/bgwglass.png'),
-                fit: BoxFit.cover,
+          return Stack(
+            children: [
+              // Background layer
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/bgwglass.png'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child: Container(
+                    color: Colors.white.withOpacity(0.75),
+                  ),
+                ),
               ),
-            ),
-            child: Container(
-              color: Colors.white.withOpacity(0.5),
-              child: Theme(
+              // Auth content with transparent background
+              Theme(
                 data: Theme.of(context).copyWith(
                   scaffoldBackgroundColor: Colors.transparent,
                 ),
                 child: ForgotPasswordScreen(
                   email: email,
                   headerBuilder: (context, constraints, shrinkOffset) {
-                    return Container(
-                      padding: const EdgeInsets.only(top: 60, bottom: 20),
-                      alignment: Alignment.center,
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16, bottom: 8),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.lock_reset_rounded, size: 48, color: AppColors.primary),
-                          const SizedBox(height: 8),
+                          Icon(Icons.lock_reset_rounded, size: 40, color: AppColors.primary),
+                          const SizedBox(height: 4),
                           Text(
                             'CountSip',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: 24,
                               fontWeight: FontWeight.w900,
+                              fontFamily: 'Rosaline',
                               letterSpacing: -1,
                               color: AppColors.primary,
                             ),
@@ -319,7 +344,7 @@ GoRouter _createRouter() {
                   },
                 ),
               ),
-            ),
+            ],
           );
         },
       ),
@@ -329,7 +354,6 @@ GoRouter _createRouter() {
         builder: (context, state) => const ProfileSetupScreen(),
       ),
       
-      // Main app routes
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             RootShellPage(navigationShell: navigationShell),
@@ -376,7 +400,6 @@ GoRouter _createRouter() {
   );
 }
 
-/// Helper class to convert Stream to Listenable for GoRouter
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();

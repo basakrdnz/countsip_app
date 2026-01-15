@@ -47,6 +47,7 @@ class WelcomeScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
+                                  fontFamily: 'Rosaline',
                                   letterSpacing: -2,
                                   color: AppColors.primary,
                                   height: 1,
