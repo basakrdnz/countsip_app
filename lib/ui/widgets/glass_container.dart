@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 class GlassContainer extends StatelessWidget {
   final Widget child;
@@ -40,7 +41,7 @@ class GlassContainer extends StatelessWidget {
           child: Container(
             padding: padding ?? const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: (color ?? Colors.white).withOpacity(opacity),
+              color: (color ?? AppColors.surface).withOpacity(opacity),
               borderRadius: BorderRadius.circular(borderRadius),
               border: border ?? Border.all(
                 color: Colors.white.withOpacity(0.5),

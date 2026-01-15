@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -9,9 +10,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart' hide ProfileScreen;
 import 'package:firebase_ui_localizations/firebase_ui_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/theme/app_colors.dart';
+import 'core/providers/preferences_provider.dart';
+import 'core/services/analytics_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/providers/auth_controller.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/signup_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
+import 'features/splash/splash_screen.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
@@ -20,6 +29,9 @@ import 'ui/screens/home_screen.dart';
 import 'ui/screens/leaderboard_screen.dart';
 import 'ui/screens/profile_screen.dart';
 import 'ui/screens/root_shell_page.dart';
+
+// Import generated l10n from lib/l10n (not flutter_gen)
+import 'l10n/app_localizations.dart';
 
 /// Toggle emulator with a compile-time define:
 /// flutter run --dart-define=USE_FIREBASE_EMULATOR=true
@@ -39,16 +51,11 @@ Future<void> main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('Flutter Error: ${details.exception}');
-    debugPrint('Stack trace: ${details.stack}');
   };
   
-  // Handle async errors
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Platform Error: $error');
-    debugPrint('Stack trace: $stack');
-    return true;
-  };
-  
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -59,7 +66,6 @@ Future<void> main() async {
   } catch (e, stackTrace) {
     debugPrint('Firebase initialization error: $e');
     debugPrint('Stack trace: $stackTrace');
-    // Continue anyway - app might work without Firebase in some cases
   }
   
   // Configure Firebase UI Auth providers
@@ -67,16 +73,24 @@ Future<void> main() async {
     EmailAuthProvider(),
   ]);
   
-  runApp(ProviderScope(child: CountSipApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const CountSipApp(),
+    ),
+  );
 }
 
-class CountSipApp extends StatelessWidget {
-  CountSipApp({super.key}) : _router = _createRouter();
-
-  final GoRouter _router;
+class CountSipApp extends ConsumerWidget {
+  const CountSipApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefsService = ref.watch(preferencesServiceProvider);
+    final savedLocale = prefsService.getLocale();
+    
     return MaterialApp.router(
       title: 'CountSip',
       theme: AppTheme.light,
@@ -84,17 +98,25 @@ class CountSipApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
         FirebaseUILocalizations.delegate,
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
+<<<<<<< HEAD
         Locale('tr', 'TR'),
       ],
       locale: const Locale('tr', 'TR'),
+=======
+        Locale('en', ''), // English
+        Locale('tr', ''), // Turkish
+      ],
+      // Use saved locale or system locale
+      locale: savedLocale != null ? Locale(savedLocale) : null,
     );
   }
-}
+
 
 Future<void> _configureFirebaseEmulator() async {
   await FirebaseAuth.instance.useAuthEmulator(
@@ -107,14 +129,13 @@ Future<void> _configureFirebaseEmulator() async {
   );
 }
 
-GoRouter _createRouter() {
-  return GoRouter(
-    initialLocation: '/welcome',
-    // Listen to Auth State changes to refresh router
-    refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
-    
-    // Global Redirect Logic
-    redirect: (context, state) {
+final _router = GoRouter(
+  initialLocation: '/welcome',
+  // Listen to Auth State changes to refresh router
+  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  
+  // Global Redirect Logic
+  redirect: (context, state) {
       final isLoggedIn = FirebaseAuth.instance.currentUser != null;
       final isLoggingIn = state.matchedLocation == '/login';
       final isSigningUp = state.matchedLocation == '/signup';
