@@ -8,7 +8,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../ui/widgets/glass_container.dart';
 
 /// Profile Setup Screen - Collect user info after signup
 /// Height, Weight, Age, Gender (for BAC calculation)
@@ -73,6 +72,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           'height': _height,
           'age': _age,
           'gender': _gender,
+          'profileComplete': true,
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
@@ -93,13 +93,44 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     }
   }
 
+  Future<void> _skipAndFinish() async {
+    final user = FirebaseAuth.instance.currentUser;
+    
+    // Navigate immediately
+    if (mounted) {
+      context.go('/home');
+    }
+    
+    // Save in background (don't block navigation)
+    if (user != null) {
+      try {
+        final data = <String, dynamic>{
+          'profileComplete': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        };
+        if (_weight != null) data['weight'] = _weight;
+        if (_height != null) data['height'] = _height;
+        if (_age != null) data['age'] = _age;
+        if (_gender != null) data['gender'] = _gender;
+
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
+          data,
+          SetOptions(merge: true),
+        );
+      } catch (e) {
+        debugPrint('Skip profile save error: $e');
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/bgwglass.png'),
+            image: AssetImage('assets/images/onlybg.png'),
             fit: BoxFit.cover,
           ),
         ),
@@ -122,7 +153,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         decoration: BoxDecoration(
                           color: index <= _currentPage
                               ? AppColors.primary
-                              : Colors.white.withOpacity(0.3),
+                              : Colors.grey.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -148,31 +179,43 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               // Navigation buttons
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Row(
+                child: Column(
                   children: [
-                    if (_currentPage > 0)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _previousPage,
-                          child: const Text('Geri'),
+                    Row(
+                      children: [
+                        if (_currentPage > 0)
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _previousPage,
+                              child: const Text('Geri'),
+                            ),
+                          ),
+                        if (_currentPage > 0) const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : (_currentPage == 3 ? _saveAndFinish : _nextPage),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                                    ),
+                                  )
+                                : Text(_currentPage == 3 ? 'Tamamla' : 'İleri'),
+                          ),
                         ),
-                      ),
-                    if (_currentPage > 0) const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isLoading
-                            ? null
-                            : (_currentPage == 3 ? _saveAndFinish : _nextPage),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                                ),
-                              )
-                            : Text(_currentPage == 3 ? 'Tamamla' : 'İleri'),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextButton(
+                      onPressed: _isLoading ? null : _skipAndFinish,
+                      child: Text(
+                        'Şimdilik atla',
+                        style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
                   ],
@@ -188,7 +231,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget _buildWeightPage() {
     return _buildInputPage(
       title: 'Kilonuz kaç?',
-      subtitle: 'Promil hesaplama için gerekli',
+      subtitle: 'Hesaplamalarınızı doğru yapabilmemiz için',
       value: _weight,
       unit: 'kg',
       min: 30,
@@ -200,7 +243,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget _buildHeightPage() {
     return _buildInputPage(
       title: 'Boyunuz kaç?',
-      subtitle: 'Daha doğru hesaplamalar için',
+      subtitle: 'Daha kişiselleştirilmiş bir deneyim için',
       value: _height,
       unit: 'cm',
       min: 100,
@@ -212,7 +255,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget _buildAgePage() {
     return _buildInputPage(
       title: 'Yaşınız kaç?',
-      subtitle: 'Yasalara uygun kullanım için',
+      subtitle: 'Yasal düzenlemeler için bilmemiz gerekiyor',
       value: _age,
       unit: 'yaş',
       min: 18,
@@ -225,8 +268,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: GlassContainer(
+        child: Container(
           padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -239,7 +293,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Promil hesaplama için gerekli',
+                'Hesaplamalarınızı doğru yapabilmemiz için',
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -256,13 +310,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
                           color: _gender == 'male'
-                              ? AppColors.primary.withOpacity(0.2)
-                              : Colors.white.withOpacity(0.1),
+                              ? AppColors.primary.withOpacity(0.15)
+                              : Colors.grey.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
                             color: _gender == 'male'
                                 ? AppColors.primary
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.grey.withOpacity(0.3),
                             width: 2,
                           ),
                         ),
@@ -297,13 +351,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
                           color: _gender == 'female'
-                              ? AppColors.primary.withOpacity(0.2)
-                              : Colors.white.withOpacity(0.1),
+                              ? AppColors.primary.withOpacity(0.15)
+                              : Colors.grey.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
                             color: _gender == 'female'
                                 ? AppColors.primary
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.grey.withOpacity(0.3),
                             width: 2,
                           ),
                         ),
@@ -348,11 +402,24 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     required int max,
     required ValueChanged<int> onChanged,
   }) {
+    final currentValue = value ?? min;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: GlassContainer(
+        child: Container(
           padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -369,28 +436,81 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.textSecondary,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xl),
               
-              // Value Display
-              Text(
-                value != null ? '$value $unit' : '-- $unit',
-                style: AppTextStyles.largeTitle.copyWith(
-                  fontSize: 48,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              // Value Display with +/- buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Minus button
+                  IconButton(
+                    onPressed: currentValue > min
+                        ? () => onChanged(currentValue - 1)
+                        : null,
+                    icon: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: currentValue > min
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.remove,
+                        color: currentValue > min
+                            ? AppColors.primary
+                            : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  // Value
+                  Text(
+                    value != null ? '$value $unit' : '-- $unit',
+                    style: AppTextStyles.largeTitle.copyWith(
+                      fontSize: 48,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  // Plus button
+                  IconButton(
+                    onPressed: currentValue < max
+                        ? () => onChanged(currentValue + 1)
+                        : null,
+                    icon: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: currentValue < max
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.add,
+                        color: currentValue < max
+                            ? AppColors.primary
+                            : Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.lg),
               
               // Slider
               Slider(
-                value: (value ?? min).toDouble(),
+                value: currentValue.toDouble(),
                 min: min.toDouble(),
                 max: max.toDouble(),
                 divisions: max - min,
                 activeColor: AppColors.primary,
-                inactiveColor: Colors.white.withOpacity(0.3),
+                inactiveColor: Colors.grey.withOpacity(0.3),
                 onChanged: (val) => onChanged(val.round()),
               ),
               
@@ -398,8 +518,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('$min', style: AppTextStyles.body),
-                  Text('$max', style: AppTextStyles.body),
+                  Text('$min', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                  Text('$max', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
                 ],
               ),
             ],

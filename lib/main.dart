@@ -129,7 +129,13 @@ GoRouter _createRouter() {
         return '/welcome';
       }
 
+      final isProfileSetup = state.matchedLocation == '/profile-setup';
+
       if (isLoggedIn) {
+        // Allow /profile-setup for new users
+        if (isProfileSetup) {
+          return null;
+        }
         if (isLoggingIn || isSigningUp || isWelcome) {
           return '/home';
         }
