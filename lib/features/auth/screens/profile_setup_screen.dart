@@ -20,24 +20,100 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
 
 class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _nameController = TextEditingController();
   int _currentPage = 0;
 
   // Form data
-  int? _weight; // kg
-  int? _height; // cm
-  int? _age;
-  String? _gender; // 'male' or 'female'
+  String? _name; // MANDATORY
+  int? _weight; // kg - optional
+  int? _height; // cm - optional
+  int? _age; // optional
+  String? _gender; // 'male' or 'female' - optional
 
   bool _isLoading = false;
 
   @override
   void dispose() {
     _pageController.dispose();
+    _nameController.dispose();
     super.dispose();
+  }
+  
+  // Fun username lists - 50 adjectives × 50 animals × 1000 numbers = 2.5M combinations
+  static const _adjectives = [
+    'happy', 'crazy', 'chill', 'wild', 'cool', 'lazy', 'fast', 'silent',
+    'secret', 'funny', 'epic', 'super', 'mega', 'ultra', 'night', 'party',
+    'cosmic', 'ninja', 'pirate', 'savage', 'calm', 'mad', 'funky', 'retro',
+    'classic', 'modern', 'ancient', 'mystic', 'magic', 'atomic', 'galactic',
+    'sonic', 'turbo', 'hyper', 'royal', 'noble', 'dark', 'bright', 'golden',
+    'silver', 'iron', 'steel', 'neo', 'cyber', 'techno', 'astro', 'lucky',
+    'swift', 'bold', 'brave',
+  ];
+  
+  static const _animals = [
+    'panda', 'fox', 'bear', 'cat', 'wolf', 'eagle', 'lion', 'tiger', 'owl',
+    'penguin', 'dolphin', 'elephant', 'giraffe', 'kangaroo', 'koala', 'rabbit',
+    'squirrel', 'hedgehog', 'beaver', 'otter', 'jaguar', 'leopard', 'puma',
+    'croc', 'cobra', 'dragon', 'phoenix', 'unicorn', 'griffin', 'sphinx',
+    'shark', 'whale', 'falcon', 'hawk', 'panther', 'viper', 'raven', 'lynx',
+    'orca', 'rhino', 'buffalo', 'monkey', 'gorilla', 'cheetah', 'husky',
+    'raccoon', 'badger', 'moose', 'mantis', 'scorpion',
+  ];
+  
+  /// Generate fun username: adjective + animal + 3 digit number
+  String _generateUsername(String email) {
+    final random = DateTime.now().millisecondsSinceEpoch;
+    
+    // Pick random adjective and animal
+    final adjective = _adjectives[random % _adjectives.length];
+    final animal = _animals[(random ~/ 100) % _animals.length];
+    
+    // Add 3 digit number (000-999)
+    final number = (random ~/ 10000) % 1000;
+    final numberStr = number.toString().padLeft(3, '0');
+    
+    return '$adjective$animal$numberStr';
+  }
+  
+  /// Check if username is unique and save it
+  Future<String> _createUniqueUsername(String baseUsername) async {
+    var username = baseUsername;
+    var attempts = 0;
+    
+    while (attempts < 10) {
+      final doc = await FirebaseFirestore.instance
+          .collection('usernames')
+          .doc(username)
+          .get();
+      
+      if (!doc.exists) {
+        return username;
+      }
+      
+      // Add random suffix
+      final random = DateTime.now().millisecondsSinceEpoch % 10000;
+      username = '${baseUsername.substring(0, baseUsername.length > 6 ? 6 : baseUsername.length)}$random';
+      attempts++;
+    }
+    
+    // Fallback: use timestamp
+    return '${baseUsername.substring(0, 4)}${DateTime.now().millisecondsSinceEpoch}';
   }
 
   void _nextPage() {
-    if (_currentPage < 3) {
+    // Name is mandatory on first page
+    if (_currentPage == 0 && _nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen adınızı girin')),
+      );
+      return;
+    }
+    
+    if (_currentPage == 0) {
+      _name = _nameController.text.trim();
+    }
+    
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -55,9 +131,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Future<void> _saveAndFinish() async {
-    if (_weight == null || _height == null || _age == null || _gender == null) {
+    // Name is mandatory, others are optional
+    if (_name == null || _name!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen tüm alanları doldurun')),
+        const SnackBar(content: Text('Lütfen adınızı girin')),
       );
       return;
     }
@@ -67,14 +144,41 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'weight': _weight,
-          'height': _height,
-          'age': _age,
-          'gender': _gender,
+        final data = <String, dynamic>{
+          'name': _name,
           'profileComplete': true,
           'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        };
+        
+        // Generate and save username if not exists
+        final existingDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        if (!existingDoc.exists || existingDoc.data()?['username'] == null) {
+          final email = user.email ?? 'user';
+          final baseUsername = _generateUsername(email);
+          final username = await _createUniqueUsername(baseUsername);
+          data['username'] = username;
+          
+          // Reserve username
+          await FirebaseFirestore.instance
+              .collection('usernames')
+              .doc(username)
+              .set({'uid': user.uid, 'createdAt': FieldValue.serverTimestamp()});
+        }
+        
+
+        if (_weight != null) data['weight'] = _weight;
+        if (_height != null) data['height'] = _height;
+        if (_age != null) data['age'] = _age;
+        if (_gender != null) data['gender'] = _gender;
+        
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
+          data, 
+          SetOptions(merge: true),
+        );
 
         if (mounted) {
           context.go('/home');
@@ -94,6 +198,22 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Future<void> _skipAndFinish() async {
+    // Name is still required even when skipping
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen önce adınızı girin')),
+      );
+      // Go to first page if not there
+      if (_currentPage != 0) {
+        _pageController.animateToPage(0, 
+          duration: const Duration(milliseconds: 300), 
+          curve: Curves.easeInOut,
+        );
+      }
+      return;
+    }
+    
+    _name = _nameController.text.trim();
     final user = FirebaseAuth.instance.currentUser;
     
     // Navigate immediately
@@ -105,9 +225,30 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (user != null) {
       try {
         final data = <String, dynamic>{
+          'name': _name,
           'profileComplete': false,
           'createdAt': FieldValue.serverTimestamp(),
         };
+        
+        // Generate and save username if not exists
+        final existingDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        if (!existingDoc.exists || existingDoc.data()?['username'] == null) {
+          final email = user.email ?? 'user';
+          final baseUsername = _generateUsername(email);
+          final username = await _createUniqueUsername(baseUsername);
+          data['username'] = username;
+          
+          // Reserve username
+          await FirebaseFirestore.instance
+              .collection('usernames')
+              .doc(username)
+              .set({'uid': user.uid, 'createdAt': FieldValue.serverTimestamp()});
+        }
+        
         if (_weight != null) data['weight'] = _weight;
         if (_height != null) data['height'] = _height;
         if (_age != null) data['age'] = _age;
@@ -142,13 +283,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: List.generate(
-                    4,
+                    5,
                     (index) => Expanded(
                       child: Container(
                         height: 4,
                         margin: EdgeInsets.only(
                           left: index == 0 ? 0 : 4,
-                          right: index == 3 ? 0 : 4,
+                          right: index == 4 ? 0 : 4,
                         ),
                         decoration: BoxDecoration(
                           color: index <= _currentPage
@@ -168,6 +309,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   controller: _pageController,
                   onPageChanged: (page) => setState(() => _currentPage = page),
                   children: [
+                    _buildNamePage(),
                     _buildWeightPage(),
                     _buildHeightPage(),
                     _buildAgePage(),
@@ -195,7 +337,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading
                                 ? null
-                                : (_currentPage == 3 ? _saveAndFinish : _nextPage),
+                                : (_currentPage == 4 ? _saveAndFinish : _nextPage),
                             child: _isLoading
                                 ? const SizedBox(
                                     height: 20,
@@ -205,20 +347,100 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                       valueColor: AlwaysStoppedAnimation(Colors.white),
                                     ),
                                   )
-                                : Text(_currentPage == 3 ? 'Tamamla' : 'İleri'),
+                                : Text(_currentPage == 4 ? 'Tamamla' : 'İleri'),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    TextButton(
-                      onPressed: _isLoading ? null : _skipAndFinish,
-                      child: Text(
-                        'Şimdilik atla',
-                        style: TextStyle(color: AppColors.textSecondary),
+                    // Only show skip button if name is filled
+                    if (_nameController.text.trim().isNotEmpty)
+                      TextButton(
+                        onPressed: _isLoading ? null : _skipAndFinish,
+                        child: Text(
+                          'Şimdilik atla',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
                       ),
-                    ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNamePage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Adınız nedir?',
+                style: AppTextStyles.largeTitle.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Size nasıl hitap edelim?',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              TextField(
+                controller: _nameController,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Adınızı girin',
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                '* Bu alan zorunludur',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.error,
                 ),
               ),
             ],

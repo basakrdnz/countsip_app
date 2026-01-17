@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
@@ -7,20 +7,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_ui_auth/firebase_ui_auth.dart' hide ProfileScreen;
-import 'package:firebase_ui_localizations/firebase_ui_localizations.dart';
+// firebase_ui_auth removed - using custom phone auth screens
 
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
+import 'features/auth/screens/phone_login_screen.dart';
+import 'features/auth/screens/phone_signup_screen.dart';
+import 'features/auth/screens/phone_forgot_password_screen.dart';
 import 'ui/screens/splash_screen.dart';
 import 'ui/screens/add_entry_screen.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/screens/leaderboard_screen.dart';
 import 'ui/screens/profile_screen.dart';
+import 'ui/screens/profile_details_screen.dart';
+import 'ui/screens/settings_screen.dart';
 import 'ui/screens/root_shell_page.dart';
+import 'ui/screens/friends_screen.dart';
+import 'ui/screens/add_friend_screen.dart';
+import 'ui/screens/blocked_users_screen.dart';
 
 /// Toggle emulator with a compile-time define:
 /// flutter run --dart-define=USE_FIREBASE_EMULATOR=true
@@ -62,11 +69,6 @@ Future<void> main() async {
     debugPrint('Stack trace: $stackTrace');
   }
   
-  // Configure Firebase UI Auth providers
-  FirebaseUIAuth.configureProviders([
-    EmailAuthProvider(),
-  ]);
-  
   runApp(ProviderScope(child: CountSipApp()));
 }
 
@@ -83,7 +85,6 @@ class CountSipApp extends StatelessWidget {
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
-        FirebaseUILocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -112,13 +113,15 @@ GoRouter _createRouter() {
     initialLocation: '/splash',
     refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
     
-    redirect: (context, state) {
-      final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    redirect: (context, state) async {
+      final user = FirebaseAuth.instance.currentUser;
+      final isLoggedIn = user != null;
       final isLoggingIn = state.matchedLocation == '/login';
       final isSigningUp = state.matchedLocation == '/signup';
       final isWelcome = state.matchedLocation == '/welcome';
       final isForgotPw = state.matchedLocation == '/forgot-password';
       final isSplash = state.matchedLocation == '/splash';
+      final isProfileSetup = state.matchedLocation == '/profile-setup';
 
       if (isSplash) return null;
 
@@ -129,15 +132,45 @@ GoRouter _createRouter() {
         return '/welcome';
       }
 
-      final isProfileSetup = state.matchedLocation == '/profile-setup';
-
+      // User is logged in
       if (isLoggedIn) {
-        // Allow /profile-setup for new users
+        // Always allow /profile-setup
         if (isProfileSetup) {
           return null;
         }
-        if (isLoggingIn || isSigningUp || isWelcome) {
-          return '/home';
+        
+        // SAFETY CHECK: On every navigation from auth screens OR to home,
+        // verify user has name and username - catch any incomplete profiles
+        if (isLoggingIn || isSigningUp || isWelcome || state.matchedLocation == '/home' || state.matchedLocation == '/') {
+          try {
+            final doc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
+            
+            // Check if essential fields are missing
+            final data = doc.data();
+            final hasName = data != null && 
+                data['name'] != null && 
+                (data['name'] as String).trim().isNotEmpty;
+            final hasUsername = data != null && 
+                data['username'] != null && 
+                (data['username'] as String).trim().isNotEmpty;
+            
+            if (!doc.exists || !hasName || !hasUsername) {
+              // Missing essential info - go to profile setup
+              return '/profile-setup';
+            }
+          } catch (e) {
+            // If check fails, go to profile setup to be safe
+            debugPrint('Profile check error: $e');
+            return '/profile-setup';
+          }
+          
+          // Profile complete - allow to home
+          if (isLoggingIn || isSigningUp || isWelcome) {
+            return '/home';
+          }
         }
       }
 
@@ -145,6 +178,11 @@ GoRouter _createRouter() {
     },
     
     routes: [
+      // Root route - redirect to home
+      GoRoute(
+        path: '/',
+        redirect: (context, state) => '/home',
+      ),
       GoRoute(
         path: '/splash',
         name: 'splash',
@@ -158,206 +196,47 @@ GoRouter _createRouter() {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => Stack(
-          children: [
-            // Background layer
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/bgwglass.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  color: Colors.white.withOpacity(0.75),
-                ),
-              ),
-            ),
-            // Auth content with transparent background
-            Theme(
-              data: Theme.of(context).copyWith(
-                scaffoldBackgroundColor: Colors.transparent,
-              ),
-              child: SignInScreen(
-                providers: FirebaseUIAuth.providersFor(FirebaseAuth.instance.app),
-                headerBuilder: (context, constraints, shrinkOffset) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.local_bar_rounded, size: 40, color: AppColors.primary),
-                        const SizedBox(height: 4),
-                        Text(
-                          'CountSip',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Rosaline',
-                            letterSpacing: -1,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                actions: [
-                  AuthStateChangeAction<SignedIn>((context, state) {
-                    context.go('/home');
-                  }),
-                  ForgotPasswordAction((context, email) {
-                    final uri = Uri(
-                      path: '/forgot-password',
-                      queryParameters: {'email': email},
-                    );
-                    context.push(uri.toString());
-                  }),
-                ],
-                footerBuilder: (context, action) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: TextButton.icon(
-                      onPressed: () => context.go('/welcome'),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Geri Dön'),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        builder: (context, state) => const PhoneLoginScreen(),
       ),
       GoRoute(
         path: '/signup',
         name: 'signup',
-        builder: (context, state) => Stack(
-          children: [
-            // Background layer
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/bgwglass.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  color: Colors.white.withOpacity(0.75),
-                ),
-              ),
-            ),
-            // Auth content with transparent background
-            Theme(
-              data: Theme.of(context).copyWith(
-                scaffoldBackgroundColor: Colors.transparent,
-              ),
-              child: RegisterScreen(
-                providers: FirebaseUIAuth.providersFor(FirebaseAuth.instance.app),
-                headerBuilder: (context, constraints, shrinkOffset) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.person_add_rounded, size: 40, color: AppColors.primary),
-                        const SizedBox(height: 4),
-                        Text(
-                          'CountSip',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Rosaline',
-                            letterSpacing: -1,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                actions: [
-                  AuthStateChangeAction<UserCreated>((context, state) {
-                    context.go('/profile-setup');
-                  }),
-                ],
-                footerBuilder: (context, action) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: TextButton.icon(
-                      onPressed: () => context.go('/welcome'),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Geri Dön'),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        builder: (context, state) => const PhoneSignupScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) {
-          final email = state.uri.queryParameters['email'];
-          return Stack(
-            children: [
-              // Background layer
-              Positioned.fill(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/bgwglass.png'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: Container(
-                    color: Colors.white.withOpacity(0.75),
-                  ),
-                ),
-              ),
-              // Auth content with transparent background
-              Theme(
-                data: Theme.of(context).copyWith(
-                  scaffoldBackgroundColor: Colors.transparent,
-                ),
-                child: ForgotPasswordScreen(
-                  email: email,
-                  headerBuilder: (context, constraints, shrinkOffset) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 16, bottom: 8),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.lock_reset_rounded, size: 40, color: AppColors.primary),
-                          const SizedBox(height: 4),
-                          Text(
-                            'CountSip',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Rosaline',
-                              letterSpacing: -1,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+        builder: (context, state) => const PhoneForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/profile-setup',
         name: 'profile-setup',
         builder: (context, state) => const ProfileSetupScreen(),
+      ),
+      GoRoute(
+        path: '/profile-details',
+        name: 'profile-details',
+        builder: (context, state) => const ProfileDetailsScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/friends',
+        name: 'friends',
+        builder: (context, state) => const FriendsScreen(),
+      ),
+      GoRoute(
+        path: '/add-friend',
+        name: 'add-friend',
+        builder: (context, state) => const AddFriendScreen(),
+      ),
+      GoRoute(
+        path: '/blocked-users',
+        name: 'blocked-users',
+        builder: (context, state) => const BlockedUsersScreen(),
       ),
       
       StatefulShellRoute.indexedStack(

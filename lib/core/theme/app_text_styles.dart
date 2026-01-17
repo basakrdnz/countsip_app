@@ -3,10 +3,20 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
+  // CountSip logo - Rosaline font
+  static const logoStyle = TextStyle(
+    fontSize: 34,
+    fontWeight: FontWeight.w900,
+    fontFamily: 'Rosaline',
+    color: AppColors.primary,
+    letterSpacing: -1,
+  );
+
+  // Headings - Cal Sans
   static const largeTitle = TextStyle(
     fontSize: 34,
-    fontWeight: FontWeight.w700,
-    fontFamily: 'Rosaline',
+    fontWeight: FontWeight.w600,
+    fontFamily: 'CalSans',
     color: AppColors.textPrimary,
     letterSpacing: 0.4,
   );
@@ -14,24 +24,25 @@ class AppTextStyles {
   static const title1 = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w600,
-    fontFamily: 'Rosaline',
+    fontFamily: 'CalSans',
     color: AppColors.textPrimary,
   );
 
   static const title2 = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w600,
-    fontFamily: 'Rosaline',
+    fontFamily: 'CalSans',
     color: AppColors.textPrimary,
   );
 
   static const title3 = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    fontFamily: 'Rosaline',
+    fontFamily: 'CalSans',
     color: AppColors.textPrimary,
   );
 
+  // Body text - default system font
   static const body = TextStyle(
     fontSize: 17,
     fontWeight: FontWeight.w400,
@@ -69,4 +80,3 @@ class AppTextStyles {
     color: AppColors.textTertiary,
   );
 }
-
