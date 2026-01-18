@@ -47,9 +47,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           labelColor: AppColors.primary,
           unselectedLabelColor: Colors.grey,
           indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: 'Arkadaşlarım'),
-            Tab(text: 'İstekler'),
+          tabs: [
+            const Tab(text: 'Arkadaşlarım'),
+            _buildRequestsTabLabel(),
           ],
         ),
       ),
@@ -60,6 +60,53 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           _RequestsTab(),
         ],
       ),
+    );
+  }
+
+  Widget _buildRequestsTabLabel() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Tab(text: 'İstekler');
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('friend_requests')
+          .where('to', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'pending')
+          .snapshots(),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.docs.length ?? 0;
+        return Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('İstekler'),
+              if (count > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -400,9 +447,11 @@ class _RequestsTab extends StatelessWidget {
           .collection('friend_requests')
           .where('to', isEqualTo: user.uid)
           .where('status', isEqualTo: 'pending')
-          .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Bir hata oluştu: ${snapshot.error}'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
