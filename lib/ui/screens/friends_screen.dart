@@ -48,7 +48,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           unselectedLabelColor: Colors.grey,
           indicatorColor: AppColors.primary,
           tabs: [
-            const Tab(text: 'Arkadaşlarım'),
+            _buildFriendsTabLabel(),
             _buildRequestsTabLabel(),
           ],
         ),
@@ -60,6 +60,47 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           _RequestsTab(),
         ],
       ),
+    );
+  }
+
+  Widget _buildFriendsTabLabel() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Tab(text: 'Arkadaşlarım');
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('friendships')
+          .where('users', arrayContains: user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.docs.length ?? 0;
+        return Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Arkadaşlarım'),
+              if (count > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 

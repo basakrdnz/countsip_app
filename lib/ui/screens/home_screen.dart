@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -21,13 +22,25 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   bool _isLoading = true;
-  int _totalPoints = 0;
-  int _totalDrinks = 0;
+  double _totalPoints = 0;
+  late Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
+  late Stream<QuerySnapshot<Map<String, dynamic>>> _entriesStream;
 
   @override
   void initState() {
     super.initState();
-    _selectedDay = _focusedDay;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _userStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
+      _entriesStream = FirebaseFirestore.instance
+          .collection('entries')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('timestamp', descending: true)
+          .snapshots();
+    } else {
+      _userStream = const Stream.empty();
+      _entriesStream = const Stream.empty();
+    }
     _loadData();
   }
 
@@ -71,8 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _userData = userDoc.data();
           _events = events;
-          _totalPoints = _userData?['totalPoints'] ?? 0;
-          _totalDrinks = _userData?['totalDrinks'] ?? 0;
+          _totalPoints = (_userData?['totalPoints'] ?? 0).toDouble();
           _isLoading = false;
         });
       }
@@ -117,6 +129,43 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _deleteEntry(String entryId, double points, int quantity) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('İçeceği Sil'),
+        content: const Text('Bu içeceği silmek istediğine emin misin? Puanların geri alınacak.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(iconColor: Colors.red),
+            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      batch.delete(FirebaseFirestore.instance.collection('entries').doc(entryId));
+      batch.update(FirebaseFirestore.instance.collection('users').doc(user.uid), {
+        'totalPoints': FieldValue.increment(-points),
+        'totalDrinks': FieldValue.increment(-quantity),
+      });
+
+      await batch.commit();
+      _loadData(); // Refresh list
+    } catch (e) {
+      debugPrint('Error deleting entry: $e');
+    }
+  }
+
   void _showYearPicker() {
     showDialog(
       context: context,
@@ -144,318 +193,525 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showDayEntriesPopup(DateTime day, List<Map<String, dynamic>> entries) {
-    DateTime currentDay = day;
-    
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: const Duration(milliseconds: 400),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            final currentEntries = _getEventsForDay(currentDay);
-            final canGoNext = !currentDay.add(const Duration(days: 1)).isAfter(DateTime.now());
-            
-            void goToPrevDay() {
-              final prevDay = currentDay.subtract(const Duration(days: 1));
-              setSheetState(() {
-                currentDay = prevDay;
-              });
-              setState(() {
-                _selectedDay = prevDay;
-                _focusedDay = prevDay;
-              });
-            }
-            
-            void goToNextDay() {
-              if (!canGoNext) {
-                ScaffoldMessenger.of(sheetContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('İleri tarih seçemezsin!'),
-                    backgroundColor: Colors.orange,
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-                return;
-              }
-              final nextDay = currentDay.add(const Duration(days: 1));
-              setSheetState(() {
-                currentDay = nextDay;
-              });
-              setState(() {
-                _selectedDay = nextDay;
-                _focusedDay = nextDay;
-              });
-            }
-            
-            return GestureDetector(
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity == null) return;
-                // Swipe right = previous day
-                if (details.primaryVelocity! > 0) {
-                  goToPrevDay();
-                }
-                // Swipe left = next day
-                else if (details.primaryVelocity! < 0) {
-                  goToNextDay();
-                }
-              },
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(sheetContext).size.height * 0.6,
+        final totalDayPoints = entries.fold<double>(0, (sum, item) => sum + (item['points'] ?? 0).toDouble());
+        final totalDayDrinks = entries.fold<int>(0, (sum, item) => sum + (item['quantity'] ?? 1) as int);
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Apple Style Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 36,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2.5),
                 ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              ),
+              
+              // Header with Date and Totals
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Handle bar
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    
-                    // Swipe hint
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        '← sağa sola kaydır →',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ),
-                    
-                    // Date header with navigation arrows
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          // Prev day button
-                          GestureDetector(
-                            onTap: goToPrevDay,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.chevron_left, color: AppColors.primary),
-                            ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat('d MMMM EEEE', 'tr_TR').format(day),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                            color: AppColors.primary,
                           ),
-                          
-                          const SizedBox(width: 8),
-                          
-                          // Date info - centered
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        '${currentDay.day}',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                      Text(
-                                        DateFormat('MMM', 'tr_TR').format(currentDay),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              '🥤 $totalDayDrinks İçecek',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('•', style: TextStyle(color: Colors.grey.shade300)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '💎 ${totalDayPoints.toStringAsFixed(1)} Puan',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.primary.withOpacity(0.8),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, size: 20, color: Colors.grey),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              Divider(height: 1, color: Colors.grey.shade100),
+              
+              // Entries List
+              Expanded(
+                child: entries.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.wine_bar_outlined, size: 64, color: Colors.grey.shade200),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Bu gün için kayıt bulunmuyor',
+                              style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: entries.length,
+                        itemBuilder: (context, index) {
+                          final entry = entries[index];
+                          final entryId = entry['id'] as String;
+                          final drinkType = entry['drinkType'] as String? ?? 'Diğer';
+                          final drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+                          final portion = entry['portion'] as String? ?? '';
+                          final quantity = entry['quantity'] as int? ?? 1;
+                          final points = (entry['points'] ?? 0).toDouble();
+                          final note = entry['note'] as String? ?? '';
+                          final timestamp = entry['timestamp'] as Timestamp?;
+                          final time = timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '';
+
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      DateFormat('EEEE', 'tr_TR').format(currentDay),
-                                      style: AppTextStyles.title2.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                    // Time & Emoji
+                                    Column(
+                                      children: [
+                                        Text(
+                                          time,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade50,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Center(
+                                            child: Text(drinkEmoji, style: const TextStyle(fontSize: 24)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 16),
+                                    
+                                    // Info
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${quantity}x $drinkType',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: -0.3,
+                                            ),
+                                          ),
+                                          if (portion.isNotEmpty)
+                                            Text(
+                                              portion,
+                                              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                                            ),
+                                          if (note.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                note,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
-                                    Text(
-                                      '${currentEntries.length} içecek',
-                                      style: TextStyle(color: AppColors.textSecondary),
+                                    
+                                    // Points & Action
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '+${points.toStringAsFixed(1)}',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        GestureDetector(
+                                          onTap: () {
+                                            Navigator.pop(sheetContext);
+                                            _deleteEntry(entryId, points, quantity);
+                                          },
+                                          child: Text(
+                                            'Sil',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.primary.withOpacity(0.8),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          
-                          const SizedBox(width: 8),
-                          
-                          // Next day button
-                          GestureDetector(
-                            onTap: canGoNext ? goToNextDay : null,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: canGoNext 
-                                    ? AppColors.primary.withOpacity(0.1)
-                                    : Colors.grey.withOpacity(0.1),
-                                shape: BoxShape.circle,
                               ),
-                              child: Icon(
-                                Icons.chevron_right,
-                                color: canGoNext ? AppColors.primary : Colors.grey,
-                              ),
-                            ),
-                          ),
-                        ],
+                              if (index != entries.length - 1)
+                                Divider(height: 1, color: Colors.grey.shade100, indent: 64),
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    
-                    Divider(height: 1, color: Colors.grey.shade200),
-                    
-                    // Entries list
-                    Flexible(
-                      child: currentEntries.isEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(40),
-                              child: Column(
+              ),
+              
+              // Bottom Safe Area padding
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Scaffold(body: Center(child: Text('Giriş yapılmadı')));
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userStream,
+      builder: (context, userSnapshot) {
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _entriesStream,
+          builder: (context, entriesSnapshot) {
+            if (userSnapshot.connectionState == ConnectionState.waiting && _userData == null) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+
+            final userData = userSnapshot.data?.data();
+            
+            // Group entries by date
+            final Map<DateTime, List<Map<String, dynamic>>> currentEvents = {};
+            if (entriesSnapshot.hasData) {
+              for (final doc in entriesSnapshot.data!.docs) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                final timestamp = data['timestamp'] as Timestamp?;
+                if (timestamp != null) {
+                  final date = DateTime(
+                    timestamp.toDate().year,
+                    timestamp.toDate().month,
+                    timestamp.toDate().day,
+                  );
+                  currentEvents.putIfAbsent(date, () => []);
+                  currentEvents[date]!.add(data);
+                }
+              }
+              // Update local cache without triggering rebuild
+              _events = currentEvents; 
+            }
+            
+            final activeEvents = entriesSnapshot.hasData ? currentEvents : _events;
+
+            // Selected Day Stats
+            double selectedPoints = 0;
+            int selectedDrinks = 0;
+            if (_selectedDay != null) {
+              final selectedKey = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
+              if (activeEvents.containsKey(selectedKey)) {
+                for (var e in activeEvents[selectedKey]!) {
+                  selectedPoints += (e['points'] ?? 0).toDouble();
+                  selectedDrinks += (e['quantity'] ?? 1) as int;
+                }
+              }
+            }
+
+            return Scaffold(
+              backgroundColor: Colors.grey.shade50,
+              body: SafeArea(
+                child: RefreshIndicator(
+                  onRefresh: () async => setState(() {}),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'CountSip',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Rosaline',
+                                  letterSpacing: -1,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {}, // Notification logic
+                                icon: const Icon(Icons.notifications_outlined),
+                                color: Colors.black87,
+                                iconSize: 26,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Welcome Placeholder or Stats Dashboard
+                        if (_selectedDay == null)
+                          _buildInitialPlaceholder()
+                        else
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: AppColors.primary.withOpacity(0.08), width: 1),
+                              ),
+                              child: Row(
                                 children: [
-                                  Icon(Icons.local_bar_outlined, size: 48, color: Colors.grey.shade300),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Bu gün içecek yok',
-                                    style: TextStyle(color: AppColors.textSecondary),
+                                  Expanded(
+                                    child: _buildDashboardItem(
+                                      label: 'SEÇİLİ PUAN',
+                                      value: selectedPoints.toStringAsFixed(1),
+                                      emoji: '🏆',
+                                      isLight: false,
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 30,
+                                    width: 1,
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                                  ),
+                                  Expanded(
+                                    child: _buildDashboardItem(
+                                      label: 'SEÇİLİ İÇECEK',
+                                      value: '$selectedDrinks',
+                                      emoji: '🍻',
+                                      isLight: false,
+                                    ),
                                   ),
                                 ],
                               ),
-                            )
-                          : ListView.separated(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.all(16),
-                              itemCount: currentEntries.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final entry = currentEntries[index];
-                                final drinkType = entry['drinkType'] as String? ?? 'Other';
-                                final quantity = entry['quantity'] as int? ?? 1;
-                                final points = entry['points'] as int? ?? 0;
-                                final venue = entry['venue'] as String?;
-                                final timestamp = entry['timestamp'] as Timestamp?;
-                                final time = timestamp != null
-                                    ? DateFormat('HH:mm').format(timestamp.toDate())
-                                    : '';
-
-                                return Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade50,
-                                    borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        
+                        const SizedBox(height: AppSpacing.lg),
+                        
+                        // Calendar
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: Colors.grey.shade100, width: 1.5),
+                          ),
+                          child: Column(
+                            children: [
+                              TableCalendar(
+                                locale: 'tr_TR',
+                                firstDay: DateTime.utc(2020, 1, 1),
+                                lastDay: DateTime.utc(2030, 12, 31),
+                                focusedDay: _focusedDay,
+                                calendarFormat: _calendarFormat,
+                                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                                eventLoader: (day) => activeEvents[DateTime(day.year, day.month, day.day)] ?? [],
+                                startingDayOfWeek: StartingDayOfWeek.monday,
+                                availableGestures: AvailableGestures.none,
+                                availableCalendarFormats: const {
+                                  CalendarFormat.month: 'Ay',
+                                  CalendarFormat.week: 'Hafta',
+                                },
+                                calendarStyle: CalendarStyle(
+                                  outsideDaysVisible: false,
+                                  weekendTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                                  defaultTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                                  todayDecoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
                                   ),
-                                  child: Row(
-                                    children: [
-                                      // Time
-                                      SizedBox(
-                                        width: 50,
-                                        child: Text(
-                                          time,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ),
-                                      
-                                      // Emoji
-                                      Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            _getDrinkEmoji(drinkType),
-                                            style: const TextStyle(fontSize: 22),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      
-                                      // Details
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  '${quantity}x $drinkType',
-                                                  style: const TextStyle(fontWeight: FontWeight.w600),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.amber.withOpacity(0.2),
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Text(
-                                                    '+$points',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: Colors.amber.shade800,
+                                  todayTextStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  selectedDecoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    border: Border.all(color: AppColors.primary, width: 2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  selectedTextStyle: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  markerDecoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  markerSize: 4.5,
+                                  markersMaxCount: 1,
+                                  markerMargin: const EdgeInsets.only(top: 6),
+                                ),
+                                headerStyle: const HeaderStyle(
+                                  formatButtonVisible: false,
+                                  titleCentered: true,
+                                  leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black54, size: 24),
+                                  rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black54, size: 24),
+                                  headerPadding: EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                calendarBuilders: CalendarBuilders(
+                                  headerTitleBuilder: (context, day) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: InkWell(
+                                              onTap: _showYearPicker,
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Flexible(
+                                                    child: Text(
+                                                      DateFormat('MMMM yyyy', 'tr_TR').format(day),
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.w900,
+                                                        color: Colors.black,
+                                                        letterSpacing: -0.5,
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                            if (venue != null && venue.isNotEmpty)
-                                              Text(
-                                                venue,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: AppColors.textSecondary,
-                                                ),
+                                                  const SizedBox(width: 4),
+                                                  const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.black54),
+                                                ],
                                               ),
-                                          ],
-                                        ),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _focusedDay = DateTime.now();
+                                                _selectedDay = DateTime.now();
+                                              });
+                                            },
+                                            style: TextButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                            child: const Text(
+                                              'Bugün',
+                                              style: TextStyle(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                                    );
+                                  },
+                                ),
+                                daysOfWeekStyle: const DaysOfWeekStyle(
+                                  weekdayStyle: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.normal),
+                                  weekendStyle: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.normal),
+                                ),
+                                onDaySelected: (selectedDay, focusedDay) {
+                                  setState(() {
+                                    if (isSameDay(_selectedDay, selectedDay)) {
+                                      _selectedDay = null; // Toggle off
+                                    } else {
+                                      _selectedDay = selectedDay;
+                                    }
+                                    _focusedDay = focusedDay;
+                                  });
+                                },
+                                onFormatChanged: (format) => setState(() => _calendarFormat = format),
+                                onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+                                onHeaderTapped: (_) => _showYearPicker(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        if (_selectedDay != null) ...[
+                          const SizedBox(height: 16),
+                          _buildInlineDayDetails(
+                            _selectedDay!, 
+                            activeEvents[DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
+                          ),
+                        ],
+                        
+                        const SizedBox(height: 120),
+                      ],
                     ),
-                    
-                    SizedBox(height: MediaQuery.of(sheetContext).padding.bottom + 16),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -465,310 +721,308 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _loadData,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'CountSip',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Rosaline',
-                                letterSpacing: -1,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.notifications_outlined,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
+  Widget _buildInitialPlaceholder() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.shade100, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.calendar_month_rounded,
+                size: 40,
+                color: AppColors.primary.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Günü Seç Geçmişini Gör',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Detayları ve istatistikleri görmek için takvimden bir gün seçebilirsin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () => context.go('/add'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.primary.withOpacity(0.7)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Eklemeye Başla',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary.withOpacity(0.8),
                       ),
-                      
-                      // Stats Cards
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                icon: Icons.emoji_events,
-                                iconColor: Colors.amber,
-                                label: 'Toplam Puan',
-                                value: '$_totalPoints',
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: _buildStatCard(
-                                icon: Icons.local_bar,
-                                iconColor: AppColors.primary,
-                                label: 'Toplam İçecek',
-                                value: '$_totalDrinks',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: AppSpacing.lg),
-                      
-                      // Calendar
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // Today button row
-                            if (!isSameDay(_focusedDay, DateTime.now()))
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8, right: 12),
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    onPressed: () {
-                                      setState(() {
-                                        _focusedDay = DateTime.now();
-                                        _selectedDay = DateTime.now();
-                                      });
-                                    },
-                                    icon: Icon(Icons.today, size: 18, color: AppColors.primary),
-                                    label: Text(
-                                      'Bugün',
-                                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            TableCalendar(
-                          locale: 'tr_TR',
-                          firstDay: DateTime.utc(2020, 1, 1),
-                          lastDay: DateTime.utc(2030, 12, 31),
-                          focusedDay: _focusedDay,
-                          calendarFormat: _calendarFormat,
-                          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                          eventLoader: _getEventsForDay,
-                          startingDayOfWeek: StartingDayOfWeek.monday,
-                          availableCalendarFormats: const {
-                            CalendarFormat.month: 'Ay',
-                            CalendarFormat.twoWeeks: '2 Hafta',
-                            CalendarFormat.week: 'Hafta',
-                          },
-                          
-                          // Calendar style
-                          calendarStyle: CalendarStyle(
-                            outsideDaysVisible: false,
-                            weekendTextStyle: TextStyle(color: AppColors.textPrimary),
-                            todayDecoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            todayTextStyle: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            selectedDecoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            selectedTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            markerDecoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            markersMaxCount: 1,
-                            markerSize: 6,
-                            markerMargin: const EdgeInsets.only(top: 6),
-                          ),
-                          
-                          // Header style
-                          headerStyle: HeaderStyle(
-                            formatButtonVisible: false, // Remove format button
-                            titleCentered: true,
-                            titleTextStyle: AppTextStyles.title2.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.primary),
-                            rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.primary),
-                            headerPadding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                          ),
-                          
-                          // Custom header builder with dropdown hint
-                          calendarBuilders: CalendarBuilders(
-                            headerTitleBuilder: (context, day) {
-                              return GestureDetector(
-                                onTap: _showYearPicker,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      DateFormat('MMMM yyyy', 'tr_TR').format(day),
-                                      style: AppTextStyles.title2.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.keyboard_arrow_down,
-                                      color: AppColors.primary,
-                                      size: 20,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                          
-                          // Days of week style
-                          daysOfWeekStyle: DaysOfWeekStyle(
-                            weekdayStyle: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            weekendStyle: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState(() {
-                              _selectedDay = selectedDay;
-                              _focusedDay = focusedDay;
-                            });
-                            
-                            final events = _getEventsForDay(selectedDay);
-                            _showDayEntriesPopup(selectedDay, events);
-                          },
-                          
-                          onFormatChanged: (format) {
-                            setState(() {
-                              _calendarFormat = format;
-                            });
-                          },
-                          
-                          onPageChanged: (focusedDay) {
-                            _focusedDay = focusedDay;
-                          },
-                          
-                          // Add year picker when tapping header
-                          onHeaderTapped: (_) => _showYearPicker(),
-                        ),
-                          ],
-                        ),
-                      ),
-                      
-                      // Bottom padding for floating nav
-                      const SizedBox(height: 120),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
+  Widget _buildInlineDayDetails(DateTime day, List<Map<String, dynamic>> entries) {
+    final totalDayPoints = entries.fold<double>(0, (sum, item) => sum + (item['points'] ?? 0).toDouble());
+    final totalDayDrinks = entries.fold<int>(0, (sum, item) => sum + (item['quantity'] ?? 1) as int);
+
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100, width: 1.5),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                value,
-                style: AppTextStyles.title2.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateFormat('d MMMM EEEE', 'tr_TR').format(day),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        '🥤 $totalDayDrinks İçecek',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('•', style: TextStyle(color: Colors.grey.shade300)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '💎 ${totalDayPoints.toStringAsFixed(1)} Puan',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary.withOpacity(0.8),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              Text(
-                label,
-                style: AppTextStyles.caption1.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
+              if (entries.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.wine_bar, color: AppColors.primary.withOpacity(0.5), size: 18),
                 ),
-              ),
             ],
           ),
+          if (entries.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Divider(height: 1, color: Colors.grey.shade100),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final entryId = entry['id'] as String;
+                final drinkType = entry['drinkType'] as String? ?? 'Diğer';
+                final drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+                final portion = entry['portion'] as String? ?? '';
+                final quantity = entry['quantity'] as int? ?? 1;
+                final points = (entry['points'] ?? 0).toDouble();
+                final timestamp = entry['timestamp'] as Timestamp?;
+                final time = timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '';
+
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                time,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(drinkEmoji, style: const TextStyle(fontSize: 20)),
+                            ],
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${quantity}x $drinkType',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                if (portion.isNotEmpty)
+                                  Text(
+                                    portion,
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '+${points.toStringAsFixed(1)}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _deleteEntry(entryId, points, quantity),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'Sil',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.primary.withOpacity(0.6),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (index != entries.length - 1)
+                      Divider(height: 1, color: Colors.grey.shade50),
+                  ],
+                );
+              },
+            ),
+          ] else ...[
+            const SizedBox(height: 24),
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.nightlight_round_outlined, size: 40, color: Colors.grey.shade200),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Kayıt bulunmuyor',
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildDashboardItem({
+    required String label,
+    required String value,
+    required String emoji,
+    required bool isLight,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isLight ? Colors.white.withOpacity(0.7) : AppColors.primary.withOpacity(0.6),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyle(
+            color: isLight ? Colors.white : AppColors.primary,
+            fontSize: isLight ? 28 : 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+          ),
+        ),
+      ],
     );
   }
 }

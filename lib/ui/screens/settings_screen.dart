@@ -152,9 +152,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (user == null) return;
 
     await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .update({'deletionScheduledAt': FieldValue.delete()});
+      .collection('users')
+      .doc(user.uid)
+      .update({'deletionScheduledAt': FieldValue.delete()});
 
     setState(() => _deletionScheduledAt = null);
 
@@ -164,6 +164,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  Future<void> _resetAllData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tüm Verileri Sıfırla?'),
+        content: const Text('Bütün içecek geçmişin, toplam puanın ve istatistiklerin kalıcı olarak silinecek. Bu işlem geri alınamaz!'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(iconColor: Colors.red),
+            child: const Text('Sıfırla', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      // 1. Delete all entries
+      final entries = await FirebaseFirestore.instance
+          .collection('entries')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+      
+      final batch = FirebaseFirestore.instance.batch();
+      for (var doc in entries.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 2. Reset user stats
+      batch.update(FirebaseFirestore.instance.collection('users').doc(user.uid), {
+        'totalPoints': 0,
+        'totalDrinks': 0,
+      });
+
+      await batch.commit();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tüm istatistikler ve geçmiş sıfırlandı! ✨'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -401,6 +460,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ),
+                  _buildDivider(),
+                  // Reset All Data
+                  _buildTapRow(
+                    icon: Icons.refresh,
+                    title: 'İstatistikleri Sıfırla',
+                    onTap: _resetAllData,
+                  ),
                 ],
               ),
             ),
