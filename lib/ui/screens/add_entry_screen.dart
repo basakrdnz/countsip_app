@@ -6,7 +6,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:confetti/confetti.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'dart:math' show pi;
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
 
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({super.key});
@@ -15,7 +21,7 @@ class AddEntryScreen extends StatefulWidget {
   State<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
-class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProviderStateMixin {
+class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStateMixin {
   // --- Data Structure ---
   static const List<Map<String, dynamic>> _categories = [
     {
@@ -89,25 +95,54 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
   int _feelingScale = 5;
   bool _isLoading = false;
   late AnimationController _animationController;
+  
+  // Modern Animations State
+  late AnimationController _scoreAnimationController;
+  late Animation<double> _scoreAnimation;
+  double _previousScore = 0.0;
+  
+  bool _isButtonPressed = false;
 
   // --- Premium Accents ---
   Color get _accentColor {
-    return Color.lerp(AppColors.primary, Colors.deepOrangeAccent, (_feelingScale - 1) / 9) ?? AppColors.primary;
+    if (_feelingScale < 5) {
+      return Color.lerp(Colors.red.shade400, Colors.orange.shade400, (_feelingScale - 1) / 4) ?? Colors.red.shade400;
+    } else if (_feelingScale == 5) {
+      return Colors.orange.shade400;
+    } else {
+      return Color.lerp(Colors.orange.shade400, Colors.green.shade500, (_feelingScale - 5) / 5) ?? Colors.green.shade500;
+    }
   }
+
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
+    });
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
+    _scoreAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scoreAnimation = Tween<double>(begin: 0, end: 0).animate(_scoreAnimationController);
   }
 
   @override
   void dispose() {
     _noteController.dispose();
+    _scrollController.dispose();
     _animationController.dispose();
+    _scoreAnimationController.dispose();
     super.dispose();
   }
 
@@ -142,7 +177,21 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
     setState(() {
       _selectedEntries[key] = (_selectedEntries[key] ?? 0) + 1;
     });
+    _updateScoreAnimation();
     _animationController.forward(from: 0);
+  }
+
+  void _updateScoreAnimation() {
+    final newScore = _getTotalScore();
+    _scoreAnimation = Tween<double>(
+      begin: _previousScore,
+      end: newScore,
+    ).animate(CurvedAnimation(
+      parent: _scoreAnimationController,
+      curve: Curves.easeOutCubic,
+    ));
+    _previousScore = newScore;
+    _scoreAnimationController.forward(from: 0);
   }
 
   void _removePortion(String key) {
@@ -152,6 +201,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
         _selectedEntries[key] = _selectedEntries[key]! - 1;
         if (_selectedEntries[key] == 0) _selectedEntries.remove(key);
       });
+      _updateScoreAnimation();
       _animationController.forward(from: 0);
     }
   }
@@ -169,7 +219,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
   Future<void> _save() async {
     if (_getTotalCount() == 0) {
       HapticFeedback.vibrate();
-      _showSnackBar('Lütfen en az bir içecek seçin', isError: true);
+      Fluttertoast.showToast(
+        msg: 'Lütfen en az bir içecek seçin',
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
       return;
     }
 
@@ -222,30 +276,29 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
 
       if (mounted) {
         HapticFeedback.heavyImpact();
-        _showSnackBar(
-          '✓ Başarıyla kaydedildi! +${totalScore.toStringAsFixed(1)} puan 🎉',
-          isError: false,
+        
+        await Fluttertoast.showToast(
+          msg: "✓ Başarıyla kaydedildi! +${totalScore.toStringAsFixed(1)} puan 🎉",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
         );
         _resetForm();
       }
     } catch (e) {
-      _showSnackBar('Hata: $e', isError: true);
+      Fluttertoast.showToast(
+        msg: 'Hata: $e',
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showSnackBar(String message, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isError ? Colors.red.withOpacity(0.9) : Colors.green.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
+
 
   // --- UI Components ---
   @override
@@ -274,10 +327,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
       ),
       body: Stack(
         children: [
+          Transform.translate(
+            offset: Offset(0, _scrollOffset * 0.3),
+            child: SizedBox.expand(
+              child: Opacity(
+                opacity: 0.15,
+                child: Image.asset(
+                  'assets/images/onlybg.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
           CustomScrollView(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              const SliverToBoxAdapter(child: SizedBox(height: 70)),
+              SliverToBoxAdapter(
+                child: SizedBox(height: _selectedEntries.isEmpty ? 40 : 110),
+              ),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 220),
                 sliver: SliverList(
@@ -334,7 +402,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.schedule_rounded, size: 16, color: _accentColor),
+                Icon(AppIcons.clock, size: 16, color: _accentColor),
                 const SizedBox(width: 8),
                 Text(
                   DateFormat('HH:mm').format(_selectedTime),
@@ -461,34 +529,42 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
   Widget _buildCategoryCard(Map<String, dynamic> category) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.grey.shade100, width: 1.5),
+        border: Border.all(color: Colors.grey.shade100, width: 2),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 8))
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showPortionPicker(category),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _showPortionPicker(category);
+          },
           borderRadius: BorderRadius.circular(28),
+          splashColor: AppColors.primary.withOpacity(0.1),
+          highlightColor: AppColors.primary.withOpacity(0.05),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: _accentColor.withOpacity(0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  category['emoji'],
-                  style: const TextStyle(fontSize: 34),
+              Hero(
+                tag: 'category_${category['id']}',
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _accentColor.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    category['emoji'],
+                    style: const TextStyle(fontSize: 34),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -514,51 +590,79 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 40,
+              offset: const Offset(0, -10),
+            ),
+          ],
         ),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Container(
-                width: 40,
-                height: 4,
+                width: 48,
+                height: 5,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(2.5),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 28),
                 child: Row(
                   children: [
-                    Text(category['emoji'], style: const TextStyle(fontSize: 32)),
-                    const SizedBox(width: 16),
-                    Text(
-                      category['name'],
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _accentColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Hero(
+                        tag: 'category_${category['id']}',
+                        child: Text(category['emoji'], style: const TextStyle(fontSize: 28)),
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            category['name'],
+                            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -1.0),
+                          ),
+                          Text(
+                            'Porsiyon seçimi yapın',
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: (category['portions'] as List).length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) => const SizedBox(height: 14),
                 itemBuilder: (context, index) {
                   final portion = category['portions'][index];
                   final score = _calculateScore(portion['volume'], portion['abv']);
                   return _buildPortionCard(category, portion, score);
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -569,47 +673,89 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
   Widget _buildPortionCard(Map<String, dynamic> category, Map<String, dynamic> portion, double score) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100, width: 1.5),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
+            HapticFeedback.lightImpact();
             _addPortion(category['id'], portion);
             Navigator.pop(context);
           },
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
+          splashColor: _accentColor.withOpacity(0.1),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(portion['name'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                      const SizedBox(height: 4),
                       Text(
-                        '%${portion['abv']} • ${portion['volume']} ml',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w600),
+                        portion['name'],
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.5),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '%${portion['abv']}',
+                              style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${portion['volume']} ml',
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: _accentColor,
-                    borderRadius: BorderRadius.circular(14),
+                    gradient: LinearGradient(
+                      colors: [_accentColor, _accentColor.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
-                      BoxShadow(color: _accentColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                      BoxShadow(color: _accentColor.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 6)),
                     ],
                   ),
-                  child: Text(
-                    '+${score.toStringAsFixed(1)} pt',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '+${score.toStringAsFixed(1)}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'pt',
+                        style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -636,7 +782,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
           ),
           child: Column(
             children: [
-              Row(
+               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Seçimlerim', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: -0.5)),
@@ -644,21 +790,33 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
                     onPressed: () {
                       HapticFeedback.lightImpact();
                       setState(() => _selectedEntries.clear());
+                      _updateScoreAnimation();
                     },
-                    icon: const Icon(Icons.refresh_rounded, size: 20),
+                    icon: Icon(AppIcons.cross, color: Colors.grey.shade400),
                     label: const Text('Temizle'),
                     style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              ..._selectedEntries.keys.map((key) {
-                final count = _selectedEntries[key]!;
-                final categoryId = key.split('|')[0];
-                final portionName = key.split('|')[1];
-                final category = _categories.firstWhere((c) => c['id'] == categoryId);
-                return _buildSelectedItem(key, count, category, portionName);
-              }),
+              AnimationLimiter(
+                child: Column(
+                  children: AnimationConfiguration.toStaggeredList(
+                    duration: const Duration(milliseconds: 375),
+                    childAnimationBuilder: (widget) => SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(child: widget),
+                    ),
+                    children: _selectedEntries.keys.map((key) {
+                      final count = _selectedEntries[key]!;
+                      final categoryId = key.split('|')[0];
+                      final portionName = key.split('|')[1];
+                      final category = _categories.firstWhere((c) => c['id'] == categoryId);
+                      return _buildSelectedItem(key, count, category, portionName);
+                    }).toList(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -707,12 +865,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200)),
             child: Row(
               children: [
-                _buildSmallActionBtn(Icons.remove, () => _removePortion(key)),
+                _buildSmallActionBtn(AppIcons.minus, () => _removePortion(key)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text('$count', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: _accentColor)),
                 ),
-                _buildSmallActionBtn(Icons.add, () {
+                _buildSmallActionBtn(AppIcons.plus, () {
                   final portion = (category['portions'] as List).firstWhere((p) => p['name'] == portionName);
                   _addPortion(category['id'], portion);
                 }),
@@ -779,6 +937,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
                   height: 48,
                   margin: const EdgeInsets.symmetric(horizontal: 1.5),
                   decoration: BoxDecoration(
@@ -801,6 +960,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
             );
           }),
         ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Kötü', style: TextStyle(color: Colors.red.shade300, fontSize: 11, fontWeight: FontWeight.w700)),
+              Text('Normal', style: TextStyle(color: Colors.orange.shade300, fontSize: 11, fontWeight: FontWeight.w700)),
+              Text('İyi', style: TextStyle(color: Colors.green.shade300, fontSize: 11, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -819,11 +990,22 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
           maxLines: 2,
           style: const TextStyle(fontWeight: FontWeight.w600),
           decoration: InputDecoration(
-            hintText: 'Mekan, arkadaş grubu veya özel bir an...',
-            hintStyle: TextStyle(color: Colors.grey.shade300, fontSize: 14),
+            labelText: 'Not Ekle',
+            labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w700),
+            floatingLabelStyle: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+            hintText: 'Mekanı veya anılarını kısaca not al...',
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
             filled: true,
             fillColor: Colors.grey.shade50,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
             contentPadding: const EdgeInsets.all(20),
           ),
         ),
@@ -856,13 +1038,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('TAHMİNİ PUAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1.2)),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: totalScore),
-                          duration: const Duration(milliseconds: 500),
-                          builder: (context, value, _) => Text(
-                            '+${value.toStringAsFixed(1)} pt',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: _accentColor, letterSpacing: -1),
-                          ),
+                        AnimatedBuilder(
+                          animation: _scoreAnimation,
+                          builder: (context, child) {
+                            final displayScore = _scoreAnimation.value;
+                            return Text(
+                              '+${displayScore.toStringAsFixed(1)} pt',
+                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: _accentColor, letterSpacing: -1),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -877,7 +1061,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.bolt_rounded, size: 18, color: _accentColor),
+                            Icon(AppIcons.bolt, size: 18, color: _accentColor),
                             const SizedBox(width: 4),
                             const Text('ŞİMDİ', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.orange, fontSize: 12)),
                           ],
@@ -887,22 +1071,39 @@ class _AddEntryScreenState extends State<AddEntryScreen> with SingleTickerProvid
                   ],
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 64,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _accentColor,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                      elevation: 6,
-                      shadowColor: _accentColor.withOpacity(0.35),
+                GestureDetector(
+                  onTapDown: (_) => setState(() => _isButtonPressed = true),
+                  onTapUp: (_) => setState(() => _isButtonPressed = false),
+                  onTapCancel: () => setState(() => _isButtonPressed = false),
+                  child: AnimatedScale(
+                    scale: _isButtonPressed ? 0.95 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    curve: Curves.easeInOut,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 64,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          elevation: 6,
+                          shadowColor: AppColors.primary.withOpacity(0.35),
+                        ),
+                        child: _isLoading
+                            ? Shimmer.fromColors(
+                                baseColor: Colors.white.withOpacity(0.3),
+                                highlightColor: Colors.white,
+                                child: const Text(
+                                  'KAYDET',
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.2),
+                                ),
+                              )
+                            : const Text('KAYDET', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.2)),
+                      ),
                     ),
-                    child: _isLoading
-                        ? const CupertinoActivityIndicator(color: Colors.white)
-                        : const Text('KAYDET', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.2)),
                   ),
                 ),
               ],

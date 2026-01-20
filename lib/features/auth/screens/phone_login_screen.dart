@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 
 class PhoneLoginScreen extends ConsumerStatefulWidget {
@@ -106,16 +108,16 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background - full screen
+          // Lighter background
           Image.asset(
-            'assets/images/bgwglass.png',
+            'assets/images/onlybg.png',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
           ),
-          // White overlay
+          // Light white overlay
           Container(
-            color: Colors.white.withOpacity(0.85),
+            color: const Color(0xFF3A2E28).withOpacity(0.58),
           ),
           // Content
           SafeArea(
@@ -127,25 +129,28 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   const SizedBox(height: 60),
                   
                   // Header
-                  Column(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.local_bar_rounded, size: 60, color: AppColors.primary),
-                      const SizedBox(height: 8),
+                      Image.asset(
+                        'assets/images/countsiplogo.png',
+                        width: 80,
+                        height: 80,
+                      ),
+                      const SizedBox(width: 16),
                       Text(
                         'CountSip',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
+                        style: AppTextStyles.largeTitle.copyWith(
                           fontFamily: 'Rosaline',
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Giriş Yap',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: AppColors.textSecondary,
+                          color: Colors.white, // Changed to White for contrast on dark overlay
+                          fontSize: 42,
+                          shadows: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -153,166 +158,231 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   
                   const SizedBox(height: 48),
                   
-                  // Phone Number
-                  Text(
-                    'Telefon Numarası',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12),
+                  // Card Container for Form
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3EDE9).withOpacity(0.92), // Light warm beige/white
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedCountryCode,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                            items: _countryCodes.map((c) => DropdownMenuItem(
-                              value: c['code'],
-                              child: Text(
-                                c['code']!,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textPrimary,
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Card Header
+                        Text(
+                          'Giriş Yap',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.title1.copyWith(
+                            color: const Color(0xFF4B3126),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Phone Number
+                        Text(
+                          'Telefon Numarası',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedCountryCode,
+                                  dropdownColor: Colors.white,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black87,
+                                  ),
+                                  items: _countryCodes.map((c) => DropdownMenuItem(
+                                    value: c['code'],
+                                    child: Text(
+                                      c['code']!,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  )).toList(),
+                                  onChanged: (v) => setState(() => _selectedCountryCode = v!),
                                 ),
                               ),
-                            )).toList(),
-                            onChanged: (v) => setState(() => _selectedCountryCode = v!),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: TextField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                  decoration: InputDecoration(
+                                    hintText: '5XX XXX XX XX',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: Colors.grey.shade300),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: Colors.grey.shade300),
+                                    ),
+                                    prefixIcon: Icon(AppIcons.phoneCall, color: Colors.grey.shade600, size: 20),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Password
+                        Text(
+                          'Şifre',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: InputDecoration(
-                            hintText: '5XX XXX XX XX',
-                            border: OutlineInputBorder(
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: TextField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              hintText: 'Şifrenizi girin',
+                              prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600, size: 20),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePassword ? AppIcons.eyeCrossed : AppIcons.eyeIcon, color: Colors.grey.shade600, size: 20),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 12),
+                        
+                        // Forgot Password
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () => context.push('/forgot-password'),
+                            child: Text(
+                              'Şifremi Unuttum',
+                              style: TextStyle(color: AppColors.primary),
+                            ),
+                          ),
+                        ),
+                        
+                        // Error
+                        if (_error != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            prefixIcon: const Icon(Icons.phone),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Password
-                  Text(
-                    'Şifre',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      hintText: 'Şifrenizi girin',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Forgot Password
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => context.push('/forgot-password'),
-                      child: Text(
-                        'Şifremi Unuttum',
-                        style: TextStyle(color: AppColors.primary),
-                      ),
-                    ),
-                  ),
-                  
-                  // Error
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red.shade700),
+                            child: Row(
+                              children: [
+                                Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _error!,
+                                    style: TextStyle(color: Colors.red.shade700),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Login Button
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Giriş Yap', style: TextStyle(fontSize: 16)),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Signup Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Hesabın yok mu? ',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.go('/signup'),
-                        child: Text(
-                          'Hesap Oluştur',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Login Button
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _login,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: const Color(0xFF6A4A3C), // Consistent Button Color
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
+                          child: _isLoading
+                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Giriş Yap', style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                )),
                         ),
-                      ),
-                    ],
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Signup Link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Hesabın yok mu? ',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
+                            GestureDetector(
+                              onTap: () => context.go('/signup'),
+                              child: Text(
+                                'Hesap Oluştur',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

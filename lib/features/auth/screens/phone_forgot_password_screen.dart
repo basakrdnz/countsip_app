@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 
 class PhoneForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -187,7 +189,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(AppIcons.angleLeft, color: Colors.white),
           onPressed: () {
             if (_currentStep > 0) {
               setState(() => _currentStep--);
@@ -202,15 +204,16 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
         fit: StackFit.expand,
         children: [
           // Background - full screen
+          // Lighter background
           Image.asset(
-            'assets/images/bgwglass.png',
+            'assets/images/onlybg.png',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
           ),
-          // White overlay
+          // Light white overlay
           Container(
-            color: Colors.white.withOpacity(0.85),
+            color: Colors.white.withOpacity(0.2),
           ),
           // Content
           SafeArea(
@@ -224,20 +227,21 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                   // Header
                   Column(
                     children: [
-                      Icon(Icons.lock_reset_rounded, size: 60, color: AppColors.primary),
+                      Icon(AppIcons.lock, size: 60, color: AppColors.brandDark),
                       const SizedBox(height: 8),
                       Text(
                         'Şifremi Unuttum',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                        style: AppTextStyles.largeTitle.copyWith(
+                          color: AppColors.brandDark,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _getStepDescription(),
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.brandDark.withOpacity(0.7),
+                          fontWeight: FontWeight.w600,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -261,7 +265,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                          Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -341,7 +345,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  prefixIcon: const Icon(Icons.phone),
+                  prefixIcon: Icon(AppIcons.phoneCall, color: AppColors.textSecondaryLight, size: 20),
                 ),
               ),
             ),
@@ -412,7 +416,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
           obscureText: true,
           decoration: InputDecoration(
             hintText: 'Yeni Şifre (en az 6 karakter)',
-            prefixIcon: const Icon(Icons.lock_outline),
+            prefixIcon: Icon(AppIcons.lock),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -424,7 +428,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
           obscureText: true,
           decoration: InputDecoration(
             hintText: 'Şifre Tekrar',
-            prefixIcon: const Icon(Icons.lock_outline),
+            prefixIcon: Icon(AppIcons.lock),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),

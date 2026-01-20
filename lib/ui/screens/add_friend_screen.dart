@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:uicons/uicons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 /// Friend relationship status enum
 enum FriendStatus {
@@ -295,7 +297,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, size: 16, color: Colors.blue.shade700),
+              Icon(AppIcons.checkCircle, size: 16, color: Colors.blue.shade700),
               const SizedBox(width: 4),
               Text(
                 'Arkadaş',
@@ -320,7 +322,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.close, size: 16, color: Colors.orange.shade700),
+                Icon(AppIcons.cross, size: 16, color: Colors.orange.shade700),
                 const SizedBox(width: 4),
                 Text(
                   'İptal Et',
@@ -352,12 +354,12 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check, size: 16, color: Colors.white),
-                SizedBox(width: 4),
-                Text(
+                Icon(AppIcons.check, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                const Text(
                   'Kabul Et',
                   style: TextStyle(
                     color: Colors.white,
@@ -379,7 +381,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.block, size: 16, color: Colors.red.shade700),
+              Icon(AppIcons.ban, size: 16, color: Colors.red.shade700),
               const SizedBox(width: 4),
               Text(
                 'Engelli',
@@ -411,12 +413,12 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.person_add, size: 16, color: Colors.white),
-                SizedBox(width: 4),
-                Text(
+                Icon(AppIcons.addUser, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                const Text(
                   'Ekle',
                   style: TextStyle(
                     color: Colors.white,
@@ -441,7 +443,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         foregroundColor: AppColors.textPrimary,
         actions: [
           IconButton(
-            icon: const Icon(Icons.block_outlined),
+            icon: Icon(AppIcons.ban, size: 22),
             tooltip: 'Engellenen Kullanıcılar',
             onPressed: () => context.push('/blocked-users'),
           ),
@@ -465,7 +467,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.share, color: Colors.white),
+                      Icon(AppIcons.share, color: Colors.white, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -499,7 +501,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                               const SnackBar(content: Text('Kopyalandı!')),
                             );
                           },
-                          icon: const Icon(Icons.copy, size: 18),
+                          icon: Icon(AppIcons.copy, size: 18),
                           label: const Text('Kopyala'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
@@ -511,7 +513,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _shareUsername,
-                          icon: const Icon(Icons.send, size: 18),
+                          icon: Icon(AppIcons.paperPlane, size: 18),
                           label: const Text('Paylaş'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -533,7 +535,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
               onChanged: _searchUsers,
               decoration: InputDecoration(
                 hintText: 'Tam kullanıcı adını gir...',
-                prefixIcon: const Icon(Icons.alternate_email),
+                prefixIcon: Icon(AppIcons.at, size: 20, color: Colors.grey.shade400),
                 suffixIcon: _isSearching
                     ? const Padding(
                         padding: EdgeInsets.all(14),
@@ -563,7 +565,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.person_search, size: 64, color: Colors.grey.shade300),
+                        Icon(AppIcons.search, size: 64, color: Colors.grey.shade300),
                         const SizedBox(height: 16),
                         Text(
                           _searchController.text.length < 3
@@ -601,7 +603,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                                   ? NetworkImage(user['photoUrl'])
                                   : null,
                               child: user['photoUrl'] == null
-                                  ? Icon(Icons.person, color: AppColors.primary)
+                                  ? Icon(UIcons.regularStraight.user, color: AppColors.primary)
                                   : null,
                             ),
                             const SizedBox(width: 12),

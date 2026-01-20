@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -143,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                       child: photoUrl == null
-                          ? Icon(Icons.person, size: 50, color: Colors.grey.shade400)
+                          ? Icon(AppIcons.user, size: 50, color: Colors.grey.shade400)
                           : null,
                     ),
                     
@@ -166,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             SnackBar(
                               content: Row(
                                 children: [
-                                  const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                                  Icon(AppIcons.checkCircle, color: Colors.white, size: 18),
                                   const SizedBox(width: 8),
                                   Text('@$username kopyalandı'),
                                 ],
@@ -190,11 +192,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              Icon(
-                                Icons.copy,
-                                size: 14,
-                                color: AppColors.textSecondary,
-                              ),
+                                Icon(
+                                  AppIcons.copy,
+                                  size: 14,
+                                  color: AppColors.textSecondary,
+                                ),
                             ],
                           ),
                         ),
@@ -218,13 +220,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           _buildMenuItem(
-                            icon: Icons.person_outline,
+                            icon: AppIcons.user,
                             title: 'Profil Bilgileri',
                             onTap: () => context.push('/profile-details'),
                           ),
                           _buildDivider(),
                           _buildMenuItem(
-                            icon: Icons.settings_outlined,
+                            icon: AppIcons.settingsSliders,
                             title: 'Ayarlar',
                             onTap: () => context.push('/settings'),
                           ),
@@ -250,13 +252,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           _buildMenuItem(
-                            icon: Icons.person_add_outlined,
+                            icon: AppIcons.addUser,
                             title: 'Arkadaş Ekle',
                             onTap: () => context.push('/add-friend'),
                           ),
                           _buildDivider(),
                           _buildMenuItem(
-                            icon: Icons.group_outlined,
+                            icon: AppIcons.users,
                             title: 'Arkadaşlarım',
                             onTap: () => context.push('/friends'),
                           ),
@@ -282,13 +284,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           _buildMenuItem(
-                            icon: Icons.help_outline,
+                            icon: AppIcons.helpIcon,
                             title: 'Yardım',
                             onTap: () {},
                           ),
                           _buildDivider(),
                           _buildMenuItem(
-                            icon: Icons.info_outline,
+                            icon: AppIcons.info,
                             title: 'Hakkında',
                             onTap: () {},
                           ),
@@ -313,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                       child: _buildMenuItem(
-                        icon: Icons.logout,
+                        icon: AppIcons.exit,
                         title: 'Çıkış Yap',
                         iconColor: AppColors.error,
                         titleColor: AppColors.error,
@@ -361,7 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             if (showArrow)
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
           ],
         ),
       ),

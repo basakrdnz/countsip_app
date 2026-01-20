@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class BlockedUsersScreen extends StatelessWidget {
   const BlockedUsersScreen({super.key});
@@ -81,7 +82,7 @@ class BlockedUsersScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.block, size: 80, color: Colors.grey.shade300),
+                  Icon(AppIcons.ban, size: 80, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
                   Text(
                     'Engellenen kullanıcı yok',
@@ -139,11 +140,8 @@ class BlockedUsersScreen extends StatelessWidget {
                         CircleAvatar(
                           radius: 24,
                           backgroundColor: Colors.red.shade100,
-                          backgroundImage: userData['photoUrl'] != null
-                              ? NetworkImage(userData['photoUrl'])
-                              : null,
                           child: userData['photoUrl'] == null
-                              ? Icon(Icons.person, color: Colors.red.shade400)
+                              ? Icon(AppIcons.user, color: Colors.red.shade400)
                               : null,
                         ),
                         const SizedBox(width: 12),

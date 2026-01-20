@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -75,7 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.warning, color: Colors.red),
+            Icon(AppIcons.exclamation, color: Colors.red),
             const SizedBox(width: 8),
             const Text('Hesabı Sil'),
           ],
@@ -255,19 +256,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _buildTapRow(
-                    icon: Icons.description_outlined,
+                    icon: AppIcons.document,
                     title: 'Gizlilik Politikası',
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildTapRow(
-                    icon: Icons.article_outlined,
+                    icon: AppIcons.memoPad,
                     title: 'Kullanım Şartları',
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildInfoRow(
-                    icon: Icons.info_outline,
+                    icon: AppIcons.infoCircle,
                     title: 'Versiyon',
                     value: '1.0.0',
                   ),
@@ -293,19 +294,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _buildDisabledRow(
-                    icon: Icons.dark_mode_outlined,
+                    icon: AppIcons.moon,
                     title: 'Karanlık Mod',
                     subtitle: 'Yakında',
                   ),
                   _buildDivider(),
                   _buildDisabledRow(
-                    icon: Icons.notifications_outlined,
+                    icon: AppIcons.bell,
                     title: 'Bildirimler',
                     subtitle: 'Yakında',
                   ),
                   _buildDivider(),
                   _buildDisabledRow(
-                    icon: Icons.language,
+                    icon: AppIcons.world,
                     title: 'Dil',
                     subtitle: 'Yakında',
                   ),
@@ -335,7 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     child: Row(
                       children: [
-                        Icon(Icons.visibility_off, color: Colors.purple, size: 24),
+                        Icon(AppIcons.eyeCrossed, color: Colors.purple, size: 24),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -369,7 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildDivider(),
                   // Blocked Users
                   _buildTapRow(
-                    icon: Icons.block,
+                    icon: AppIcons.ban,
                     title: 'Engellenen Kullanıcılar',
                     onTap: () => context.push('/blocked-users'),
                   ),
@@ -382,7 +383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.warning, color: Colors.orange, size: 24),
+                              Icon(AppIcons.exclamation, color: Colors.orange, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
@@ -431,7 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         child: Row(
                           children: [
-                            const Icon(Icons.delete_forever, color: Colors.red, size: 24),
+                            Icon(AppIcons.trash, color: Colors.red, size: 24),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
@@ -455,7 +456,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                             Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
                           ],
                         ),
                       ),
@@ -463,7 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildDivider(),
                   // Reset All Data
                   _buildTapRow(
-                    icon: Icons.refresh,
+                    icon: AppIcons.refresh,
                     title: 'İstatistikleri Sıfırla',
                     onTap: _resetAllData,
                   ),
@@ -525,7 +526,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
           ],
         ),
       ),

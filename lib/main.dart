@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 // firebase_ui_auth removed - using custom phone auth screens
 
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/welcome_screen.dart';
+import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
 import 'features/auth/screens/phone_login_screen.dart';
 import 'features/auth/screens/phone_signup_screen.dart';
@@ -28,6 +30,7 @@ import 'ui/screens/root_shell_page.dart';
 import 'ui/screens/friends_screen.dart';
 import 'ui/screens/add_friend_screen.dart';
 import 'ui/screens/blocked_users_screen.dart';
+import 'ui/screens/notifications_screen.dart';
 
 /// Toggle emulator with a compile-time define:
 /// flutter run --dart-define=USE_FIREBASE_EMULATOR=true
@@ -41,7 +44,8 @@ const int _authEmulatorPort =
     int.fromEnvironment('FIREBASE_AUTH_EMULATOR_PORT', defaultValue: 9099);
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -122,14 +126,15 @@ GoRouter _createRouter() {
       final isForgotPw = state.matchedLocation == '/forgot-password';
       final isSplash = state.matchedLocation == '/splash';
       final isProfileSetup = state.matchedLocation == '/profile-setup';
+      final isOnboarding = state.matchedLocation == '/onboarding';
 
       if (isSplash) return null;
 
       if (!isLoggedIn) {
-        if (isLoggingIn || isSigningUp || isWelcome || isForgotPw) {
+        if (isLoggingIn || isSigningUp || isWelcome || isForgotPw || isOnboarding) {
           return null;
         }
-        return '/welcome';
+        return '/onboarding';
       }
 
       // User is logged in
@@ -194,6 +199,11 @@ GoRouter _createRouter() {
         builder: (context, state) => const WelcomeScreen(),
       ),
       GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
         path: '/login',
         name: 'login',
         builder: (context, state) => const PhoneLoginScreen(),
@@ -237,6 +247,11 @@ GoRouter _createRouter() {
         path: '/blocked-users',
         name: 'blocked-users',
         builder: (context, state) => const BlockedUsersScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
       
       StatefulShellRoute.indexedStack(

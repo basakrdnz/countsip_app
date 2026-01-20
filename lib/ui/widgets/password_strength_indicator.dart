@@ -98,7 +98,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
         // Strength label
         Text(
           getStrengthLabel(strength),
-          style: AppTextStyles.caption1.copyWith(
+          style: AppTextStyles.caption.copyWith(
             color: color,
             fontWeight: FontWeight.w600,
           ),

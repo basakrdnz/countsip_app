@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Welcome screen - First screen users see
 class WelcomeScreen extends StatelessWidget {
@@ -15,7 +16,7 @@ class WelcomeScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/bgwglass.png'),
+            image: AssetImage('assets/images/onlybg.png'),
             fit: BoxFit.cover,
           ),
         ),
@@ -36,22 +37,10 @@ class WelcomeScreen extends StatelessWidget {
                           // Branding Section
                           Column(
                             children: [
-                              Icon(
-                                Icons.local_bar_rounded,
-                                size: 80,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'CountSip',
-                                style: TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.w900,
-                                  fontFamily: 'Rosaline',
-                                  letterSpacing: -2,
-                                  color: AppColors.primary,
-                                  height: 1,
-                                ),
+                              Image.asset(
+                                'assets/images/countsiplogo.png',
+                                height: 150,
+                                fit: BoxFit.contain,
                               ),
                               const SizedBox(height: 16),
                               Text(

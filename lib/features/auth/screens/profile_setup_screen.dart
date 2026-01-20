@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Profile Setup Screen - Collect user info after signup
 /// Height, Weight, Age, Gender (for BAC calculation)
@@ -545,7 +546,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         child: Column(
                           children: [
                             Icon(
-                              Icons.male,
+                              AppIcons.mars,
                               size: 48,
                               color: _gender == 'male'
                                   ? AppColors.primary
@@ -586,7 +587,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         child: Column(
                           children: [
                             Icon(
-                              Icons.female,
+                              AppIcons.venus,
                               size: 48,
                               color: _gender == 'female'
                                   ? AppColors.primary
@@ -681,7 +682,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.remove,
+                        AppIcons.minus,
                         color: currentValue > min
                             ? AppColors.primary
                             : Colors.grey,
@@ -714,7 +715,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.add,
+                        AppIcons.plus,
                         color: currentValue < max
                             ? AppColors.primary
                             : Colors.grey,

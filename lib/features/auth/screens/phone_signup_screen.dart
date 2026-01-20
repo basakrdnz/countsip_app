@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 
 class PhoneSignupScreen extends ConsumerStatefulWidget {
@@ -237,16 +239,16 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background - full screen
+          // Lighter background
           Image.asset(
-            'assets/images/bgwglass.png',
+            'assets/images/onlybg.png',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
           ),
-          // White overlay
+          // Light white overlay
           Container(
-            color: Colors.white.withOpacity(0.85),
+            color: const Color(0xFF3A2E28).withOpacity(0.58),
           ),
           // Content
           SafeArea(
@@ -258,25 +260,28 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                   const SizedBox(height: 40),
                   
                   // Header
-                  Column(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.local_bar_rounded, size: 60, color: AppColors.primary),
-                      const SizedBox(height: 8),
+                      Image.asset(
+                        'assets/images/countsiplogo.png',
+                        width: 80,
+                        height: 80,
+                      ),
+                      const SizedBox(width: 16),
                       Text(
                         'CountSip',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
+                        style: AppTextStyles.largeTitle.copyWith(
                           fontFamily: 'Rosaline',
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Hesap Oluştur',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: AppColors.textSecondary,
+                          color: Colors.white, // Changed to White for contrast
+                          fontSize: 42,
+                          shadows: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -284,61 +289,93 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                   
                   const SizedBox(height: 40),
                   
-                  // Step Indicator
-                  _buildStepIndicator(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Step Content
-                  if (_currentStep == 0) _buildPhoneStep(),
-                  if (_currentStep == 1) _buildCodeStep(),
-                  if (_currentStep == 2) _buildPasswordStep(),
-                  
-                  // Error
-                  if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red.shade700),
+                  // Card Container for Content
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3EDE9).withOpacity(0.92), // Light warm beige/white
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Card Header
+                        Text(
+                          'Hesap Oluştur',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.title1.copyWith(
+                            color: const Color(0xFF4B3126),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Step Indicator
+                        _buildStepIndicator(),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Step Content
+                        if (_currentStep == 0) _buildPhoneStep(),
+                        if (_currentStep == 1) _buildCodeStep(),
+                        if (_currentStep == 2) _buildPasswordStep(),
+                        
+                        // Error
+                        if (_error != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _error!,
+                                    style: TextStyle(color: Colors.red.shade700),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Login Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Zaten hesabın var mı? ',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.go('/login'),
-                        child: Text(
-                          'Giriş Yap',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Login Link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Zaten hesabın var mı? ',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
+                            GestureDetector(
+                              onTap: () => context.go('/login'),
+                              child: Text(
+                                'Giriş Yap',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -377,7 +414,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           ),
           child: Center(
             child: isActive && !isCurrent
-                ? const Icon(Icons.check, color: Colors.white, size: 18)
+                ? Icon(AppIcons.check, color: Colors.white, size: 18)
                 : Text(
                     '${step + 1}',
                     style: TextStyle(
@@ -409,7 +446,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
@@ -425,10 +462,11 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedCountryCode,
+                  dropdownColor: Colors.white,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: Colors.black87,
                   ),
                   items: _countryCodes.map((c) => DropdownMenuItem(
                     value: c['code'],
@@ -437,7 +475,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: Colors.black87,
                       ),
                     ),
                   )).toList(),
@@ -448,16 +486,29 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             const SizedBox(width: 12),
             // Phone Number
             Expanded(
-              child: TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  hintText: '5XX XXX XX XX',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    hintText: '5XX XXX XX XX',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    prefixIcon: Icon(AppIcons.phoneCall, color: Colors.grey.shade600, size: 20),
+                    filled: true,
+                    fillColor: Colors.white,
                   ),
-                  prefixIcon: const Icon(Icons.phone),
                 ),
               ),
             ),
@@ -468,11 +519,19 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           onPressed: _isLoading ? null : _sendCode,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: const Color(0xFF6A4A3C),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: _isLoading
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Devam Et', style: TextStyle(fontSize: 16)),
+              : const Text(
+                  'Devam Et', 
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  )
+                ),
         ),
       ],
     );
@@ -487,27 +546,40 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           '$_selectedCountryCode ${_phoneController.text} numarasına gönderilen 6 haneli kodu gir',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: Colors.grey.shade600),
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: _codeController,
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
-          maxLength: 6,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(
-            hintText: '• • • • • •',
-            counterText: '',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _codeController,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+            maxLength: 6,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              hintText: '• • • • • •',
+              counterText: '',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              filled: true,
+              fillColor: Colors.white,
             ),
           ),
         ),
@@ -529,11 +601,19 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           onPressed: _isLoading ? null : _verifyCode,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: const Color(0xFF6A4A3C),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: _isLoading
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Doğrula', style: TextStyle(fontSize: 16)),
+              : const Text(
+                  'Doğrula', 
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  )
+                ),
         ),
         const SizedBox(height: 12),
         OutlinedButton(
@@ -553,35 +633,61 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Hesabın için güçlü bir şifre belirle',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: Colors.grey.shade600),
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: _passwordController,
-          obscureText: true,
-          decoration: InputDecoration(
-            hintText: 'Şifre (en az 6 karakter)',
-            prefixIcon: const Icon(Icons.lock_outline),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: InputDecoration(
+              hintText: 'Şifre (en az 6 karakter)',
+              prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600, size: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              filled: true,
+              fillColor: Colors.white,
             ),
           ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _confirmPasswordController,
-          obscureText: true,
-          decoration: InputDecoration(
-            hintText: 'Şifre Tekrar',
-            prefixIcon: const Icon(Icons.lock_outline),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _confirmPasswordController,
+            obscureText: true,
+            decoration: InputDecoration(
+              hintText: 'Şifre Tekrar',
+              prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600, size: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              filled: true,
+              fillColor: Colors.white,
             ),
           ),
         ),
@@ -590,11 +696,19 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           onPressed: _isLoading ? null : _createAccount,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: const Color(0xFF6A4A3C),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: _isLoading
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Hesap Oluştur', style: TextStyle(fontSize: 16)),
+              : const Text(
+                  'Hesap Oluştur', 
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  )
+                ),
         ),
         const SizedBox(height: 12),
         OutlinedButton(

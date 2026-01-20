@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
 
 class RootShellPage extends StatefulWidget {
   const RootShellPage({super.key, required this.navigationShell});
@@ -64,7 +65,7 @@ class _RootShellPageState extends State<RootShellPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.warning, color: Colors.orange),
+            Icon(AppIcons.exclamation, color: Colors.orange),
             const SizedBox(width: 8),
             const Text('Hesabın Silinecek!'),
           ],
@@ -139,7 +140,7 @@ class _RootShellPageState extends State<RootShellPage> {
                 bottom: false,
                 child: Row(
                   children: [
-                    const Icon(Icons.visibility_off, color: Colors.white, size: 18),
+                    Icon(AppIcons.eyeCrossed, color: Colors.white, size: 18),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -189,14 +190,14 @@ class _RootShellPageState extends State<RootShellPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _NavItem(
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
+                icon: AppIcons.home,
+                selectedIcon: AppIcons.home, //rs doesn't have filled/outlined usually, we can use same or find counterpart
                 isSelected: currentIndex == 0,
                 onTap: () => _onDestinationSelected(0),
               ),
               _NavItem(
-                icon: Icons.add,
-                selectedIcon: Icons.add,
+                icon: AppIcons.plus,
+                selectedIcon: AppIcons.plus,
                 isSelected: currentIndex == 1,
                 onTap: () => _onDestinationSelected(1),
               ),
@@ -223,22 +224,22 @@ class _RootShellPageState extends State<RootShellPage> {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.local_bar,
+                  child: Icon(
+                    AppIcons.drinkAlt,
                     color: Colors.white,
                     size: 26,
                   ),
                 ),
               ),
               _NavItem(
-                icon: Icons.emoji_events_outlined,
-                selectedIcon: Icons.emoji_events,
+                icon: AppIcons.trophyIcon,
+                selectedIcon: AppIcons.trophyIcon,
                 isSelected: currentIndex == 2,
                 onTap: () => _onDestinationSelected(2),
               ),
               _NavItem(
-                icon: Icons.person_outline,
-                selectedIcon: Icons.person,
+                icon: AppIcons.user,
+                selectedIcon: AppIcons.user,
                 isSelected: currentIndex == 3,
                 onTap: () => _onDestinationSelected(3),
               ),

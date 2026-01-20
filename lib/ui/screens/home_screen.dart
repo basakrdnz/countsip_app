@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uicons/uicons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -70,13 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
         
         final timestamp = data['timestamp'] as Timestamp?;
         if (timestamp != null) {
-          final date = DateTime(
-            timestamp.toDate().year,
-            timestamp.toDate().month,
-            timestamp.toDate().day,
-          );
-          events.putIfAbsent(date, () => []);
-          events[date]!.add(data);
+          final date = timestamp.toDate();
+          final normalizedDate = DateTime.utc(date.year, date.month, date.day);
+          events.putIfAbsent(normalizedDate, () => []);
+          events[normalizedDate]!.add(data);
         }
       }
 
@@ -97,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Map<String, dynamic>> _getEventsForDay(DateTime day) {
-    final normalizedDay = DateTime(day.year, day.month, day.day);
+    final normalizedDay = DateTime.utc(day.year, day.month, day.day);
     return _events[normalizedDay] ?? [];
   }
 
@@ -272,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.grey.shade100,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, size: 20, color: Colors.grey),
+                        child: Icon(UIcons.regularStraight.cross, size: 20, color: Colors.grey),
                       ),
                     ),
                   ],
@@ -288,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.wine_bar_outlined, size: 64, color: Colors.grey.shade200),
+                            Icon(AppIcons.glassWhiskey, size: 64, color: Colors.grey.shade200),
                             const SizedBox(height: 16),
                             Text(
                               'Bu gün için kayıt bulunmuyor',
@@ -453,13 +452,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 data['id'] = doc.id;
                 final timestamp = data['timestamp'] as Timestamp?;
                 if (timestamp != null) {
-                  final date = DateTime(
-                    timestamp.toDate().year,
-                    timestamp.toDate().month,
-                    timestamp.toDate().day,
-                  );
-                  currentEvents.putIfAbsent(date, () => []);
-                  currentEvents[date]!.add(data);
+                  final date = timestamp.toDate();
+                  final normalizedDate = DateTime.utc(date.year, date.month, date.day);
+                  currentEvents.putIfAbsent(normalizedDate, () => []);
+                  currentEvents[normalizedDate]!.add(data);
                 }
               }
               // Update local cache without triggering rebuild
@@ -472,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
             double selectedPoints = 0;
             int selectedDrinks = 0;
             if (_selectedDay != null) {
-              final selectedKey = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
+              final selectedKey = DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
               if (activeEvents.containsKey(selectedKey)) {
                 for (var e in activeEvents[selectedKey]!) {
                   selectedPoints += (e['points'] ?? 0).toDouble();
@@ -507,11 +503,51 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: AppColors.primary,
                                 ),
                               ),
-                              IconButton(
-                                onPressed: () {}, // Notification logic
-                                icon: const Icon(Icons.notifications_outlined),
-                                color: Colors.black87,
-                                iconSize: 26,
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('friend_requests')
+                                    .where('to', isEqualTo: user.uid)
+                                    .where('status', isEqualTo: 'pending')
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  final count = snapshot.data?.docs.length ?? 0;
+                                  return Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () => context.push('/notifications'),
+                                        icon: Icon(UIcons.regularStraight.bell),
+                                        color: Colors.black87,
+                                        iconSize: 26,
+                                      ),
+                                      if (count > 0)
+                                        Positioned(
+                                          right: 8,
+                                          top: 8,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 16,
+                                              minHeight: 16,
+                                            ),
+                                            child: Text(
+                                              '$count',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -534,9 +570,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Expanded(
                                     child: _buildDashboardItem(
-                                      label: 'SEÇİLİ PUAN',
+                                      label: 'PUAN',
                                       value: selectedPoints.toStringAsFixed(1),
-                                      emoji: '🏆',
+                                      icon: UIcons.regularStraight.magic_wand,
                                       isLight: false,
                                     ),
                                   ),
@@ -548,9 +584,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   Expanded(
                                     child: _buildDashboardItem(
-                                      label: 'SEÇİLİ İÇECEK',
+                                      label: 'İÇECEK',
                                       value: '$selectedDrinks',
-                                      emoji: '🍻',
+                                      icon: UIcons.regularStraight.drink_alt,
                                       isLight: false,
                                     ),
                                   ),
@@ -578,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 focusedDay: _focusedDay,
                                 calendarFormat: _calendarFormat,
                                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                                eventLoader: (day) => activeEvents[DateTime(day.year, day.month, day.day)] ?? [],
+                                eventLoader: (day) => activeEvents[DateTime.utc(day.year, day.month, day.day)] ?? [],
                                 startingDayOfWeek: StartingDayOfWeek.monday,
                                 availableGestures: AvailableGestures.none,
                                 availableCalendarFormats: const {
@@ -614,12 +650,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   markersMaxCount: 1,
                                   markerMargin: const EdgeInsets.only(top: 6),
                                 ),
-                                headerStyle: const HeaderStyle(
+                                headerStyle: HeaderStyle(
                                   formatButtonVisible: false,
                                   titleCentered: true,
-                                  leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black54, size: 24),
-                                  rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black54, size: 24),
-                                  headerPadding: EdgeInsets.symmetric(vertical: 16),
+                                  leftChevronIcon: Icon(AppIcons.angleLeft, color: Colors.black54, size: 24),
+                                  rightChevronIcon: Icon(AppIcons.angleRight, color: Colors.black54, size: 24),
+                                  headerPadding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
                                 calendarBuilders: CalendarBuilders(
                                   headerTitleBuilder: (context, day) {
@@ -647,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 4),
-                                                  const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.black54),
+                                                   Icon(AppIcons.angleDown, size: 20, color: Colors.black54),
                                                 ],
                                               ),
                                             ),
@@ -704,7 +740,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 16),
                           _buildInlineDayDetails(
                             _selectedDay!, 
-                            activeEvents[DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
+                            activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
                           ),
                         ],
                         
@@ -748,7 +784,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.calendar_month_rounded,
+                UIcons.regularStraight.calendar,
                 size: 40,
                 color: AppColors.primary.withOpacity(0.5),
               ),
@@ -786,7 +822,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.primary.withOpacity(0.7)),
+                    Icon(UIcons.regularStraight.plus, size: 18, color: AppColors.primary.withOpacity(0.7)),
                     const SizedBox(width: 8),
                     Text(
                       'Eklemeye Başla',
@@ -837,29 +873,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '🥤 $totalDayDrinks İçecek',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('•', style: TextStyle(color: Colors.grey.shade300)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '💎 ${totalDayPoints.toStringAsFixed(1)} Puan',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.primary.withOpacity(0.8),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
               if (entries.isNotEmpty)
@@ -869,7 +882,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.primary.withOpacity(0.05),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.wine_bar, color: AppColors.primary.withOpacity(0.5), size: 18),
+                  child: Icon(UIcons.regularStraight.drink_alt, color: AppColors.primary.withOpacity(0.5), size: 18),
                 ),
             ],
           ),
@@ -973,7 +986,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Center(
               child: Column(
                 children: [
-                  Icon(Icons.nightlight_round_outlined, size: 40, color: Colors.grey.shade200),
+                  Icon(UIcons.regularStraight.moon, size: 40, color: Colors.grey.shade200),
                   const SizedBox(height: 8),
                   Text(
                     'Kayıt bulunmuyor',
@@ -991,7 +1004,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDashboardItem({
     required String label,
     required String value,
-    required String emoji,
+    required IconData icon,
     required bool isLight,
   }) {
     return Column(
@@ -999,7 +1012,11 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
+            Icon(
+              icon,
+              size: 14,
+              color: isLight ? Colors.white.withOpacity(0.8) : AppColors.primary.withOpacity(0.8),
+            ),
             const SizedBox(width: 6),
             Text(
               label,

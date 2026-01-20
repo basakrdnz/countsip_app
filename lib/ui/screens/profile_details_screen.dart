@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class ProfileDetailsScreen extends StatefulWidget {
   const ProfileDetailsScreen({super.key});
@@ -257,12 +258,12 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: Icon(AppIcons.camera),
               title: const Text('Kamera'),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: Icon(AppIcons.gallery),
               title: const Text('Galeri'),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -617,7 +618,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         child: Column(
           children: [
             Icon(
-              value == 'male' ? Icons.male : Icons.female,
+              value == 'male' ? AppIcons.mars : AppIcons.venus,
               size: 32,
               color: isSelected ? Colors.white : Colors.grey.shade600,
             ),
@@ -682,7 +683,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           child: _isUploadingPhoto
                               ? const Center(child: CircularProgressIndicator())
                               : _photoUrl == null
-                                  ? Icon(Icons.person, size: 60, color: Colors.grey.shade400)
+                                  ? Icon(AppIcons.user, size: 60, color: Colors.grey.shade400)
                                   : null,
                         ),
                         // Camera badge
@@ -696,7 +697,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
                             ),
-                            child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                            child: Icon(AppIcons.camera, size: 18, color: Colors.white),
                           ),
                         ),
                       ],
@@ -770,14 +771,14 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           // Cancel button
                           IconButton(
                             onPressed: _cancelEditingName,
-                            icon: Icon(Icons.close, color: Colors.grey.shade500),
+                            icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),
                           ),
                           // Save button
                           IconButton(
                             onPressed: _saveName,
-                            icon: Icon(Icons.check, color: AppColors.primary),
+                            icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),
                           ),
@@ -785,7 +786,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           // Edit button
                           IconButton(
                             onPressed: _startEditingName,
-                            icon: Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                            icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),
                           ),
@@ -872,20 +873,20 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                         if (_isEditingUsername) ...[
                           IconButton(
                             onPressed: _cancelEditingUsername,
-                            icon: Icon(Icons.close, color: Colors.grey.shade500),
+                            icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),
                           ),
                           IconButton(
                             onPressed: _saveUsername,
-                            icon: Icon(Icons.check, color: AppColors.primary),
+                            icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),
                           ),
                         ] else
                           IconButton(
                             onPressed: _startEditingUsername,
-                            icon: Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                            icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),
                           ),
@@ -967,7 +968,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
           ],
         ),
       ),
