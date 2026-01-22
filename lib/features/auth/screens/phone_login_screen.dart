@@ -109,321 +109,334 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Custom Background
+          // 1. Base Background Image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/mainbg.png',
+              'assets/images/mainbgwemp.png',
               fit: BoxFit.cover,
             ),
           ),
+        
           
-          // Content
+          // 3. Main Glass/Blur Overlay (Removed blur for maximum clarity)
+          const Positioned.fill(
+            child: SizedBox.shrink(),
+          ),
+          
+          // 4. Content
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Back Button
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () => context.go('/onboarding'),
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
-                        ),
-                        child: Icon(
-                          AppIcons.angleLeft,
-                          color: AppColors.brandDark,
-                          size: 24,
-                        ),
-                      ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Header with Logo
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 25,
-                              spreadRadius: 3,
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/images/countsiplogo.png',
-                          width: 80,
-                          height: 80,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'CountSip',
-                        style: TextStyle(
-                          fontFamily: 'Rosaline',
-                          color: const Color(0xFF6A4A3C),
-                          fontSize: 36,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Glass Form Container
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Card Header
-                            Text(
-                              'Giriş Yap',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'CalSans',
-                                color: const Color(0xFF4B3126),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 26,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Phone Number
-                            Text(
-                              'Telefon Numarası',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF4B3126),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute top and center
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Header (Logo always at the top)
+                          SizedBox(
+                            height: 80,
+                            child: Stack(
+                              alignment: Alignment.center,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(color: Colors.grey.shade300),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: _selectedCountryCode,
-                                      dropdownColor: Colors.white,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
+                                Image.asset(
+                                  'assets/images/applogowname.png',
+                                  height: 60,
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Centered form (Removed Expanded to fix crash)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(32),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(AppSpacing.xl),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.35),
+                                      borderRadius: BorderRadius.circular(32),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.4),
+                                        width: 1.5,
                                       ),
-                                      items: _countryCodes.map((c) => DropdownMenuItem(
-                                        value: c['code'],
-                                        child: Text(
-                                          c['code']!,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Form Header
+                                        Text(
+                                          'Tekrar Hoş Geldin!',
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black87,
+                                            fontFamily: 'CalSans',
+                                            color: const Color(0xFF4B3126),
+                                            fontSize: 28,
+                                            letterSpacing: -0.5,
                                           ),
                                         ),
-                                      )).toList(),
-                                      onChanged: (v) => setState(() => _selectedCountryCode = v!),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: TextField(
-                                      controller: _phoneController,
-                                      keyboardType: TextInputType.phone,
-                                      style: const TextStyle(color: Colors.black87),
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                      decoration: InputDecoration(
-                                        hintText: '5XX XXX XX XX',
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Kaldığın yerden devam etmek için giriş yap',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.black.withOpacity(0.5),
+                                            fontSize: 14,
+                                          ),
                                         ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        
+                                        const SizedBox(height: 40),
+                                        
+                                        // Form Content
+                                        _buildLoginForm(),
+                                        
+                                        // Error
+                                        if (_error != null) ...[
+                                          const SizedBox(height: 20),
+                                          Text(
+                                            _error!,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                        
+                                        // Signup Link (inside card)
+                                        const SizedBox(height: 24),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'Hesabın yok mu? ',
+                                              style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => context.go('/signup'),
+                                              style: TextButton.styleFrom(
+                                                padding: EdgeInsets.zero,
+                                                minimumSize: Size.zero,
+                                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              ),
+                                              child: const Text(
+                                                'Hesap Oluştur',
+                                                style: TextStyle(
+                                                  color: Color(0xFF6A4A3C),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        prefixIcon: Icon(AppIcons.phoneCall, color: Colors.grey.shade600, size: 20),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                      ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 20),
-                            
-                            // Password
-                            Text(
-                              'Şifre',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF4B3126),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: TextField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: const TextStyle(color: Colors.black87),
-                                decoration: InputDecoration(
-                                  hintText: 'Şifrenizi girin',
-                                  prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600, size: 20),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(_obscurePassword ? AppIcons.eyeCrossed : AppIcons.eyeIcon, color: Colors.grey.shade600, size: 20),
-                                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 12),
-                            
-                            // Forgot Password
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () => context.push('/forgot-password'),
-                                child: Text(
-                                  'Şifremi Unuttum',
-                                  style: TextStyle(color: AppColors.primary),
-                                ),
-                              ),
-                            ),
-                            
-                            // Error
-                            if (_error != null) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _error!,
-                                        style: TextStyle(color: Colors.red.shade700),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Login Button
-                            ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                backgroundColor: const Color(0xFF6A4A3C),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Giriş Yap', style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    )),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Signup Link
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Hesabın yok mu? ',
-                                  style: TextStyle(color: Colors.grey.shade700),
-                                ),
-                                GestureDetector(
-                                  onTap: () => context.go('/signup'),
-                                  child: Text(
-                                    'Hesap Oluştur',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGlassIconButton(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+        ),
+        child: Icon(icon, color: const Color(0xFF6A4A3C), size: 22),
+      ),
+    );
+  }
+
+  Widget _buildLoginForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildInputLabel('Telefon Numarası'),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            // Country Picker
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withOpacity(0.08)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedCountryCode,
+                  dropdownColor: Colors.white,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                  items: _countryCodes.map((c) => DropdownMenuItem(
+                    value: c['code'],
+                    child: Text(c['code']!),
+                  )).toList(),
+                  onChanged: (v) => setState(() => _selectedCountryCode = v!),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Phone Field
+            Expanded(
+              child: _buildTextField(
+                controller: _phoneController,
+                hintText: '5XX XXX XX XX',
+                icon: AppIcons.phoneCall,
+                keyboardType: TextInputType.phone,
+                formatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildInputLabel('Şifre'),
+        const SizedBox(height: 12),
+        _buildTextField(
+          controller: _passwordController,
+          hintText: 'Şifren',
+          icon: AppIcons.lock,
+          obscureText: _obscurePassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? AppIcons.eyeIcon : AppIcons.eyeCrossed,
+              color: const Color(0xFF6A4A3C).withOpacity(0.5),
+              size: 20,
+            ),
+            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+          ),
+        ),
+        
+        // Forgot Password
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => context.go('/forgot-password'),
+            child: const Text(
+              'Şifremi Unuttum',
+              style: TextStyle(color: Color(0xFF6A4A3C), fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 24),
+        _buildPrimaryButton('Giriş Yap', _login),
+      ],
+    );
+  }
+
+  // --- Helper UI Components ---
+
+  Widget _buildInputLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF4B3126)),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    IconData? icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? formatters,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        inputFormatters: formatters,
+        style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
+          prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton(String text, VoidCallback? onPressed) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF6A4A3C),
+            const Color(0xFF4B3126),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6A4A3C).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+        child: _isLoading
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Text(text, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
       ),
     );
   }

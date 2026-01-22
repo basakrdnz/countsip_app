@@ -189,165 +189,135 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Custom Background
+          // 1. Base Background Image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/mainbg.png',
+              'assets/images/mainbgwemp.png',
               fit: BoxFit.cover,
             ),
           ),
           
-          // Content
+
+          
+          // 4. Content
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                   // Back Button
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () {
-                        if (_currentStep > 0) {
-                          setState(() => _currentStep--);
-                        } else {
-                          context.go('/login');
-                        }
-                      },
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
-                        ),
-                        child: Icon(
-                          AppIcons.angleLeft,
-                          color: AppColors.brandDark,
-                          size: 24,
-                        ),
-                      ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Header with Logo
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 25,
-                              spreadRadius: 3,
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/images/countsiplogo.png',
-                          width: 80,
-                          height: 80,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'CountSip',
-                        style: TextStyle(
-                          fontFamily: 'Rosaline',
-                          color: const Color(0xFF6A4A3C),
-                          fontSize: 36,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Glass Form Container
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Card Header
-                            Text(
-                              'Şifremi Unuttum',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'CalSans',
-                                color: const Color(0xFF4B3126),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 26,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _getStepDescription(),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: const Color(0xFF4B3126).withOpacity(0.7),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            // Step Content
-                            if (_currentStep == 0) _buildPhoneStep(),
-                            if (_currentStep == 1) _buildCodeStep(),
-                            if (_currentStep == 2) _buildPasswordStep(),
-                            
-                            // Error
-                            if (_error != null) ...[
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute top and center
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Header (Top Aligned)
+                          SizedBox(
+                            height: 80,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _buildGlassIconButton(
+                                    AppIcons.angleLeft,
+                                    () {
+                                      if (_currentStep > 0) {
+                                        setState(() => _currentStep--);
+                                      } else {
+                                        context.go('/login');
+                                      }
+                                    },
+                                  ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _error!,
-                                        style: TextStyle(color: Colors.red.shade700),
+                                Image.asset(
+                                  'assets/images/applogowname.png',
+                                  height: 60,
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+
+                          // Centered form
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 190),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(32),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(AppSpacing.xl),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.35),
+                                      borderRadius: BorderRadius.circular(32),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.4),
+                                        width: 1.5,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Title & Indicator
+                                        Text(
+                                          'Şifreni Sıfırla',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontFamily: 'CalSans',
+                                            color: const Color(0xFF6A4A3C),
+                                            fontSize: 28,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        
+                                        _buildPremiumIndicator(),
+                                        
+                                        const SizedBox(height: 32),
+                                        
+                                        // Form Content
+                                        AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 300),
+                                          child: _buildCurrentStep(),
+                                        ),
+                                        
+                                        // Error
+                                        if (_error != null) ...[
+                                          const SizedBox(height: 20),
+                                          Text(
+                                            _error!,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ],
-                          ],
-                        ),
+                            ),
+                          ),
+                          const SizedBox(height: 40),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -355,51 +325,84 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
     );
   }
 
-  String _getStepDescription() {
+  String _getStepTitleDescription() {
     switch (_currentStep) {
-      case 0:
-        return 'Hesabınla kayıtlı telefon numarasını gir';
-      case 1:
-        return 'Telefonuna gelen 6 haneli kodu gir';
-      case 2:
-        return 'Yeni şifreni belirle';
-      default:
-        return '';
+      case 0: return 'Şifreni sıfırlamak için telefonunu kullan';
+      case 1: return 'Telefonuna gelen doğrulama kodunu gir';
+      case 2: return 'Yeni ve güçlü bir şifre belirle';
+      default: return '';
     }
   }
 
-  Widget _buildPhoneStep() {
+  Widget _buildGlassIconButton(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+        ),
+        child: Icon(icon, color: const Color(0xFF6A4A3C), size: 22),
+      ),
+    );
+  }
+
+  Widget _buildPremiumIndicator() {
+    return Row(
+      children: List.generate(3, (index) {
+        final isActive = _currentStep >= index;
+        return Expanded(
+          child: Container(
+            height: 4,
+            margin: EdgeInsets.symmetric(horizontal: (index == 1) ? 6 : 0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: isActive ? const Color(0xFF6A4A3C) : const Color(0xFF6A4A3C).withOpacity(0.15),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0: return _buildPhoneStep(key: const ValueKey(0));
+      case 1: return _buildCodeStep(key: const ValueKey(1));
+      case 2: return _buildPasswordStep(key: const ValueKey(2));
+      default: return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildPhoneStep({required Key key}) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildInputLabel('Telefon Numarası'),
+        const SizedBox(height: 12),
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedCountryCode,
                   dropdownColor: Colors.white,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
                   items: _countryCodes.map((c) => DropdownMenuItem(
                     value: c['code'],
-                    child: Text(
-                      c['code']!,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    child: Text(c['code']!),
                   )).toList(),
                   onChanged: (v) => setState(() => _selectedCountryCode = v!),
                 ),
@@ -407,175 +410,141 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  style: const TextStyle(color: Colors.black87),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(
-                    hintText: '5XX XXX XX XX',
-                    hintStyle: TextStyle(color: Colors.grey.shade500),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    prefixIcon: Icon(AppIcons.phoneCall, color: Colors.grey.shade600, size: 20),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
+              child: _buildTextField(
+                controller: _phoneController,
+                hintText: '5XX XXX XX XX',
+                icon: AppIcons.phoneCall,
+                keyboardType: TextInputType.phone,
+                formatters: [FilteringTextInputFormatter.digitsOnly],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _sendCode,
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            backgroundColor: const Color(0xFF6A4A3C),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: _isLoading
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Kod Gönder', style: TextStyle(fontSize: 16, color: Colors.white)),
-        ),
+        const SizedBox(height: 32),
+        _buildPrimaryButton('Kod Gönder', _sendCode),
       ],
     );
   }
 
-  Widget _buildCodeStep() {
+  Widget _buildCodeStep({required Key key}) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: TextField(
-            controller: _codeController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold, color: Colors.black87),
-            maxLength: 6,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              hintText: '• • • • • •',
-              counterText: '',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
+        _buildInputLabel('Doğrulama Kodu'),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _codeController,
+          hintText: '• • • • • •',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+          keyboardType: TextInputType.number,
+          maxLength: 6,
         ),
         const SizedBox(height: 16),
         Center(
           child: _resendCountdown > 0
-              ? Text('Tekrar gönder ($_resendCountdown sn)', style: TextStyle(color: Colors.grey.shade500))
+              ? Text('Tekrar gönder: $_resendCountdown sn', style: TextStyle(color: Colors.black.withOpacity(0.3), fontSize: 13))
               : TextButton(
                   onPressed: _sendCode,
-                  child: const Text('Kodu Tekrar Gönder'),
+                  child: const Text('Kodu Tekrar Gönder', style: TextStyle(color: Color(0xFF6A4A3C), fontWeight: FontWeight.w600)),
                 ),
         ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _verifyCode,
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            backgroundColor: const Color(0xFF6A4A3C),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text('Doğrula', style: TextStyle(fontSize: 16, color: Colors.white)),
-        ),
+        const SizedBox(height: 32),
+        _buildPrimaryButton('Doğrula', _verifyCode),
       ],
     );
   }
 
-  Widget _buildPasswordStep() {
+  Widget _buildPasswordStep({required Key key}) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: TextField(
-            controller: _passwordController,
-            obscureText: true,
-            style: const TextStyle(color: Colors.black87),
-            decoration: InputDecoration(
-              hintText: 'Yeni Şifre (en az 6 karakter)',
-              prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
-        ),
+        _buildInputLabel('Yeni Şifre'),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: TextField(
-            controller: _confirmPasswordController,
-            obscureText: true,
-            style: const TextStyle(color: Colors.black87),
-            decoration: InputDecoration(
-              hintText: 'Şifre Tekrar',
-              prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
+        _buildTextField(
+          controller: _passwordController,
+          hintText: 'Yeni Şifren',
+          icon: AppIcons.lock,
+          obscureText: true,
         ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _resetPassword,
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            backgroundColor: const Color(0xFF6A4A3C),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: _isLoading
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Şifreyi Güncelle', style: TextStyle(fontSize: 16, color: Colors.white)),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _confirmPasswordController,
+          hintText: 'Şifreni Onayla',
+          icon: AppIcons.lock,
+          obscureText: true,
         ),
+        const SizedBox(height: 32),
+        _buildPrimaryButton('Şifreyi Güncelle', _resetPassword),
       ],
+    );
+  }
+
+  Widget _buildInputLabel(String label) {
+    return Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF4B3126)));
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    IconData? icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? formatters,
+    TextAlign textAlign = TextAlign.start,
+    TextStyle? style,
+    int? maxLength,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        inputFormatters: formatters,
+        textAlign: textAlign,
+        maxLength: maxLength,
+        style: style ?? const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          hintText: hintText,
+          prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
+          counterText: '',
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton(String text, VoidCallback? onPressed) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF6A4A3C), const Color(0xFF4B3126)],
+        ),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF6A4A3C).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6)),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+        child: _isLoading
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Text(text, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 }

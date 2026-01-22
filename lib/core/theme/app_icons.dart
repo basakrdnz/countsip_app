@@ -47,6 +47,11 @@ class AppIcons {
   static final IconData refresh = UIcons.regularStraight.refresh;
   static final IconData marker = UIcons.regularStraight.marker;
 
+  // Bold Icons for Auth Screens
+  static final IconData exitBold = UIcons.boldStraight.exit;
+  static final IconData addUserBold = UIcons.boldStraight.user_add;
+  static final IconData lockBold = UIcons.boldStraight.lock;
+
   // Onboarding Specific Icons (Requested Styles)
   static final IconData onboardingGlass = UIcons.regularRounded.glass_cheers;
   static final IconData onboardingGauge = UIcons.boldRounded.tachometer_fast;
