@@ -485,7 +485,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.w300,
-                      color: AppColors.textPrimary,
+                      color: const Color(0xFF4B3126),
                       letterSpacing: -1,
                     ),
                   ),
@@ -628,7 +628,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: isSelected ? Colors.white : const Color(0xFF4B3126),
               ),
             ),
           ],
@@ -647,7 +647,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         title: const Text('Profil Bilgileri'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: const Color(0xFF4B3126),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -734,7 +734,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                 'İsim',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary,
+                                  color: const Color(0xFF714A39),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -745,6 +745,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
+                                  color: Color(0xFF4B3126),
                                 ),
                                 decoration: InputDecoration(
                                   border: _isEditingName 
@@ -828,7 +829,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                   Text('@', style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
-                                    color: _isEditingUsername ? AppColors.primary : AppColors.textPrimary,
+                                    color: _isEditingUsername ? AppColors.primary : const Color(0xFF4B3126),
                                   )),
                                   Expanded(
                                     child: TextField(
@@ -838,6 +839,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF4B3126),
                                       ),
                                       decoration: InputDecoration(
                                         border: _isEditingUsername 
@@ -956,7 +958,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               label,
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textSecondary,
+                color: const Color(0xFF714A39),
               ),
             ),
             const Spacer(),
@@ -965,6 +967,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
+                color: const Color(0xFF4B3126),
               ),
             ),
             const SizedBox(width: 8),

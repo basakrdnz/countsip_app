@@ -16,7 +16,7 @@ class NotificationsScreen extends StatelessWidget {
     if (user == null) return const Scaffold(body: Center(child: Text('Giriş yapılmadı')));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         title: const Text(
           'Bildirimler',
@@ -25,7 +25,7 @@ class NotificationsScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: AppColors.brandDark,
         leading: IconButton(
           icon: Icon(AppIcons.angleLeft, size: 20),
           onPressed: () => Navigator.pop(context),

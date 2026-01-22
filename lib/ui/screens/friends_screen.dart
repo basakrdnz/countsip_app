@@ -36,7 +36,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         title: const Text('Arkadaşlar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.brandDark,
         actions: [
           IconButton(
             onPressed: () => context.push('/add-friend'),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -18,13 +17,12 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    FlutterNativeSplash.remove();
     _startNavigation();
   }
 
   Future<void> _startNavigation() async {
     // Keep a reasonable delay to show the animation
-    await Future.delayed(const Duration(milliseconds: 3000));
+    await Future.delayed(const Duration(milliseconds: 2000));
     
     if (!mounted || _navigating) return;
     _navigating = true;
@@ -45,15 +43,9 @@ class _SplashScreenState extends State<SplashScreen> {
         children: [
           // Background Image
           Image.asset(
-            'assets/images/onlybg.png',
+            'assets/images/mainbg.png',
             fit: BoxFit.cover,
           ),
-          
-          // Optional: Light overlay if needed for contrast, 
-          // keeping it subtle or removing if "directly on bg" means raw image.
-          // User said "direk bizim bg üstüne", sticking to clean BG or very subtle overlay.
-          // I will omit the overlay to be "direct" as requested, or keep it very minimal if contrast is needed.
-          // Let's go with raw BG first as implicit in "direk bg üstüne".
           
           Center(
             child: LoadingAnimationWidget.hexagonDots(

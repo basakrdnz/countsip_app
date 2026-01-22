@@ -80,7 +80,7 @@ class _RootShellPageState extends State<RootShellPage> {
               await FirebaseAuth.instance.signOut();
               if (mounted) {
                 Navigator.pop(context, false);
-                context.go('/welcome');
+                context.go('/onboarding');
               }
             },
             child: const Text('Çıkış Yap'),

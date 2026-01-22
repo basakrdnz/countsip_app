@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -239,17 +240,14 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Lighter background
-          Image.asset(
-            'assets/images/onlybg.png',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
+          // Custom Background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/mainbg.png',
+              fit: BoxFit.cover,
+            ),
           ),
-          // Light white overlay
-          Container(
-            color: const Color(0xFF3A2E28).withOpacity(0.58),
-          ),
+          
           // Content
           SafeArea(
             child: SingleChildScrollView(
@@ -257,124 +255,159 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 40),
+                   // Back Button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      onPressed: () => context.go('/login'),
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        ),
+                        child: Icon(
+                          AppIcons.angleLeft,
+                          color: AppColors.brandDark,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
                   
-                  // Header
+                  const SizedBox(height: 20),
+                  
+                  // Header with Logo
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        'assets/images/countsiplogo.png',
-                        width: 80,
-                        height: 80,
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 25,
+                              spreadRadius: 3,
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          'assets/images/countsiplogo.png',
+                          width: 80,
+                          height: 80,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Text(
                         'CountSip',
-                        style: AppTextStyles.largeTitle.copyWith(
+                        style: TextStyle(
                           fontFamily: 'Rosaline',
-                          color: Colors.white, // Changed to White for contrast
-                          fontSize: 42,
-                          shadows: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          color: const Color(0xFF6A4A3C),
+                          fontSize: 36,
                         ),
                       ),
                     ],
                   ),
                   
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                   
-                  // Card Container for Content
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3EDE9).withOpacity(0.92), // Light warm beige/white
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Card Header
-                        Text(
-                          'Hesap Oluştur',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.title1.copyWith(
-                            color: const Color(0xFF4B3126),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 24,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Step Indicator
-                        _buildStepIndicator(),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Step Content
-                        if (_currentStep == 0) _buildPhoneStep(),
-                        if (_currentStep == 1) _buildCodeStep(),
-                        if (_currentStep == 2) _buildPasswordStep(),
-                        
-                        // Error
-                        if (_error != null) ...[
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(12),
+                  // Glass Form Container
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
-                            child: Row(
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Card Header
+                            Text(
+                              'Hesap Oluştur',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'CalSans',
+                                color: const Color(0xFF4B3126),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 26,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Step Indicator
+                            _buildStepIndicator(),
+                            
+                            const SizedBox(height: 32),
+                            
+                            // Step Content
+                            if (_currentStep == 0) _buildPhoneStep(),
+                            if (_currentStep == 1) _buildCodeStep(),
+                            if (_currentStep == 2) _buildPasswordStep(),
+                            
+                            // Error
+                            if (_error != null) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _error!,
+                                        style: TextStyle(color: Colors.red.shade700),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            
+                            const SizedBox(height: 32),
+                            
+                            // Login Link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(AppIcons.exclamation, color: Colors.red.shade700, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
+                                Text(
+                                  'Zaten hesabın var mı? ',
+                                  style: TextStyle(color: Colors.grey.shade700),
+                                ),
+                                GestureDetector(
+                                  onTap: () => context.go('/login'),
                                   child: Text(
-                                    _error!,
-                                    style: TextStyle(color: Colors.red.shade700),
+                                    'Giriş Yap',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Login Link
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Zaten hesabın var mı? ',
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                            GestureDetector(
-                              onTap: () => context.go('/login'),
-                              child: Text(
-                                'Giriş Yap',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -388,11 +421,12 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
 
   Widget _buildStepIndicator() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildStepDot(0, 'Telefon'),
-        Expanded(child: Container(height: 2, color: _currentStep > 0 ? AppColors.primary : Colors.grey.shade300)),
+        Container(width: 40, height: 2, color: _currentStep > 0 ? const Color(0xFF6A4A3C) : const Color(0xFF6A4A3C).withOpacity(0.3)),
         _buildStepDot(1, 'Doğrula'),
-        Expanded(child: Container(height: 2, color: _currentStep > 1 ? AppColors.primary : Colors.grey.shade300)),
+        Container(width: 40, height: 2, color: _currentStep > 1 ? const Color(0xFF6A4A3C) : const Color(0xFF6A4A3C).withOpacity(0.3)),
         _buildStepDot(2, 'Şifre'),
       ],
     );
@@ -409,17 +443,21 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isActive ? AppColors.primary : Colors.grey.shade300,
-            border: isCurrent ? Border.all(color: AppColors.primary, width: 3) : null,
+            color: isActive ? const Color(0xFF6A4A3C) : Colors.white.withOpacity(0.8),
+            border: Border.all(
+              color: isActive ? const Color(0xFF6A4A3C) : const Color(0xFF6A4A3C).withOpacity(0.3), 
+              width: isCurrent ? 2.5 : 1.5
+            ),
           ),
           child: Center(
             child: isActive && !isCurrent
-                ? Icon(AppIcons.check, color: Colors.white, size: 18)
+                ? Icon(AppIcons.check, color: Colors.white, size: 16)
                 : Text(
                     '${step + 1}',
                     style: TextStyle(
-                      color: isActive ? Colors.white : Colors.grey.shade600,
+                      color: isActive ? Colors.white : const Color(0xFF4B3126),
                       fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
           ),
@@ -428,8 +466,8 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            color: isActive ? AppColors.primary : Colors.grey.shade500,
+            fontSize: 11,
+            color: isActive ? const Color(0xFF4B3126) : const Color(0xFF4B3126).withOpacity(0.6),
             fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -456,6 +494,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
+                color: Colors.white,
                 border: Border.all(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -491,10 +530,11 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  child: TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(color: Colors.black87),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     hintText: '5XX XXX XX XX',
                     border: OutlineInputBorder(
@@ -564,7 +604,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             controller: _codeController,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold, color: Colors.black87),
             maxLength: 6,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
@@ -650,6 +690,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           child: TextField(
             controller: _passwordController,
             obscureText: true,
+            style: const TextStyle(color: Colors.black87),
             decoration: InputDecoration(
               hintText: 'Şifre (en az 6 karakter)',
               prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600, size: 20),
@@ -675,6 +716,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           child: TextField(
             controller: _confirmPasswordController,
             obscureText: true,
+            style: const TextStyle(color: Colors.black87),
             decoration: InputDecoration(
               hintText: 'Şifre Tekrar',
               prefixIcon: Icon(AppIcons.lock, color: Colors.grey.shade600, size: 20),

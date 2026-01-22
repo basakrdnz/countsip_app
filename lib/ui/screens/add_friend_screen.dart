@@ -440,7 +440,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         title: const Text('Arkadaş Ekle'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.brandDark,
         actions: [
           IconButton(
             icon: Icon(AppIcons.ban, size: 22),

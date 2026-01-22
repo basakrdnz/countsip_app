@@ -45,6 +45,7 @@ class AppIcons {
   static final IconData moon = UIcons.regularStraight.moon;
   static final IconData world = UIcons.regularStraight.world;
   static final IconData refresh = UIcons.regularStraight.refresh;
+  static final IconData marker = UIcons.regularStraight.marker;
 
   // Onboarding Specific Icons (Requested Styles)
   static final IconData onboardingGlass = UIcons.regularRounded.glass_cheers;

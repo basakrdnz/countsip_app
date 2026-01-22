@@ -7,13 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
+// flutter_native_splash import removed - splash disabled
 // firebase_ui_auth removed - using custom phone auth screens
 
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
-import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
 import 'features/auth/screens/phone_login_screen.dart';
@@ -44,8 +43,7 @@ const int _authEmulatorPort =
     int.fromEnvironment('FIREBASE_AUTH_EMULATOR_PORT', defaultValue: 9099);
 
 Future<void> main() async {
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  WidgetsFlutterBinding.ensureInitialized();
   
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -122,7 +120,6 @@ GoRouter _createRouter() {
       final isLoggedIn = user != null;
       final isLoggingIn = state.matchedLocation == '/login';
       final isSigningUp = state.matchedLocation == '/signup';
-      final isWelcome = state.matchedLocation == '/welcome';
       final isForgotPw = state.matchedLocation == '/forgot-password';
       final isSplash = state.matchedLocation == '/splash';
       final isProfileSetup = state.matchedLocation == '/profile-setup';
@@ -131,7 +128,7 @@ GoRouter _createRouter() {
       if (isSplash) return null;
 
       if (!isLoggedIn) {
-        if (isLoggingIn || isSigningUp || isWelcome || isForgotPw || isOnboarding) {
+        if (isLoggingIn || isSigningUp || isForgotPw || isOnboarding) {
           return null;
         }
         return '/onboarding';
@@ -146,7 +143,7 @@ GoRouter _createRouter() {
         
         // SAFETY CHECK: On every navigation from auth screens OR to home,
         // verify user has name and username - catch any incomplete profiles
-        if (isLoggingIn || isSigningUp || isWelcome || state.matchedLocation == '/home' || state.matchedLocation == '/') {
+        if (isLoggingIn || isSigningUp || state.matchedLocation == '/home' || state.matchedLocation == '/') {
           try {
             final doc = await FirebaseFirestore.instance
                 .collection('users')
@@ -173,7 +170,7 @@ GoRouter _createRouter() {
           }
           
           // Profile complete - allow to home
-          if (isLoggingIn || isSigningUp || isWelcome) {
+          if (isLoggingIn || isSigningUp) {
             return '/home';
           }
         }
@@ -193,11 +190,7 @@ GoRouter _createRouter() {
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/welcome',
-        name: 'welcome',
-        builder: (context, state) => const WelcomeScreen(),
-      ),
+
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',

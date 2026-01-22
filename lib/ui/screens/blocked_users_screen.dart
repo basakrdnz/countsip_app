@@ -62,7 +62,7 @@ class BlockedUsersScreen extends StatelessWidget {
         title: const Text('Engellenen Kullanıcılar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.brandDark,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

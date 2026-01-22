@@ -43,12 +43,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     super.initState();
     _pageController = PageController();
     
+    // Listen for overscroll on last page to navigate to login
+    _pageController.addListener(_handleOverscroll);
+    
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
 
     _fadeController.forward();
+  }
+
+  void _handleOverscroll() {
+    if (_currentPage == _contents.length - 1) {
+      // Check if user is trying to swipe past the last page
+      if (_pageController.position.pixels > _pageController.position.maxScrollExtent + 50) {
+        HapticFeedback.mediumImpact();
+        context.go('/login');
+      }
+    }
   }
 
   void _nextPage() {
@@ -79,15 +92,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/bgwdark.png',
+              'assets/images/mainbgdark.png',
               fit: BoxFit.cover,
-            ),
-          ),
-
-          // Smoky warm overlay (KEY PART)
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF3A2E28).withOpacity(0.58),
             ),
           ),
 
@@ -113,14 +119,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     },
                     itemCount: _contents.length,
                     itemBuilder: (context, index) {
-                      return FadeTransition(
-                        opacity: _fadeController,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: OnboardingPageContent(
-                              content: _contents[index],
-                              isActive: index == _currentPage,
+                      return ScaleTransition(
+                        scale: Tween<double>(begin: 0.85, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: _fadeController,
+                            curve: Curves.easeOutBack,
+                          ),
+                        ),
+                        child: FadeTransition(
+                          opacity: _fadeController,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: OnboardingPageContent(
+                                content: _contents[index],
+                                isActive: index == _currentPage,
+                              ),
                             ),
                           ),
                         ),
@@ -178,22 +192,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   Widget _buildNextButton() {
-    return ElevatedButton(
-      key: const ValueKey('next'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF6A4A3C),
-        minimumSize: const Size.fromHeight(52),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6A4A3C).withOpacity(0.4),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      onPressed: _nextPage,
-      child: const Text(
-        'Hadi Başlayalım',
-        style: TextStyle(
-          color: Color(0xFFF3EDE9),
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
+      child: ElevatedButton(
+        key: const ValueKey('next'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF6A4A3C),
+          minimumSize: const Size.fromHeight(56),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        onPressed: _nextPage,
+        child: const Text(
+          'Hadi Başlayalım',
+          style: TextStyle(
+            fontFamily: 'CalSans',
+            color: Color(0xFFF3EDE9),
+            fontSize: 18,
+            fontWeight: FontWeight.normal,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -204,28 +234,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       key: const ValueKey('auth'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6A4A3C),
-            minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6A4A3C).withOpacity(0.4),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          onPressed: () {
-            HapticFeedback.mediumImpact();
-            context.go('/login');
-          },
-          child: const Text(
-            'Giriş Yap',
-            style: TextStyle(
-              color: Color(0xFFF3EDE9),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A4A3C),
+              minimumSize: const Size.fromHeight(56),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              context.go('/login');
+            },
+            child: const Text(
+              'Giriş Yap',
+              style: TextStyle(
+                fontFamily: 'CalSans',
+                color: Color(0xFFF3EDE9),
+                fontSize: 18,
+                fontWeight: FontWeight.normal,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         TextButton(
           onPressed: () {
             HapticFeedback.mediumImpact();
@@ -234,9 +280,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           child: const Text(
             'Hesap Oluştur',
             style: TextStyle(
+              fontFamily: 'CalSans',
               color: Color(0xFFB9ADA5),
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+              letterSpacing: 0.3,
             ),
           ),
         ),
@@ -257,7 +305,7 @@ class OnboardingContent {
   });
 }
 
-class OnboardingPageContent extends StatelessWidget {
+class OnboardingPageContent extends StatefulWidget {
   final OnboardingContent content;
   final bool isActive;
 
@@ -268,40 +316,115 @@ class OnboardingPageContent extends StatelessWidget {
   });
 
   @override
+  State<OnboardingPageContent> createState() => _OnboardingPageContentState();
+}
+
+class _OnboardingPageContentState extends State<OnboardingPageContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bounceController;
+  late Animation<double> _bounceAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _bounceAnimation = Tween<double>(begin: 0, end: 8).animate(
+      CurvedAnimation(
+        parent: _bounceController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _bounceController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Icon Section
-        Icon(
-          content.icon,
-          size: 64,
-          color: const Color(0xFFD2C5BC),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Title
-        Text(
-          content.title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFFD2C5BC),
+        // Icon with Bounce Animation and Subtle Glow
+        AnimatedBuilder(
+          animation: _bounceAnimation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, -_bounceAnimation.value),
+              child: child,
+            );
+          },
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFFD2C5BC).withOpacity(0.08),
+                  Colors.transparent,
+                ],
+                stops: const [0.4, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD2C5BC).withOpacity(0.15),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                widget.content.icon,
+                size: 110,
+                color: Colors.white.withOpacity(0.9),
+                shadows: [
+                  Shadow(
+                    color: const Color(0xFFD2C5BC).withOpacity(0.3),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
 
         const SizedBox(height: 12),
 
-        // Description
+        // Title - Plain Color
         Text(
-          content.description,
+          widget.content.title,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 15,
-            height: 1.5,
-            color: Color(0xFFB9ADA5),
+            fontFamily: 'CalSans',
+            fontSize: 34,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            height: 1.1,
+            letterSpacing: -0.5,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Description - Plain Color
+        Text(
+          widget.content.description,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            height: 1.6,
+            color: Colors.white.withOpacity(0.75),
+            letterSpacing: 0.2,
           ),
         ),
       ],

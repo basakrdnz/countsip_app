@@ -144,7 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Sign out
     await FirebaseAuth.instance.signOut();
     if (mounted) {
-      context.go('/welcome');
+      context.go('/onboarding');
     }
   }
 
@@ -233,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Ayarlar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.brandDark,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
