@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.11"
+  ansicolor:
+    dependency: transitive
+    description:
+      name: ansicolor
+      sha256: "50e982d500bc863e1d703448afdbf9e5a72eb48840a4f766fa361ffd6877055f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   antlr4:
     dependency: transitive
     description:
@@ -265,6 +273,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  confetti:
+    dependency: "direct main"
+    description:
+      name: confetti
+      sha256: "79376a99648efbc3f23582f5784ced0fe239922bd1a0fb41f582051eba750751"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
   connectivity_plus:
     dependency: "direct main"
     description:
@@ -640,6 +656,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_native_splash:
+    dependency: "direct dev"
+    description:
+      name: flutter_native_splash
+      sha256: "4fb9f4113350d3a80841ce05ebf1976a36de622af7d19aca0ca9a9911c7ff002"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.7"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -656,6 +680,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
+  flutter_staggered_animations:
+    dependency: "direct main"
+    description:
+      name: flutter_staggered_animations
+      sha256: "81d3c816c9bb0dca9e8a5d5454610e21ffb068aedb2bde49d2f8d04f75538351"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
+  flutter_staggered_grid_view:
+    dependency: "direct main"
+    description:
+      name: flutter_staggered_grid_view
+      sha256: "19e7abb550c96fbfeb546b23f3ff356ee7c59a019a651f8f102a4ba9b7349395"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -674,6 +714,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluttertoast:
+    dependency: "direct main"
+    description:
+      name: fluttertoast
+      sha256: "144ddd74d49c865eba47abe31cbc746c7b311c82d6c32e571fd73c4264b740e2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.0.0"
   freezed_annotation:
     dependency: transitive
     description:
@@ -815,6 +863,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  image:
+    dependency: transitive
+    description:
+      name: image
+      sha256: "492bd52f6c4fbb6ee41f781ff27765ce5f627910e1e0cbecfa3d9add5562604c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.7.2"
   image_picker:
     dependency: "direct main"
     description:
@@ -948,6 +1004,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  loading_animation_widget:
+    dependency: "direct main"
+    description:
+      name: loading_animation_widget
+      sha256: "9fe23381f3096e902f39e87e487648ff7f74925e86234353fa885bb9f6c98004"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   logger:
     dependency: transitive
     description:
@@ -1601,6 +1665,78 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  uicons:
+    dependency: "direct main"
+    description:
+      name: uicons
+      sha256: "07c9d221c76462b6f6f7e41bb36db3826a9da4ad166167f7a5f9d629b0136483"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
+  uicons_bold_rounded:
+    dependency: transitive
+    description:
+      name: uicons_bold_rounded
+      sha256: d0cb77efa94e6737a8e25a385c9164d5099e543373a415313eb457f9b7e5d94e
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  uicons_bold_straight:
+    dependency: transitive
+    description:
+      name: uicons_bold_straight
+      sha256: f2d6649748744b424a689082868374636d9bea4cea1db15da6ba288b5e9a0b8e
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  uicons_brands:
+    dependency: transitive
+    description:
+      name: uicons_brands
+      sha256: "4bffb4681e55cfb43c11a773c1976b9a3930723883ae67bafa9d92fba7ab7c5f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  uicons_regular_rounded:
+    dependency: transitive
+    description:
+      name: uicons_regular_rounded
+      sha256: "80bf870676524fb48698a2e2037e76de6e81d5d10999191362a89de946fad541"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  uicons_regular_straight:
+    dependency: transitive
+    description:
+      name: uicons_regular_straight
+      sha256: "967cbcbc75f2b5247b7c6018a8594a6e36745e37146531bc726ab5ffde4e9e4f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  uicons_solid_rounded:
+    dependency: transitive
+    description:
+      name: uicons_solid_rounded
+      sha256: "2a8ee5654941f9777bddf109acc691b60211bdef6d0249851968ce9aa220473f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  uicons_solid_straight:
+    dependency: transitive
+    description:
+      name: uicons_solid_straight
+      sha256: a751ac73eda538907e672951f80b7a9e3a117084afa50f5b6baae2edf285cb04
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  universal_io:
+    dependency: transitive
+    description:
+      name: universal_io
+      sha256: f63cbc48103236abf48e345e07a03ce5757ea86285ed313a6a032596ed9301e2
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
   url_launcher:
     dependency: "direct main"
     description:

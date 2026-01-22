@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Profile Setup Screen - Collect user info after signup
 /// Height, Weight, Age, Gender (for BAC calculation)
@@ -268,106 +270,108 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/onlybg.png'),
-            fit: BoxFit.cover,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/mainbg.png',
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Progress indicator
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  children: List.generate(
-                    5,
-                    (index) => Expanded(
-                      child: Container(
-                        height: 4,
-                        margin: EdgeInsets.only(
-                          left: index == 0 ? 0 : 4,
-                          right: index == 4 ? 0 : 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: index <= _currentPage
-                              ? AppColors.primary
-                              : Colors.grey.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
+          SafeArea(
+            child: Column(
+              children: [
+                // Progress indicator
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Row(
+                    children: List.generate(
+                      5,
+                      (index) => Expanded(
+                        child: Container(
+                          height: 4,
+                          margin: EdgeInsets.only(
+                            left: index == 0 ? 0 : 4,
+                            right: index == 4 ? 0 : 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: index <= _currentPage
+                                ? AppColors.primary
+                                : Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              // Pages
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (page) => setState(() => _currentPage = page),
-                  children: [
-                    _buildNamePage(),
-                    _buildWeightPage(),
-                    _buildHeightPage(),
-                    _buildAgePage(),
-                    _buildGenderPage(),
-                  ],
+                // Pages
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (page) => setState(() => _currentPage = page),
+                    children: [
+                      _buildNamePage(),
+                      _buildWeightPage(),
+                      _buildHeightPage(),
+                      _buildAgePage(),
+                      _buildGenderPage(),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Navigation buttons
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        if (_currentPage > 0)
+                // Navigation buttons
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          if (_currentPage > 0)
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _previousPage,
+                                child: const Text('Geri'),
+                              ),
+                            ),
+                          if (_currentPage > 0) const SizedBox(width: AppSpacing.md),
                           Expanded(
-                            child: OutlinedButton(
-                              onPressed: _previousPage,
-                              child: const Text('Geri'),
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : (_currentPage == 4 ? _saveAndFinish : _nextPage),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                                      ),
+                                    )
+                                  : Text(_currentPage == 4 ? 'Tamamla' : 'İleri'),
                             ),
                           ),
-                        if (_currentPage > 0) const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _isLoading
-                                ? null
-                                : (_currentPage == 4 ? _saveAndFinish : _nextPage),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                                    ),
-                                  )
-                                : Text(_currentPage == 4 ? 'Tamamla' : 'İleri'),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // Only show skip button if name is filled
+                      if (_nameController.text.trim().isNotEmpty)
+                        TextButton(
+                          onPressed: _isLoading ? null : _skipAndFinish,
+                          child: Text(
+                            'Şimdilik atla',
+                            style: TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    // Only show skip button if name is filled
-                    if (_nameController.text.trim().isNotEmpty)
-                      TextButton(
-                        onPressed: _isLoading ? null : _skipAndFinish,
-                        child: Text(
-                          'Şimdilik atla',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -376,76 +380,83 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          decoration: BoxDecoration(
-            color: Colors.white,
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Adınız nedir?',
+                      style: AppTextStyles.largeTitle.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Size nasıl hitap edelim?',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    TextField(
+                      controller: _nameController,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Adınızı girin',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: AppColors.primary, width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      '* Bu alan zorunludur',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Adınız nedir?',
-                style: AppTextStyles.largeTitle.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Size nasıl hitap edelim?',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              TextField(
-                controller: _nameController,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Adınızı girin',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontWeight: FontWeight.normal,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                ),
-                textCapitalization: TextCapitalization.words,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                '* Bu alan zorunludur',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.error,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -490,127 +501,134 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          decoration: BoxDecoration(
-            color: Colors.white,
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Cinsiyetiniz?',
-                style: AppTextStyles.largeTitle.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Hesaplamalarınızı doğru yapabilmemiz için',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              
-              // Gender Selection
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _gender = 'male'),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: _gender == 'male'
-                              ? AppColors.primary.withOpacity(0.15)
-                              : Colors.grey.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(
-                            color: _gender == 'male'
-                                ? AppColors.primary
-                                : Colors.grey.withOpacity(0.3),
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.male,
-                              size: 48,
-                              color: _gender == 'male'
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Erkek',
-                              style: AppTextStyles.title3.copyWith(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Cinsiyetiniz?',
+                      style: AppTextStyles.largeTitle.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Hesaplamalarınızı doğru yapabilmemiz için',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    // Gender Selection
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _gender = 'male'),
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              decoration: BoxDecoration(
                                 color: _gender == 'male'
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
+                                    ? AppColors.primary.withOpacity(0.15)
+                                    : Colors.grey.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                border: Border.all(
+                                  color: _gender == 'male'
+                                      ? AppColors.primary
+                                      : Colors.grey.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    AppIcons.mars,
+                                    size: 48,
+                                    color: _gender == 'male'
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    'Erkek',
+                                    style: AppTextStyles.title3.copyWith(
+                                      color: _gender == 'male'
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _gender = 'female'),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: _gender == 'female'
-                              ? AppColors.primary.withOpacity(0.15)
-                              : Colors.grey.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(
-                            color: _gender == 'female'
-                                ? AppColors.primary
-                                : Colors.grey.withOpacity(0.3),
-                            width: 2,
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.female,
-                              size: 48,
-                              color: _gender == 'female'
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Kadın',
-                              style: AppTextStyles.title3.copyWith(
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _gender = 'female'),
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              decoration: BoxDecoration(
                                 color: _gender == 'female'
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
+                                    ? AppColors.primary.withOpacity(0.15)
+                                    : Colors.grey.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                border: Border.all(
+                                  color: _gender == 'female'
+                                      ? AppColors.primary
+                                      : Colors.grey.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    AppIcons.venus,
+                                    size: 48,
+                                    color: _gender == 'female'
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    'Kadın',
+                                    style: AppTextStyles.title3.copyWith(
+                                      color: _gender == 'female'
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
       ),
     );
   }
@@ -629,122 +647,129 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.largeTitle.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                subtitle,
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              
-              // Value Display with +/- buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Minus button
-                  IconButton(
-                    onPressed: currentValue > min
-                        ? () => onChanged(currentValue - 1)
-                        : null,
-                    icon: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: currentValue > min
-                            ? AppColors.primary.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.remove,
-                        color: currentValue > min
-                            ? AppColors.primary
-                            : Colors.grey,
-                      ),
-                    ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  // Value
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Text(
-                    value != null ? '$value $unit' : '-- $unit',
+                    title,
                     style: AppTextStyles.largeTitle.copyWith(
-                      fontSize: 48,
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  // Plus button
-                  IconButton(
-                    onPressed: currentValue < max
-                        ? () => onChanged(currentValue + 1)
-                        : null,
-                    icon: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: currentValue < max
-                            ? AppColors.primary.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.add,
-                        color: currentValue < max
-                            ? AppColors.primary
-                            : Colors.grey,
-                      ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  
+                  // Value Display with +/- buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Minus button
+                      IconButton(
+                        onPressed: currentValue > min
+                            ? () => onChanged(currentValue - 1)
+                            : null,
+                        icon: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: currentValue > min
+                                ? AppColors.primary.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            AppIcons.minus,
+                            color: currentValue > min
+                                ? AppColors.primary
+                                : Colors.grey,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      // Value
+                      Text(
+                        value != null ? '$value $unit' : '-- $unit',
+                        style: AppTextStyles.largeTitle.copyWith(
+                          fontSize: 48,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      // Plus button
+                      IconButton(
+                        onPressed: currentValue < max
+                            ? () => onChanged(currentValue + 1)
+                            : null,
+                        icon: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: currentValue < max
+                                ? AppColors.primary.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            AppIcons.plus,
+                            color: currentValue < max
+                                ? AppColors.primary
+                                : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // Slider
+                  Slider(
+                    value: currentValue.toDouble(),
+                    min: min.toDouble(),
+                    max: max.toDouble(),
+                    divisions: max - min,
+                    activeColor: AppColors.primary,
+                    inactiveColor: Colors.grey.withOpacity(0.3),
+                    onChanged: (val) => onChanged(val.round()),
+                  ),
+                  
+                  // Min/Max labels
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('$min', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                      Text('$max', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              
-              // Slider
-              Slider(
-                value: currentValue.toDouble(),
-                min: min.toDouble(),
-                max: max.toDouble(),
-                divisions: max - min,
-                activeColor: AppColors.primary,
-                inactiveColor: Colors.grey.withOpacity(0.3),
-                onChanged: (val) => onChanged(val.round()),
-              ),
-              
-              // Min/Max labels
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('$min', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
-                  Text('$max', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -35,11 +36,11 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         title: const Text('Arkadaşlar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.brandDark,
         actions: [
           IconButton(
             onPressed: () => context.push('/add-friend'),
-            icon: const Icon(Icons.person_add),
+            icon: Icon(AppIcons.addUser, size: 22),
           ),
         ],
         bottom: TabBar(
@@ -175,7 +176,7 @@ class _FriendsListTab extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.people_outline, size: 80, color: Colors.grey.shade300),
+                Icon(AppIcons.users, size: 80, color: Colors.grey.shade300),
                 const SizedBox(height: 16),
                 Text(
                   'Henüz arkadaşın yok',
@@ -199,12 +200,12 @@ class _FriendsListTab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.person_add, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Text(
+                        Icon(AppIcons.addUser, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
                           'Arkadaş Ekle',
                           style: TextStyle(
                             color: Colors.white,
@@ -264,7 +265,7 @@ class _FriendsListTab extends StatelessWidget {
                             ? NetworkImage(friendData['photoUrl'])
                             : null,
                         child: friendData['photoUrl'] == null
-                            ? Icon(Icons.person, color: AppColors.primary)
+                            ? Icon(AppIcons.user, color: AppColors.primary)
                             : null,
                       ),
                       const SizedBox(width: 12),
@@ -290,7 +291,7 @@ class _FriendsListTab extends StatelessWidget {
                         ),
                       ),
                       PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                        icon: Icon(AppIcons.menuDotsVertical, color: Colors.grey.shade400, size: 18),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         onSelected: (value) {
                           if (value == 'block') {
@@ -300,23 +301,23 @@ class _FriendsListTab extends StatelessWidget {
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'remove',
                             child: Row(
                               children: [
-                                Icon(Icons.person_remove, color: Colors.orange, size: 20),
-                                SizedBox(width: 12),
-                                Text('Arkadaşlıktan Çıkar'),
+                                Icon(AppIcons.userRemoveIcon, color: Colors.orange, size: 20),
+                                const SizedBox(width: 12),
+                                const Text('Arkadaşlıktan Çıkar'),
                               ],
                             ),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'block',
                             child: Row(
                               children: [
-                                Icon(Icons.block, color: Colors.red, size: 20),
-                                SizedBox(width: 12),
-                                Text('Engelle'),
+                                Icon(AppIcons.ban, color: Colors.red, size: 20),
+                                const SizedBox(width: 12),
+                                const Text('Engelle'),
                               ],
                             ),
                           ),
@@ -341,7 +342,7 @@ class _FriendsListTab extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.block, color: Colors.red),
+            Icon(AppIcons.ban, color: Colors.red),
             const SizedBox(width: 8),
             const Text('Kullanıcıyı Engelle'),
           ],
@@ -504,7 +505,7 @@ class _RequestsTab extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.mail_outline, size: 80, color: Colors.grey.shade300),
+                Icon(AppIcons.envelope, size: 80, color: Colors.grey.shade300),
                 const SizedBox(height: 16),
                 Text(
                   'Bekleyen istek yok',
@@ -559,7 +560,7 @@ class _RequestsTab extends StatelessWidget {
                                 ? NetworkImage(senderData['photoUrl'])
                                 : null,
                             child: senderData['photoUrl'] == null
-                                ? Icon(Icons.person, color: AppColors.primary)
+                                ? Icon(AppIcons.user, color: AppColors.primary)
                                 : null,
                           ),
                           const SizedBox(width: 12),

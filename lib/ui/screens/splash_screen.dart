@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../core/theme/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,7 +21,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _startNavigation() async {
-    await Future.delayed(const Duration(milliseconds: 2500));
+    // Keep a reasonable delay to show the animation
+    await Future.delayed(const Duration(milliseconds: 2000));
     
     if (!mounted || _navigating) return;
     _navigating = true;
@@ -29,50 +31,29 @@ class _SplashScreenState extends State<SplashScreen> {
     if (user != null) {
       context.go('/home');
     } else {
-      context.go('/welcome');
+      context.go('/onboarding');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bgwglass.png'),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image
+          Image.asset(
+            'assets/images/mainbg.png',
             fit: BoxFit.cover,
           ),
-        ),
-        child: Container(
-          color: Colors.white.withOpacity(0.75),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Loading indicator
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 4,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  'CountSip',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Rosaline',
-                    color: AppColors.primary,
-                    letterSpacing: -1.5,
-                  ),
-                ),
-              ],
+          
+          Center(
+            child: LoadingAnimationWidget.hexagonDots(
+              color: AppColors.primaryLight, 
+              size: 50,
             ),
           ),
-        ),
+        ],
       ),
     );
   }

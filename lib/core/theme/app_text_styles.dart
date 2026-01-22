@@ -1,82 +1,91 @@
 import 'package:flutter/material.dart';
-
 import 'app_colors.dart';
 
 class AppTextStyles {
-  // CountSip logo - Rosaline font
-  static const logoStyle = TextStyle(
-    fontSize: 34,
-    fontWeight: FontWeight.w900,
-    fontFamily: 'Rosaline',
-    color: AppColors.primary,
-    letterSpacing: -1,
+  // Display - Hero text
+  static const display = TextStyle(
+    fontSize: 40,
+    fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary,
+    letterSpacing: -1.2,
+    height: 1.0,
   );
 
-  // Headings - Cal Sans
+  // Large Title - Screen headers
   static const largeTitle = TextStyle(
-    fontSize: 34,
-    fontWeight: FontWeight.w600,
-    fontFamily: 'CalSans',
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
-    letterSpacing: 0.4,
+    letterSpacing: -0.8,
   );
 
+  // Title 1 - Section headers
   static const title1 = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.w600,
-    fontFamily: 'CalSans',
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
+    letterSpacing: -0.5,
   );
 
+  // Title 2 - Card titles
   static const title2 = TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    fontFamily: 'CalSans',
-    color: AppColors.textPrimary,
-  );
-
-  static const title3 = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    fontFamily: 'CalSans',
     color: AppColors.textPrimary,
+    letterSpacing: -0.3,
   );
 
-  // Body text - default system font
+  // Title 3 - Subsection
+  static const title3 = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    letterSpacing: -0.2,
+  );
+
+  // Body - Regular text
   static const body = TextStyle(
-    fontSize: 17,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
-    height: 1.4,
-  );
-
-  static const callout = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
+    height: 1.5,
   );
 
-  static const subheadline = TextStyle(
+  // Body Emphasis
+  static const bodyEmphasis = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    height: 1.5,
+  );
+
+  // Callout
+  static const callout = TextStyle(
     fontSize: 15,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
   );
 
+  // Subheadline
+  static const subheadline = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+    height: 1.4,
+  );
+
+  // Footnote
   static const footnote = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
+    color: AppColors.textTertiary,
   );
 
-  static const caption1 = TextStyle(
+  // Caption
+  static const caption = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,
-  );
-
-  static const caption2 = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textTertiary,
+    letterSpacing: 0.3,
   );
 }
