@@ -282,11 +282,19 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   }
 
   Widget _buildLoginForm() {
+    OutlineInputBorder roundedBorder(Color color) {
+      return OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: color, width: 1),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildInputLabel('Telefon Numarası'),
         const SizedBox(height: 12),
+
         Row(
           children: [
             // Country Picker
@@ -296,7 +304,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black.withOpacity(0.08)),
+                border: Border.all(color: Colors.black.withOpacity(0.08), width: 1),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -315,34 +323,57 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
             const SizedBox(width: 12),
             // Phone Field
             Expanded(
-              child: _buildTextField(
+              child: TextField(
                 controller: _phoneController,
-                hintText: '5XX XXX XX XX',
-                icon: AppIcons.phoneCall,
                 keyboardType: TextInputType.phone,
-                formatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
+                decoration: InputDecoration(
+                  hintText: '5XX XXX XX XX',
+                  hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
+                  prefixIcon: Icon(AppIcons.phoneCall, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: roundedBorder(Colors.transparent),
+                  enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
+                  focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                ),
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 16),
+
         _buildInputLabel('Şifre'),
         const SizedBox(height: 12),
-        _buildTextField(
+
+        TextField(
           controller: _passwordController,
-          hintText: 'Şifren',
-          icon: AppIcons.lock,
           obscureText: _obscurePassword,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? AppIcons.eyeIcon : AppIcons.eyeCrossed,
-              color: const Color(0xFF6A4A3C).withOpacity(0.5),
-              size: 20,
+          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: 'Şifren',
+            hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
+            prefixIcon: Icon(AppIcons.lock, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? AppIcons.eyeIcon : AppIcons.eyeCrossed,
+                size: 20,
+                color: const Color(0xFF6A4A3C).withOpacity(0.5),
+              ),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            filled: true,
+            fillColor: Colors.white,
+            border: roundedBorder(Colors.transparent),
+            enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
+            focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           ),
         ),
-        
+
         // Forgot Password
         Align(
           alignment: Alignment.centerRight,
@@ -350,12 +381,17 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
             onPressed: () => context.go('/forgot-password'),
             child: const Text(
               'Şifremi Unuttum',
-              style: TextStyle(color: Color(0xFF6A4A3C), fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: Color(0xFF6A4A3C),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
-        
+
         const SizedBox(height: 24),
+
         _buildPrimaryButton('Giriş Yap', _login),
       ],
     );

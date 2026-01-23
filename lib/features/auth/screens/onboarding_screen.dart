@@ -10,8 +10,10 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerProviderStateMixin {
   late PageController _pageController;
+  late AnimationController _bounceController;
+  late Animation<double> _bounceAnimation;
   int _currentPage = 0;
   final int _totalPages = 3;
 
@@ -19,11 +21,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    
+    // Bounce animation
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    
+    _bounceAnimation = Tween<double>(begin: 0, end: 6).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
@@ -50,6 +63,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Image.asset(
               'assets/images/mainbg.png',
               fit: BoxFit.cover,
+            ),
+          ),
+          
+          // White overlay with blur
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                color: Colors.white.withOpacity(0.3),
+              ),
             ),
           ),
 
@@ -112,14 +135,72 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildSlide(int slideNumber) {
-    return Center(
-      child: Text(
-        'Slide $slideNumber',
-        style: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF6A4A3C),
-        ),
+    // 3D ikonlar ve içerikler
+    final slideData = [
+      {
+        'icon': 'assets/images/3d/glass3d.png',
+        'title': 'İçeceklerini Kaydet',
+        'description': 'Tek dokunuşla ne içtiğini, nerede olduğunu kaydet. Basit, hızlı ve eğlenceli!',
+      },
+      {
+        'icon': 'assets/images/3d/people3d.png',
+        'title': 'Arkadaşlarınla Yarış',
+        'description': 'Haftalık liderlik tablosunda arkadaşlarınla rekabet et. Kim kazanacak? 🏆',
+      },
+      {
+        'icon': 'assets/images/3d/lock3d.png',
+        'title': 'Sadece Arkadaşlarına Görünür',
+        'description': 'Veriler gizli kalır, sadece arkadaş listendekilere açık. Güvenle eğlen!',
+      },
+    ];
+
+    final data = slideData[slideNumber - 1];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 3D Icon with bounce animation
+          AnimatedBuilder(
+            animation: _bounceAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, -_bounceAnimation.value),
+                child: child,
+              );
+            },
+            child: Image.asset(
+              data['icon']!,
+              width: 210,
+              height: 210,
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Title
+          Text(
+            data['title']!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'CalSans',
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF6A4A3C),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Description
+          Text(
+            data['description']!,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: const Color(0xFF6A4A3C).withOpacity(0.7),
+              height: 1.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -133,7 +214,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: double.infinity,
           height: 56,
           decoration: BoxDecoration(
-            color: const Color(0xFF6A4A3C).withOpacity(0.85),
+            color: const Color(0xFF6A4A3C).withOpacity(0.75),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Colors.white.withOpacity(0.2),

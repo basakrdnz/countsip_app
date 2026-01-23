@@ -392,7 +392,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black.withOpacity(0.08)),
+                border: Border.all(color: Colors.black.withOpacity(0.08), width: 1),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -497,27 +497,31 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
     TextStyle? style,
     int? maxLength,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    OutlineInputBorder roundedBorder(Color color) {
+      return OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.08)),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        inputFormatters: formatters,
-        textAlign: textAlign,
-        maxLength: maxLength,
-        style: style ?? const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
-        decoration: InputDecoration(
-          hintText: hintText,
-          prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
-          counterText: '',
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        ),
+        borderSide: BorderSide(color: color, width: 1),
+      );
+    }
+    
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      inputFormatters: formatters,
+      textAlign: textAlign,
+      maxLength: maxLength,
+      style: style ?? const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
+        counterText: '',
+        filled: true,
+        fillColor: Colors.white,
+        border: roundedBorder(Colors.transparent),
+        enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
+        focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
     );
   }

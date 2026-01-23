@@ -81,3 +81,35 @@
 - `.env` gerçek değerlerini yerelinde doldur; prod key'leri repoya koyma
 - Production için gerçek AdMob App ID'yi Firebase Console'dan al ve AndroidManifest.xml'e ekle
 - Emulator testi için `firebase emulators:start --only firestore,auth` ile lokal test et
+
+> Tarih: 2026-01-23
+
+## Ne yaptık? (bugün - Auth & Onboarding UI)
+
+### Auth Ekranları (Kilitlendi ✅)
+- **Input alanları standardize edildi**: Tüm auth ekranlarında (login, signup, forgot password) `OutlineInputBorder` kullanılarak tutarlı rounded corners (16px) ve border width (1px) sağlandı
+- **Stil tutarlılığı**: `hintStyle`, `contentPadding`, icon renkleri tüm ekranlarda eşitlendi
+- **Country picker**: Dropdown'lar aynı stilde güncellendi
+
+### Onboarding Slides (Tamamlandı ✅)
+- **3D İkonlar eklendi**: 
+  - Slide 1: `glass3d.png` - İçeceklerini Kaydet
+  - Slide 2: `people3d.png` - Arkadaşlarınla Yarış
+  - Slide 3: `lock3d.png` - Sadece Arkadaşlarına Görünür
+- **İçerikler PRD'ye uygun yazıldı**: Sosyal içecek takibi, arkadaşlarla yarışma, gizlilik vurgusu ("alkol/promil" kelimeleri kullanılmadı)
+- **Backdrop blur eklendi**: `sigmaX: 12, sigmaY: 12` ile glassmorphism efekti
+- **White overlay**: %30 opacity ile arka plan beyazlaştırıldı
+- **Bounce animasyonu**: İkonlara yumuşak yukarı-aşağı hareket (6px, 1.5s döngü)
+- **Buton saydamlığı**: %75 opacity ile hafif şeffaflık
+- **Boşluklar optimize edildi**: İkon-yazı arası 14px
+
+## Neden yaptık?
+- Auth ekranlarında görsel tutarsızlık vardı (farklı border kalınlıkları, rounded corners)
+- Onboarding slide'ları placeholder içerik taşıyordu, ürün mesajını yansıtmıyordu
+- UX iyileştirmesi: Bounce animasyonu ve glassmorphism ile premium görünüm
+
+## Sıradaki önerilen adımlar
+- Home feed ekranını doldur
+- Add drink modal formunu tamamla
+- Leaderboard sorgularını yaz
+- Profile istatistiklerini göster
