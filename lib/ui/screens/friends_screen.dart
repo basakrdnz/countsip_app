@@ -31,7 +31,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.innerBackground,
       appBar: AppBar(
         title: const Text('Arkadaşlar'),
         backgroundColor: Colors.transparent,

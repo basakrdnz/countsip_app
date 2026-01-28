@@ -415,12 +415,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         opacity: _entranceController,
         child: Stack(
           children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/mainbgempty.png',
-                fit: BoxFit.cover,
-              ),
-            ),
+            Container(color: AppColors.innerBackground),
             CustomScrollView(
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
@@ -651,9 +646,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         child: Container(
           height: 100, // Explicit height for horizontal layout
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.4), // Even more transparent/saydam
+            color: Colors.white.withOpacity(0.95),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+            border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Material(
             color: Colors.transparent,
@@ -736,12 +738,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withOpacity(0.95),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+              border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: AppColors.primary.withOpacity(0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),

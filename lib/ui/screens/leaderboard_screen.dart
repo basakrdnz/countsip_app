@@ -17,7 +17,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.innerBackground,
       appBar: AppBar(
         title: const Text(
           'Liderlik Tablosu',
@@ -30,15 +30,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/mainbgempty.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Column(
+      body: Column(
             children: [
               // Toggle Buttons
               Padding(
@@ -86,8 +78,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ),
             ],
           ),
-        ],
-      ),
     );
   }
 
@@ -175,14 +165,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isCurrentUser
-            ? AppColors.primary.withOpacity(0.2)
-            : Colors.white.withOpacity(0.7),
+            ? AppColors.primary.withOpacity(0.15)
+            : Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCurrentUser
-              ? AppColors.primary.withOpacity(0.4)
-              : Colors.white.withOpacity(0.2),
+              ? AppColors.primary.withOpacity(0.25)
+              : AppColors.primary.withOpacity(0.12),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [

@@ -497,16 +497,8 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             return Scaffold(
-              backgroundColor: Colors.transparent,
-              body: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/mainbgempty.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  SafeArea(
+              backgroundColor: AppColors.innerBackground,
+              body: SafeArea(
                     child: RefreshIndicator(
                       onRefresh: () async => setState(() {}),
                       child: SingleChildScrollView(
@@ -593,9 +585,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.7),
+                                        color: Colors.white.withOpacity(0.95),
                                         borderRadius: BorderRadius.circular(24),
-                                        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+                                        border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.primary.withOpacity(0.1),
+                                            blurRadius: 24,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
                                       ),
                                       child: Row(
                                         children: [
@@ -638,9 +637,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Container(
                                   margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.white.withOpacity(0.95),
                                     borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+                                    border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
                                   ),
                                   child: Column(
                                     children: [
@@ -788,8 +794,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                  ),
-                ],
               ),
             );
           },
@@ -809,14 +813,14 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withOpacity(0.95),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+              border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: AppColors.primary.withOpacity(0.1),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -898,9 +902,16 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withOpacity(0.95),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+            border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

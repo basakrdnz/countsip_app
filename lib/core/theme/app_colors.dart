@@ -39,4 +39,7 @@ class AppColors {
   // Shadows
   static const shadow = Color(0x40000000);
   static const shadowLight = Color(0x1A000000);
+
+  // İç sayfalar için sade arka plan
+  static const innerBackground = Color(0xFFFAF8F5);  // Kırık beyaz / Warm white
 }

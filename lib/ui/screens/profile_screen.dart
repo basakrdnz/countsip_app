@@ -108,16 +108,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final photoUrl = userData?['photoUrl'] as String?;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/mainbgempty.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          SafeArea(
+      backgroundColor: AppColors.innerBackground,
+      body: SafeArea(
             child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -334,9 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
+      ),
     );
         },
       );
