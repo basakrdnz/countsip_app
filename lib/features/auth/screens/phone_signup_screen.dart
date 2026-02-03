@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -323,10 +324,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                                         Text(
                                           'Hesap Oluştur',
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontFamily: 'CalSans',
-                                            color: const Color(0xFF4B3126),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: AppColors.textPrimary,
                                             fontSize: 28,
+                                            fontWeight: FontWeight.bold,
                                             letterSpacing: -0.5,
                                           ),
                                         ),
@@ -394,7 +395,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                                               child: const Text(
                                                 'Giriş Yap',
                                                 style: TextStyle(
-                                                  color: Color(0xFF6A4A3C),
+                                                  color: AppColors.primary,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -433,7 +434,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
-        child: Icon(icon, color: const Color(0xFF6A4A3C), size: 22),
+        child: Icon(icon, color: AppColors.primary, size: 22),
       ),
     );
   }
@@ -449,8 +450,8 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
               color: isActive 
-                ? const Color(0xFF6A4A3C) 
-                : const Color(0xFF6A4A3C).withOpacity(0.15),
+                ? AppColors.primary 
+                : AppColors.primary.withOpacity(0.15),
             ),
           ),
         );
@@ -478,7 +479,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           children: [
             // Styled Country Picker
             Container(
-              height: 56,
+              height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -545,7 +546,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
               ? Text('Tekrar gönder: $_resendCountdown sn', style: TextStyle(color: Colors.black.withOpacity(0.3), fontSize: 13))
               : TextButton(
                   onPressed: _resendCode,
-                  child: const Text('Kodu Tekrar Gönder', style: TextStyle(color: Color(0xFF6A4A3C), fontWeight: FontWeight.w600)),
+                  child: const Text('Kodu Tekrar Gönder', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                 ),
         ),
         const SizedBox(height: 32),
@@ -589,7 +590,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   Widget _buildInputLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF4B3126)),
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
     );
   }
 
@@ -622,14 +623,14 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
-        prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
+        prefixIcon: icon != null ? Icon(icon, color: AppColors.primary.withOpacity(0.6), size: 20) : null,
         counterText: '',
         filled: true,
         fillColor: Colors.white,
         border: roundedBorder(Colors.transparent),
         enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
-        focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        focusedBorder: roundedBorder(AppColors.primary),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       ),
     );
   }
@@ -640,15 +641,15 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF6A4A3C),
-            const Color(0xFF4B3126),
+            AppColors.primary,
+            AppColors.textPrimary,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6A4A3C).withOpacity(0.3),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

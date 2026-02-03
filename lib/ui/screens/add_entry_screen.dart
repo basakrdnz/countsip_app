@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:shimmer/shimmer.dart';
@@ -15,6 +16,7 @@ import 'dart:math' show pi;
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 import 'package:uicons/uicons.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -397,13 +399,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 22,
-            color: Color(0xFF4B3126),
+            color: AppColors.textPrimary,
           ),
         ),
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.brandDark,
+        foregroundColor: AppColors.textPrimary,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -415,7 +417,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         opacity: _entranceController,
         child: Stack(
           children: [
-            Container(color: AppColors.innerBackground),
+            Container(color: AppColors.background),
             CustomScrollView(
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
@@ -431,14 +433,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         duration: const Duration(milliseconds: 600),
                         switchInCurve: Curves.easeInOutQuart,
                         switchOutCurve: Curves.easeInOutQuart,
+                        layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                          return Stack(
+                            alignment: Alignment.topCenter,
+                            children: <Widget>[
+                              ...previousChildren,
+                              if (currentChild != null) currentChild,
+                            ],
+                          );
+                        },
                         child: (_selectedEntries.isEmpty && _focusedCategoryId == null)
-                            ? Column(
-                                  children: [
-                                   _buildSearchBar(),
-                                   const SizedBox(height: 8),
-                                   KeyedSubtree(key: const ValueKey('grid'), child: _buildCategoryGrid()),
-                                 ],
-                              )
+                            ? _buildSearchBarWithGrid()
                             : KeyedSubtree(key: const ValueKey('focused'), child: _buildFocusedDrinkView()),
                       ),
                       if (_focusedCategoryId != null) ...[
@@ -456,12 +461,26 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 ),
               ],
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildBottomPanel(),
-            ),
+            if (_selectedEntries.isEmpty && _focusedCategoryId == null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                   height: 100,
+                   decoration: BoxDecoration(
+                     gradient: LinearGradient(
+                       begin: Alignment.topCenter,
+                       end: Alignment.bottomCenter,
+                       colors: [
+                         AppColors.background.withOpacity(0),
+                         AppColors.background.withOpacity(0.8),
+                         AppColors.background,
+                       ],
+                     ),
+                   ),
+                ),
+              ),
           ],
         ),
       ),
@@ -469,42 +488,44 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Widget _buildTimeSelector() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _showModernDateTimePicker,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _showModernDateTimePicker,
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(UIcons.regularStraight.clock, size: 18, color: Color(0xFF4B3126).withOpacity(0.7)),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat('HH:mm').format(_selectedTime),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF4B3126)),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(width: 1, height: 12, color: Colors.grey.withOpacity(0.2)),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat('d MMM', 'tr').format(_selectedTime),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF4B3126)),
-                    ),
-                  ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(UIcons.regularStraight.clock, size: 18, color: AppColors.textSecondary.withOpacity(0.7)),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('HH:mm').format(_selectedTime),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800, 
+                    fontSize: 13, 
+                    color: AppColors.textPrimary
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Container(width: 1, height: 12, color: AppColors.textPrimary.withOpacity(0.1)),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('d MMM', 'tr').format(_selectedTime),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800, 
+                    fontSize: 13, 
+                    color: AppColors.textPrimary
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -516,82 +537,120 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     HapticFeedback.selectionClick();
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+        decoration: BoxDecoration(
+          color: AppColors.background.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border(top: BorderSide(color: AppColors.primary.withOpacity(0.1), width: 1.5)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5)),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
             Container(
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 32),
-            const Text(
-              'Tarih ve Saat Seç',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 220,
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.dateAndTime,
-                initialDateTime: _selectedTime,
-                use24hFormat: true,
-                onDateTimeChanged: (DateTime newDateTime) {
-                  setState(() => _selectedTime = newDateTime);
-                },
+            const SizedBox(height: 24),
+            Text(
+              'Tarih ve Saat',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.5,
               ),
             ),
+            const SizedBox(height: 20),
+            
+            // Picker
+            SizedBox(
+              height: 200,
+              child: CupertinoTheme(
+                data: CupertinoThemeData(
+                  textTheme: CupertinoTextThemeData(
+                    dateTimePickerTextStyle: GoogleFonts.plusJakartaSans(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600, // Reduced bold
+                    ),
+                  ),
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.dateAndTime,
+                  initialDateTime: _selectedTime,
+                  use24hFormat: true,
+                  onDateTimeChanged: (DateTime newDateTime) {
+                    setState(() => _selectedTime = newDateTime);
+                  },
+                ),
+              ),
+            ),
+            
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
               child: Row(
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () {
-                        setState(() => _selectedTime = DateTime.now());
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey.shade500,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        foregroundColor: AppColors.textSecondary.withOpacity(0.5),
+                        padding: const EdgeInsets.symmetric(vertical: 16), // Reduced height
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
-                      child: const Text('ŞİMDİ YAP', style: TextStyle(fontWeight: FontWeight.w800)),
+                      child: Text(
+                        'VAZGEÇ', 
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800, 
+                          fontSize: 12, 
+                          letterSpacing: 1.2
+                        )
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    flex: 2,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.pop(context);
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _accentColor,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        padding: const EdgeInsets.symmetric(vertical: 16), // Reduced height
                       ),
-                      child: const Text('TAMAM', style: TextStyle(fontWeight: FontWeight.w900)),
+                      child: Text(
+                        'DÜZENLE', 
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800, 
+                          fontSize: 12, 
+                          letterSpacing: 1.2
+                        )
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
+
 
   Widget _buildCategoryGrid() {
     final filteredCategories = _categories.where((c) {
@@ -615,21 +674,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 ),
               ),
             )
-          : GridView.count(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+          : Column(
               children: List.generate(filteredCategories.length, (index) {
-                return AnimationConfiguration.staggeredGrid(
-                  position: index,
-                  duration: const Duration(milliseconds: 600),
-                  columnCount: 2,
-                  child: ScaleAnimation(
-                    scale: 0.9,
-                    child: FadeInAnimation(
-                      child: _buildCategoryCard(filteredCategories[index]),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: AnimationConfiguration.staggeredList(
+                    position: index,
+                    duration: const Duration(milliseconds: 600),
+                    child: SlideAnimation(
+                      horizontalOffset: index.isEven ? -50.0 : 50.0,
+                      child: FadeInAnimation(
+                        child: _buildCategoryCard(filteredCategories[index]),
+                      ),
                     ),
                   ),
                 );
@@ -640,28 +696,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildCategoryCard(Map<String, dynamic> category) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 100, // Explicit height for horizontal layout
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          height: 80, // Horizontal strip height
+          decoration: AppDecorations.glassCard(borderWidth: 1.0),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.mediumImpact();
                 setState(() {
                   _focusedCategoryId = category['id'];
                   _selectedPortion = (category['portions'] as List).first;
@@ -671,53 +716,76 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 });
                 _updateScoreAnimation();
               },
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                clipBehavior: Clip.none,
+              borderRadius: BorderRadius.circular(20),
+              child: Row(
                 children: [
-                  // Image on the left - DRAMATICALLY larger and overflowing significantly
-                  Positioned(
-                    left: -40, // Deeply overflowing left for "half-visible" effect
-                    top: -15,
-                    bottom: -15,
-                    width: 130, // Much wider for the oversized image
-                    child: Hero(
-                      tag: 'drink_${category['id']}',
-                      child: category['id'] == 'custom'
-                          ? Center(
-                              child: Icon(
-                                UIcons.regularStraight.interrogation,
-                                size: 50,
-                                color: AppColors.primary.withOpacity(0.3),
-                              ),
-                            )
-                          : Image.asset(
-                              category['image'],
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.wine_bar, size: 40, color: Colors.grey),
-                            ),
+                  // Image with overflow on the left
+                  SizedBox(
+                    width: 100,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: -20,
+                          top: -10,
+                          bottom: -10,
+                          width: 110,
+                          child: Hero(
+                            tag: 'drink_grid_${category['id']}',
+                            child: category['id'] == 'custom'
+                                ? Center(
+                                    child: Icon(
+                                      UIcons.regularStraight.interrogation,
+                                      size: 40,
+                                      color: AppColors.primary.withOpacity(0.3),
+                                    ),
+                                  )
+                                : Image.asset(
+                                    category['image'],
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Icon(Icons.wine_bar, size: 30, color: AppColors.textTertiary.withOpacity(0.5)),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   
-                  // Text on the right
-                  Positioned(
-                    left: 70, // Start after the image
-                    right: 12,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: Text(
-                        category['name'],
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
-                          color: Color(0xFF4B3126),
-                          letterSpacing: -0.5,
+                  // Text Content
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category['name'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        Text(
+                          '${(category['portions'] as List).length} seçenek',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary.withOpacity(0.6),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Detail indicator
+                  Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: AppColors.primary.withOpacity(0.2),
                     ),
                   ),
                 ],
@@ -737,24 +805,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            decoration: AppDecorations.glassCard(borderRadius: 20, borderWidth: 1.2),
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF4B3126)),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Ne içmiştin?',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
+                hintStyle: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.w600),
                 prefixIcon: Icon(UIcons.regularStraight.search, size: 20, color: AppColors.primary),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -792,7 +849,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF4B3126),
+            color: AppColors.textPrimary,
             letterSpacing: -0.5,
           ),
         ),
@@ -822,52 +879,71 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         const Text(
           'GÖRSEL EKLE',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.grey, letterSpacing: 1.2),
+          style: TextStyle(
+            fontWeight: FontWeight.w900, 
+            fontSize: 12, 
+            color: AppColors.textSecondary, 
+            letterSpacing: 1.2
+          ),
         ),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: _pickImage,
-          child: Container(
-            width: double.infinity,
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.shade200, width: 2, style: BorderStyle.solid),
-            ),
-            child: _pickedImage == null
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(UIcons.regularStraight.camera, color: Colors.grey.shade400, size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Bir fotoğraf ekle',
-                        style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w700, fontSize: 13),
-                      ),
-                    ],
-                  )
-                : Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(22),
-                        child: Image.file(File(_pickedImage!.path), fit: BoxFit.cover),
-                      ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _pickedImage = null),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            child: const Icon(Icons.close, size: 16, color: Colors.red),
-                          ),
-                        ),
-                      ),
-                    ],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: double.infinity,
+                height: 160,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15), 
+                    width: 1.5
                   ),
+                ),
+                child: _pickedImage == null
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(UIcons.regularStraight.camera, color: AppColors.primary.withOpacity(0.4), size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Bir fotoğraf ekle',
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withOpacity(0.6), 
+                              fontWeight: FontWeight.w700, 
+                              fontSize: 13
+                            ),
+                          ),
+                        ],
+                      )
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(22),
+                            child: Image.file(File(_pickedImage!.path), fit: BoxFit.cover),
+                          ),
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: GestureDetector(
+                              onTap: () => setState(() => _pickedImage = null),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                child: const Icon(Icons.close, size: 16, color: Colors.red),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ),
       ],
@@ -877,186 +953,228 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildFocusedDrinkView() {
     final category = _categories.firstWhere((c) => c['id'] == _focusedCategoryId);
-    final score = _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']);
-    final totalPoints = score * _quantity;
 
-    return GestureDetector(
-      onVerticalDragUpdate: (details) {
-        setState(() {
-          _cardDragY += details.delta.dy;
-          if (_cardDragY < 0) _cardDragY = 0; // Prevent upward drag
-        });
-      },
-      onVerticalDragEnd: (details) {
-        if (_cardDragY > 150) {
-          // Dismiss
-          HapticFeedback.lightImpact();
-          setState(() {
-            _cardDragY = 0;
-            _selectedEntries.clear();
-            _focusedCategoryId = null;
-            _selectedPortion = null;
-            _quantity = 1;
-          });
-          _updateScoreAnimation();
-        } else {
-          // Spring back
-          setState(() {
-            _cardDragY = 0;
-          });
-        }
-      },
-      child: Transform.translate(
-        offset: Offset(0, _cardDragY),
-        child: Column(
-          children: [
-            // Glass Handle
-            Center(
+    return Transform.translate(
+      offset: Offset(0, _cardDragY),
+      child: Column(
+        children: [
+          // Glass Handle with Drag Detector
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onVerticalDragUpdate: (details) {
+              if (details.delta.dy > 0) {
+                setState(() => _cardDragY += details.delta.dy);
+              } else if (_cardDragY > 0) {
+                setState(() => _cardDragY = (_cardDragY + details.delta.dy).clamp(0, double.infinity));
+              }
+            },
+            onVerticalDragEnd: (details) {
+              if (_cardDragY > 100) {
+                _dismissFocused();
+              } else {
+                setState(() => _cardDragY = 0);
+              }
+            },
+            child: Center(
               child: Container(
                 width: 40,
                 height: 5,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.5),
+                  color: AppColors.primary.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(36),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(36),
-                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 32,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      if (category['id'] == 'custom')
-                        _buildCustomRequestForm()
-                      else ...[
-                        Hero(
-                          tag: 'drink_${category['id']}',
-                          child: ScaleTransition(
-                            scale: _bounceController,
-                            child: Image.asset(
-                              category['image'],
-                              height: 180,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.wine_bar, size: 100, color: Colors.grey),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+                decoration: AppDecorations.glassCard(borderWidth: 1.5),
+                child: Column(
+                  children: [
+                    if (category['id'] == 'custom')
+                      _buildCustomRequestForm()
+                    else ...[
+                      // Floating Hero Image with subtle glow/shadow + Drag Detector
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onVerticalDragUpdate: (details) {
+                           if (details.delta.dy > 0) {
+                             setState(() => _cardDragY += details.delta.dy);
+                           } else if (_cardDragY > 0) {
+                             setState(() => _cardDragY = (_cardDragY + details.delta.dy).clamp(0, double.infinity));
+                           }
+                        },
+                        onVerticalDragEnd: (details) {
+                          if (_cardDragY > 100) {
+                            _dismissFocused();
+                          } else {
+                            setState(() => _cardDragY = 0);
+                          }
+                        },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 160,
+                              height: 160,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primary.withOpacity(0.05),
+                              ),
                             ),
-                          ),
+                            Hero(
+                              tag: 'drink_focused_${category['id']}',
+                              child: ScaleTransition(
+                                scale: _bounceController,
+                                child: Image.asset(
+                                  category['image'],
+                                  height: 200,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.wine_bar, size: 100, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
+                      ),
+                        const SizedBox(height: 32),
+                        
+                        // Drink Identity
                         Text(
                           category['name'],
                           style: const TextStyle(
-                            fontSize: 28,
+                            fontSize: 32,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF4B3126),
+                            color: AppColors.textPrimary,
                             letterSpacing: -1.0,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         
-                        // Portion Selector Chip Grid (if more than 1)
+                        // Portion Selector (Modern Segmented style)
                         if ((category['portions'] as List).length > 1) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: (category['portions'] as List).map<Widget>((p) {
-                              final isSelected = _selectedPortion!['name'] == p['name'];
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: (category['portions'] as List).map<Widget>((p) {
+                                final isSelected = _selectedPortion!['name'] == p['name'];
+                                return GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    setState(() {
+                                      _selectedPortion = p;
+                                      final key = '${category['id']}|${p['name']}';
+                                      _selectedEntries.clear();
+                                      _selectedEntries[key] = _quantity;
+                                    });
+                                    _updateScoreAnimation();
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppColors.textPrimary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: isSelected ? [
+                                        BoxShadow(
+                                          color: AppColors.textPrimary.withOpacity(0.3),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        )
+                                      ] : [],
+                                    ),
+                                    child: Text(
+                                      p['name'],
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                        ],
+          
+                        // Elegant Quantity Stepper
+                        Container(
+                          height: 70,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(35),
+                            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildModernQtyBtn(Icons.remove, () {
+                                if (_quantity > 1) {
                                   setState(() {
-                                    _selectedPortion = p;
-                                    final key = '${category['id']}|${p['name']}';
-                                    _selectedEntries.clear();
+                                    _quantity--;
+                                    final key = '${category['id']}|${_selectedPortion!['name']}';
                                     _selectedEntries[key] = _quantity;
                                   });
                                   _updateScoreAnimation();
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? AppColors.brandDark : Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    p['name'],
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.grey.shade600,
-                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
+                                }
+                              }),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 32),
+                                child: Text(
+                                  '$_quantity',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-          
-                        // Quantity Selector
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildQtyBtn(Icons.remove, () {
-                              if (_quantity > 1) {
+                              ),
+                              _buildModernQtyBtn(Icons.add, () {
                                 setState(() {
-                                  _quantity--;
+                                  _quantity++;
                                   final key = '${category['id']}|${_selectedPortion!['name']}';
                                   _selectedEntries[key] = _quantity;
                                 });
                                 _updateScoreAnimation();
-                              }
-                            }),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: Text(
-                                '$_quantity',
-                                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFF4B3126)),
-                              ),
-                            ),
-                            _buildQtyBtn(Icons.add, () {
-                              setState(() {
-                                _quantity++;
-                                final key = '${category['id']}|${_selectedPortion!['name']}';
-                                _selectedEntries[key] = _quantity;
-                              });
-                              _updateScoreAnimation();
-                            }),
-                          ],
+                              }),
+                            ],
+                          ),
                         ),
                         
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 40),
+                        
+                        // Attributes Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildDetailTag('%${_selectedPortion!['abv']}', 'Alkol'),
-                            const SizedBox(width: 12),
-                            _buildDetailTag('${_selectedPortion!['volume']}ml', 'Hacim'),
-                            const SizedBox(width: 12),
-                            _buildDetailTag('+${totalPoints.toStringAsFixed(1)}', 'Puan', isHighlight: true),
+                            _buildPremiumTag('%${_selectedPortion!['abv']}', 'Alkol'),
+                            const SizedBox(width: 8),
+                            _buildPremiumTag('${_selectedPortion!['volume']}ml', 'Hacim'),
                           ],
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 48),
+                        
+                        // Action Buttons
                         Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
+                              flex: 1,
+                              child: IconButton(
                                 onPressed: () {
                                   HapticFeedback.lightImpact();
                                   setState(() {
@@ -1067,27 +1185,48 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   });
                                   _updateScoreAnimation();
                                 },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.grey.shade400,
-                                  side: BorderSide(color: Colors.grey.shade200),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                icon: const Icon(Icons.close_rounded),
+                                color: AppColors.textSecondary,
+                                iconSize: 28,
+                                style: IconButton.styleFrom(
+                                  padding: const EdgeInsets.all(16),
+                                  backgroundColor: AppColors.primary.withOpacity(0.05),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                 ),
-                                child: const Text('Geri Dön', style: TextStyle(fontWeight: FontWeight.w800)),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 16),
                             Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _save,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  elevation: 0,
+                              flex: 3,
+                              child: Container(
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                                 ),
-                                child: const Text('Hemen Ekle', style: TextStyle(fontWeight: FontWeight.w900)),
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _save,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                  child: const Text(
+                                    'Hemen Ekle',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -1100,8 +1239,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildCustomRequestForm() {
@@ -1111,15 +1249,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         const Center(
           child: Text(
             'İçecek Talebi Oluştur',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF4B3126)),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+              letterSpacing: -1.0,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Center(
           child: Text(
             'Aradığın içeceği bulamadın mı? Bilgileri gir, yönetici onaylayınca listeye eklensin!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: AppColors.textSecondary.withOpacity(0.7),
+              fontSize: 14,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         const SizedBox(height: 32),
@@ -1128,28 +1276,45 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         _buildRequestField('Alkol Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number),
         const SizedBox(height: 20),
         _buildRequestField('Not / Açıklama', 'Bardak boyutu veya özel içerik...', _customDescController, maxLines: 3),
-        const SizedBox(height: 32),
-        SizedBox(
+        const SizedBox(height: 40),
+        Container(
           width: double.infinity,
+          height: 60,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: ElevatedButton(
             onPressed: _isLoading ? null : _submitRequest,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
             child: _isLoading 
-              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('İsteği Gönder', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+              : const Text('İsteği Gönder', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5)),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Center(
           child: TextButton(
             onPressed: () => setState(() => _focusedCategoryId = null),
-            child: Text('Vazgeç', style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w700)),
+            child: Text(
+              'Vazgeç',
+              style: TextStyle(
+                color: AppColors.textSecondary.withOpacity(0.5),
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ),
+            ),
           ),
         ),
       ],
@@ -1162,25 +1327,30 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Colors.grey, letterSpacing: 1.0),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            color: AppColors.textPrimary.withOpacity(0.4),
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade100),
+            color: AppColors.primary.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.primary.withOpacity(0.08)),
           ),
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
             maxLines: maxLines,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF4B3126)),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade300, fontSize: 14),
+              hintStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.2), fontSize: 15),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
           ),
         ),
@@ -1228,20 +1398,62 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }
   }
 
-  Widget _buildQtyBtn(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade100, width: 2),
+  Widget _buildModernQtyBtn(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(25),
+        child: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.textPrimary.withOpacity(0.05),
+          ),
+          child: Icon(icon, color: AppColors.textPrimary, size: 24),
         ),
-        child: Icon(icon, size: 24, color: AppColors.brandDark),
+      ),
+    );
+  }
+
+  Widget _buildPremiumTag(String text, String label, {bool isHighlight = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isHighlight ? AppColors.primary.withOpacity(0.12) : AppColors.primary.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isHighlight ? AppColors.primary.withOpacity(0.25) : AppColors.primary.withOpacity(0.08),
+            width: 1.2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              text,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: isHighlight ? AppColors.textPrimary : AppColors.textPrimary.withOpacity(0.9),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: isHighlight ? AppColors.primary : AppColors.textSecondary.withOpacity(0.5),
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1252,70 +1464,78 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         const Text(
           'NEREDESİN?',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.grey, letterSpacing: 1.2),
+          style: TextStyle(
+            fontWeight: FontWeight.w900, 
+            fontSize: 12, 
+            color: AppColors.textSecondary, 
+            letterSpacing: 1.2
+          ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _locationController,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-          decoration: InputDecoration(
-            prefixIcon: Icon(AppIcons.marker, color: AppColors.primary, size: 20),
-            labelText: 'Mekan İsmi',
-            labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w700),
-            floatingLabelStyle: TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _locationController,
+                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  prefixIcon: Icon(AppIcons.marker, color: AppColors.primary, size: 18),
+                  labelText: 'Mekan İsmi',
+                  labelStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontWeight: FontWeight.w700),
+                  floatingLabelStyle: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                  hintText: 'Mekan ismi veya bölge...',
+                  hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.4), fontSize: 14),
+                  filled: true,
+                  fillColor: AppColors.primary.withOpacity(0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3), width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+              ),
             ),
-            hintText: 'Örn: Kadıköy Bar, Ev...',
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            const SizedBox(width: 8),
+            _buildLocationActionBtn(
+              UIcons.regularStraight.marker, 
+              () {
+                HapticFeedback.mediumImpact();
+                // Future: Open Map Selection
+              }
             ),
-            contentPadding: const EdgeInsets.all(20),
-          ),
+            const SizedBox(width: 8),
+            _buildLocationActionBtn(
+              Icons.gps_fixed_rounded, 
+              () {
+                HapticFeedback.mediumImpact();
+                // Future: Get Current Location
+              }
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildDetailTag(String top, String bottom, {bool isHighlight = false}) {
+  Widget _buildLocationActionBtn(IconData icon, VoidCallback onTap) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isHighlight ? AppColors.primary.withOpacity(0.05) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isHighlight ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-        ),
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        children: [
-          Text(
-            top,
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
-              color: isHighlight ? AppColors.primary : const Color(0xFF4B3126),
-            ),
-          ),
-          Text(
-            bottom,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 10,
-              color: Colors.grey.shade400,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
+      child: IconButton(
+        icon: Icon(icon, size: 18, color: AppColors.primary),
+        onPressed: onTap,
+        padding: const EdgeInsets.all(12),
       ),
     );
   }
+
 
 
 
@@ -1325,7 +1545,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         const Text(
           'NASIL HİSSEDİYORSUN?',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.grey, letterSpacing: 1.2),
+          style: TextStyle(
+            fontWeight: FontWeight.w900, 
+            fontSize: 12, 
+            color: AppColors.textSecondary, 
+            letterSpacing: 1.2
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -1353,24 +1578,31 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isSelected ? _accentColor.withOpacity(0.1) : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
+                color: isSelected ? AppColors.primary.withOpacity(0.15) : AppColors.primary.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isSelected ? _accentColor : Colors.transparent,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
                   width: 2,
                 ),
+                boxShadow: isSelected ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ] : [],
               ),
               child: Text(emoji, style: const TextStyle(fontSize: 24)),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                color: isSelected ? _accentColor : Colors.grey,
+                color: isSelected ? AppColors.textPrimary : AppColors.textTertiary,
               ),
             ),
           ],
@@ -1385,29 +1617,34 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         const Text(
           'KISA BİR NOT?',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.grey, letterSpacing: 1.2),
+          style: TextStyle(
+            fontWeight: FontWeight.w900, 
+            fontSize: 12, 
+            color: AppColors.textSecondary, 
+            letterSpacing: 1.2
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _noteController,
           maxLines: 2,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
           decoration: InputDecoration(
             labelText: 'Not Ekle',
-            labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w700),
-            floatingLabelStyle: TextStyle(
+            labelStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontWeight: FontWeight.w700),
+            floatingLabelStyle: const TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.w900,
               fontSize: 16,
             ),
             hintText: 'Mekanı veya anılarını kısaca not al...',
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.4), fontSize: 14),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppColors.primary.withOpacity(0.05),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+              borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3), width: 1.5),
             ),
             contentPadding: const EdgeInsets.all(20),
           ),
@@ -1416,140 +1653,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildBottomPanel() {
-    if (_focusedCategoryId == null) return const SizedBox.shrink();
-    
-    final totalScore = _getTotalScore();
-    return AnimatedSlide(
-      offset: _focusedCategoryId != null ? Offset.zero : const Offset(0, 1),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutQuart,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              border: Border.all(color: Colors.grey.shade100, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 40,
-                  offset: const Offset(0, -10),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'TAHMİNİ PUAN',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.grey,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          AnimatedBuilder(
-                            animation: _scoreAnimation,
-                            builder: (context, child) {
-                              final displayScore = _scoreAnimation.value;
-                              return Text(
-                                '+${displayScore.toStringAsFixed(1)} pt',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: _accentColor,
-                                  letterSpacing: -1,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          setState(() => _selectedTime = DateTime.now());
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _accentColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(AppIcons.bolt, size: 18, color: _accentColor),
-                              const SizedBox(width: 4),
-                              const Text(
-                                'ŞİMDİ',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.orange,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTapDown: (_) => setState(() => _isButtonPressed = true),
-                    onTapUp: (_) => setState(() => _isButtonPressed = false),
-                    onTapCancel: () => setState(() => _isButtonPressed = false),
-                    child: AnimatedScale(
-                      scale: _isButtonPressed ? 0.95 : 1.0,
-                      duration: const Duration(milliseconds: 100),
-                      curve: Curves.easeInOut,
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 64,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _save,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            elevation: 6,
-                            shadowColor: AppColors.primary.withOpacity(0.35),
-                          ),
-                          child: _isLoading
-                              ? Shimmer.fromColors(
-                                  baseColor: Colors.white.withOpacity(0.3),
-                                  highlightColor: Colors.white,
-                                  child: const Text(
-                                    'KAYDET',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.2),
-                                  ),
-                                )
-                              : const Text('KAYDET', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.2)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+  Widget _buildSearchBarWithGrid() {
+    return Column(
+      children: [
+        _buildSearchBar(),
+        const SizedBox(height: 8),
+        KeyedSubtree(key: const ValueKey('grid'), child: _buildCategoryGrid()),
+      ],
     );
+  }
+
+  void _dismissFocused() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _cardDragY = 0;
+      _selectedEntries.clear();
+      _focusedCategoryId = null;
+      _selectedPortion = null;
+      _quantity = 1;
+    });
+    _updateScoreAnimation();
   }
 }

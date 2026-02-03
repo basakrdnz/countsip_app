@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -276,10 +277,10 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                                         Text(
                                           'Şifreni Sıfırla',
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontFamily: 'CalSans',
-                                            color: const Color(0xFF6A4A3C),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: AppColors.primary,
                                             fontSize: 28,
+                                            fontWeight: FontWeight.bold,
                                             letterSpacing: -0.5,
                                           ),
                                         ),
@@ -345,7 +346,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
-        child: Icon(icon, color: const Color(0xFF6A4A3C), size: 22),
+        child: Icon(icon, color: AppColors.primary, size: 22),
       ),
     );
   }
@@ -360,7 +361,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
             margin: EdgeInsets.symmetric(horizontal: (index == 1) ? 6 : 0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
-              color: isActive ? const Color(0xFF6A4A3C) : const Color(0xFF6A4A3C).withOpacity(0.15),
+              color: isActive ? AppColors.primary : AppColors.primary.withOpacity(0.15),
             ),
           ),
         );
@@ -387,7 +388,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
         Row(
           children: [
             Container(
-              height: 56,
+              height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -447,7 +448,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
               ? Text('Tekrar gönder: $_resendCountdown sn', style: TextStyle(color: Colors.black.withOpacity(0.3), fontSize: 13))
               : TextButton(
                   onPressed: _sendCode,
-                  child: const Text('Kodu Tekrar Gönder', style: TextStyle(color: Color(0xFF6A4A3C), fontWeight: FontWeight.w600)),
+                  child: const Text('Kodu Tekrar Gönder', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                 ),
         ),
         const SizedBox(height: 32),
@@ -483,7 +484,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
   }
 
   Widget _buildInputLabel(String label) {
-    return Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF4B3126)));
+    return Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary));
   }
 
   Widget _buildTextField({
@@ -514,14 +515,14 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
       style: style ?? const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hintText,
-        prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
+        prefixIcon: icon != null ? Icon(icon, color: AppColors.primary.withOpacity(0.6), size: 20) : null,
         counterText: '',
         filled: true,
         fillColor: Colors.white,
         border: roundedBorder(Colors.transparent),
         enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
-        focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        focusedBorder: roundedBorder(AppColors.primary),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       ),
     );
   }
@@ -531,10 +532,10 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
-          colors: [const Color(0xFF6A4A3C), const Color(0xFF4B3126)],
+          colors: [AppColors.primary, AppColors.textPrimary],
         ),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF6A4A3C).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6)),
+          BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6)),
         ],
       ),
       child: ElevatedButton(

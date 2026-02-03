@@ -1,13 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,46 +19,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  Map<String, dynamic>? _userData;
-  bool _isLoading = true;
-  String? _photoUrl;
+
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
   }
 
-  Future<void> _loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        if (mounted) {
-          setState(() {
-            _userData = doc.data();
-            _photoUrl = _userData?['photoUrl'] ?? user.photoURL;
-            _isLoading = false;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
-    } else {
-      setState(() => _isLoading = false);
-    }
-  }
 
   Future<void> _signOut(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Çıkış Yap'),
         content: const Text('Hesabınızdan çıkış yapmak istediğinize emin misiniz?'),
@@ -108,8 +83,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final photoUrl = userData?['photoUrl'] as String?;
 
     return Scaffold(
-      backgroundColor: AppColors.innerBackground,
+      backgroundColor: AppColors.background,
+      extendBody: true,
       body: SafeArea(
+            bottom: false,
             child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -149,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       name,
                       style: AppTextStyles.title1.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF4B3126),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     
@@ -162,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             SnackBar(
                               content: Row(
                                 children: [
-                                  Icon(AppIcons.checkCircle, color: Colors.white, size: 18),
+                                  Icon(AppIcons.checkCircle, color: AppColors.buttonOnPrimary, size: 18),
                                   const SizedBox(width: 8),
                                   Text('@$username kopyalandı'),
                                 ],
@@ -182,14 +159,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 '@$username',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: const Color(0xFF714A39),
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                               const SizedBox(width: 4),
                                 Icon(
                                   AppIcons.copy,
                                   size: 14,
-                                  color: const Color(0xFF714A39),
+                                  color: AppColors.textSecondary,
                                 ),
                             ],
                           ),
@@ -199,128 +176,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     
                     // Main Menu Items
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                        child: Container(
+                          decoration: AppDecorations.glassCard(),
+                          child: Column(
+                            children: [
+                              _buildMenuItem(
+                                icon: AppIcons.user,
+                                title: 'Profil Bilgileri',
+                                onTap: () => context.push('/profile-details'),
+                              ),
+                              _buildDivider(),
+                              _buildMenuItem(
+                                icon: AppIcons.settingsSliders,
+                                title: 'Ayarlar',
+                                onTap: () => context.push('/settings'),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildMenuItem(
-                            icon: AppIcons.user,
-                            title: 'Profil Bilgileri',
-                            onTap: () => context.push('/profile-details'),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: AppIcons.settingsSliders,
-                            title: 'Ayarlar',
-                            onTap: () => context.push('/settings'),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     
                     const SizedBox(height: AppSpacing.lg),
                     
                     // Social Section
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                        child: Container(
+                          decoration: AppDecorations.glassCard(),
+                          child: Column(
+                            children: [
+                              _buildMenuItem(
+                                icon: AppIcons.addUser,
+                                title: 'Arkadaş Ekle',
+                                onTap: () => context.push('/add-friend'),
+                              ),
+                              _buildDivider(),
+                              _buildMenuItem(
+                                icon: AppIcons.users,
+                                title: 'Arkadaşlarım',
+                                onTap: () => context.push('/friends'),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildMenuItem(
-                            icon: AppIcons.addUser,
-                            title: 'Arkadaş Ekle',
-                            onTap: () => context.push('/add-friend'),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: AppIcons.users,
-                            title: 'Arkadaşlarım',
-                            onTap: () => context.push('/friends'),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     
                     const SizedBox(height: AppSpacing.lg),
                     
                     // Help Section
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                        child: Container(
+                          decoration: AppDecorations.glassCard(),
+                          child: Column(
+                            children: [
+                              _buildMenuItem(
+                                icon: AppIcons.helpIcon,
+                                title: 'Yardım',
+                                onTap: () {},
+                              ),
+                              _buildDivider(),
+                              _buildMenuItem(
+                                icon: AppIcons.info,
+                                title: 'Hakkında',
+                                onTap: () {},
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildMenuItem(
-                            icon: AppIcons.helpIcon,
-                            title: 'Yardım',
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: AppIcons.info,
-                            title: 'Hakkında',
-                            onTap: () {},
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     
                     const SizedBox(height: AppSpacing.lg),
                     
                     // Logout Button
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: _buildMenuItem(
-                        icon: AppIcons.exit,
-                        title: 'Çıkış Yap',
-                        iconColor: AppColors.error,
-                        titleColor: AppColors.error,
-                        showArrow: false,
-                        onTap: () => _signOut(context),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                        child: Container(
+                          width: double.infinity,
+                          decoration: AppDecorations.glassCard(),
+                        child: _buildMenuItem(
+                          icon: AppIcons.exit,
+                          title: 'Çıkış Yap',
+                          iconColor: AppColors.error,
+                          titleColor: AppColors.error,
+                          showArrow: false,
+                          onTap: () => _signOut(context),
+                        ),
                       ),
                     ),
+                  ),
                     
                     const SizedBox(height: 100), // Bottom padding for nav bar
                   ],
@@ -347,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            Icon(icon, color: iconColor ?? AppColors.primary, size: 24),
+            Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -355,12 +312,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: titleColor ?? AppColors.textPrimaryLight,
+                  color: titleColor ?? AppColors.textPrimary,
                 ),
               ),
             ),
             if (showArrow)
-              Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
+              Icon(AppIcons.angleRight, color: AppColors.textTertiary, size: 18),
           ],
         ),
       ),
@@ -372,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       height: 1,
       indent: 56,
       endIndent: 20,
-      color: Colors.grey.shade200,
+      color: AppColors.primary.withOpacity(0.1),
     );
   }
 }

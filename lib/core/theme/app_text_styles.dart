@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
   // Display - Hero text
-  static const display = TextStyle(
+  static TextStyle display = GoogleFonts.plusJakartaSans(
     fontSize: 40,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
@@ -12,7 +13,7 @@ class AppTextStyles {
   );
 
   // Large Title - Screen headers
-  static const largeTitle = TextStyle(
+  static TextStyle largeTitle = GoogleFonts.plusJakartaSans(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -20,7 +21,7 @@ class AppTextStyles {
   );
 
   // Title 1 - Section headers
-  static const title1 = TextStyle(
+  static TextStyle title1 = GoogleFonts.plusJakartaSans(
     fontSize: 24,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -28,7 +29,7 @@ class AppTextStyles {
   );
 
   // Title 2 - Card titles
-  static const title2 = TextStyle(
+  static TextStyle title2 = GoogleFonts.plusJakartaSans(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -36,7 +37,7 @@ class AppTextStyles {
   );
 
   // Title 3 - Subsection
-  static const title3 = TextStyle(
+  static TextStyle title3 = GoogleFonts.plusJakartaSans(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -44,7 +45,7 @@ class AppTextStyles {
   );
 
   // Body - Regular text
-  static const body = TextStyle(
+  static TextStyle body = GoogleFonts.plusJakartaSans(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
@@ -52,7 +53,7 @@ class AppTextStyles {
   );
 
   // Body Emphasis
-  static const bodyEmphasis = TextStyle(
+  static TextStyle bodyEmphasis = GoogleFonts.plusJakartaSans(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -60,14 +61,14 @@ class AppTextStyles {
   );
 
   // Callout
-  static const callout = TextStyle(
+  static TextStyle callout = GoogleFonts.plusJakartaSans(
     fontSize: 15,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
   );
 
   // Subheadline
-  static const subheadline = TextStyle(
+  static TextStyle subheadline = GoogleFonts.plusJakartaSans(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
@@ -75,14 +76,14 @@ class AppTextStyles {
   );
 
   // Footnote
-  static const footnote = TextStyle(
+  static TextStyle footnote = GoogleFonts.plusJakartaSans(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,
   );
 
   // Caption
-  static const caption = TextStyle(
+  static TextStyle caption = GoogleFonts.plusJakartaSans(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,

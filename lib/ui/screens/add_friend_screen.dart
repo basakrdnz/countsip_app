@@ -8,6 +8,7 @@ import 'package:uicons/uicons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 /// Friend relationship status enum
 enum FriendStatus {
@@ -435,12 +436,12 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Arkadaş Ekle'),
+        title: const Text('Arkadaş Ekle', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.brandDark,
+        foregroundColor: AppColors.textPrimary,
         actions: [
           IconButton(
             icon: Icon(AppIcons.ban, size: 22),
@@ -530,27 +531,32 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _searchUsers,
-              decoration: InputDecoration(
-                hintText: 'Tam kullanıcı adını gir...',
-                prefixIcon: Icon(AppIcons.at, size: 20, color: Colors.grey.shade400),
-                suffixIcon: _isSearching
-                    ? const Padding(
-                        padding: EdgeInsets.all(14),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : null,
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+            child: Container(
+              decoration: AppDecorations.glassCard(borderRadius: 16, borderWidth: 0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _searchUsers,
+                style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: 'Tam kullanıcı adını gir...',
+                  prefixIcon: Icon(AppIcons.at, size: 20, color: AppColors.textTertiary),
+                  suffixIcon: _isSearching
+                      ? const Padding(
+                          padding: EdgeInsets.all(14),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.transparent, // Controlled by container
+                  hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
@@ -565,13 +571,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(AppIcons.search, size: 64, color: Colors.grey.shade300),
+                        Icon(AppIcons.search, size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: 16),
                         Text(
                           _searchController.text.length < 3
                               ? 'Kullanıcı adını tam olarak yaz'
                               : 'Kullanıcı bulunamadı',
-                          style: TextStyle(color: Colors.grey.shade500),
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -584,16 +590,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
+                        decoration: AppDecorations.glassCard(borderRadius: 20),
                         child: Row(
                           children: [
                             CircleAvatar(
@@ -611,20 +608,21 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    user['name'] ?? 'İsimsiz',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                                    Text(
+                                      user['name'] ?? 'İsimsiz',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                        color: AppColors.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    '@${user['username']}',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 14,
+                                    Text(
+                                      '@${user['username']}',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/date_symbol_data_local.dart';
 // flutter_native_splash import removed - splash disabled
 // firebase_ui_auth removed - using custom phone auth screens
 
@@ -44,6 +45,9 @@ const int _authEmulatorPort =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Turkish date formatting
+  await initializeDateFormatting('tr', null);
   
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -194,57 +198,182 @@ GoRouter _createRouter() {
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) {
+          final pageStr = state.uri.queryParameters['page'];
+          final initialPage = int.tryParse(pageStr ?? '0') ?? 0;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: OnboardingScreen(initialPage: initialPage),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position: animation.drive(
+                  Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutExpo)),
+                ),
+                child: child,
+              );
+            },
+          );
+        },
       ),
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const PhoneLoginScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const PhoneLoginScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutExpo)),
+              ),
+              child: child,
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/signup',
         name: 'signup',
-        builder: (context, state) => const PhoneSignupScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const PhoneSignupScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutExpo)),
+              ),
+              child: child,
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) => const PhoneForgotPasswordScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const PhoneForgotPasswordScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutExpo)),
+              ),
+              child: child,
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/profile-setup',
         name: 'profile-setup',
-        builder: (context, state) => const ProfileSetupScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const ProfileSetupScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/profile-details',
         name: 'profile-details',
-        builder: (context, state) => const ProfileDetailsScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const ProfileDetailsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/settings',
         name: 'settings',
-        builder: (context, state) => const SettingsScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const SettingsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/friends',
         name: 'friends',
-        builder: (context, state) => const FriendsScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const FriendsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/add-friend',
         name: 'add-friend',
-        builder: (context, state) => const AddFriendScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const AddFriendScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/blocked-users',
         name: 'blocked-users',
-        builder: (context, state) => const BlockedUsersScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const BlockedUsersScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/notifications',
         name: 'notifications',
-        builder: (context, state) => const NotificationsScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const NotificationsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
       ),
       
       StatefulShellRoute.indexedStack(

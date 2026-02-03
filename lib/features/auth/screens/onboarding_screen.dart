@@ -1,10 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final int initialPage;
+  const OnboardingScreen({super.key, this.initialPage = 0});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -20,7 +24,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _currentPage = widget.initialPage;
+    _pageController = PageController(initialPage: widget.initialPage);
     
     // Bounce animation
     _bounceController = AnimationController(
@@ -95,8 +100,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(2),
                           color: isActive
-                              ? const Color(0xFF6A4A3C)
-                              : const Color(0xFF6A4A3C).withOpacity(0.2),
+                              ? AppColors.primary
+                              : AppColors.primary.withOpacity(0.2),
                         ),
                       );
                     }),
@@ -108,12 +113,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                   child: PageView(
                     controller: _pageController,
                     onPageChanged: (index) {
+                      if (index == _totalPages) {
+                        // 4. sayfaya (boş sayfa) geçmeye çalışınca login'e git
+                        context.go('/login');
+                        return;
+                      }
                       setState(() => _currentPage = index);
                     },
+                    dragStartBehavior: DragStartBehavior.down,
                     children: [
                       _buildSlide(1),
                       _buildSlide(2),
-                      _buildSlide(3),
+                      _buildLastSlide(), // Use a special build for the last slide
+                      // Swipe-to-Next için gizli sayfa
+                      const SizedBox.shrink(),
                     ],
                   ),
                 ),
@@ -132,6 +145,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
         ],
       ),
     );
+  }
+
+  Widget _buildLastSlide() {
+    return _buildSlide(3);
   }
 
   Widget _buildSlide(int slideNumber) {
@@ -172,8 +189,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             },
             child: Image.asset(
               data['icon']!,
-              width: 210,
-              height: 210,
+              width: 120, // Reduced from 140
+              height: 120, // Reduced from 140
               fit: BoxFit.contain,
             ),
           ),
@@ -182,11 +199,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
           Text(
             data['title']!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: 'CalSans',
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF6A4A3C),
+              color: AppColors.primary,
             ),
           ),
           const SizedBox(height: 16),
@@ -196,7 +212,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
-              color: const Color(0xFF6A4A3C).withOpacity(0.7),
+              color: AppColors.primary.withOpacity(0.7),
               height: 1.5,
             ),
           ),
@@ -206,44 +222,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   }
 
   Widget _buildGlassButton(String text, VoidCallback onPressed) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          width: double.infinity,
-          height: 56,
-          decoration: BoxDecoration(
-            color: const Color(0xFF6A4A3C).withOpacity(0.75),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6A4A3C).withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(20),
-              child: Center(
-                child: Text(
-                  text,
-                  style: const TextStyle(
-                    fontFamily: 'CalSans',
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(20),
+          child: Center(
+            child: Text(
+              text,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
           ),

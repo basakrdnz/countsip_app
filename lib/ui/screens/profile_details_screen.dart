@@ -1,13 +1,18 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class ProfileDetailsScreen extends StatefulWidget {
   const ProfileDetailsScreen({super.key});
@@ -84,7 +89,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Kullanıcı Adı Değiştir'),
         content: const Text(
@@ -247,57 +252,173 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   Future<void> _pickAndUploadPhoto() async {
     final picker = ImagePicker();
     
-    // Show source selection dialog
-    final source = await showDialog<ImageSource>(
+    // 1. Explain why we need gallery/camera access
+    final proceed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Fotoğraf Seç'),
-        content: Column(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Profil Fotoğrafı Seç'),
+        content: const Text(
+          'Profilini kişiselleştirmek için galerinden bir fotoğraf seçebilir veya yeni bir tane çekebilirsin.',
+          style: TextStyle(fontSize: 15, color: Colors.black54),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Vazgeç'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Devam Et'),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed != true) return;
+
+    // 1.5. Check Permissions
+    final photoStatus = await Permission.photos.status;
+    final cameraStatus = await Permission.camera.status;
+
+    if (photoStatus.isPermanentlyDenied || cameraStatus.isPermanentlyDenied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fotoğraf erişimi için ayarlardan izin vermelisin.')),
+        );
+      }
+      openAppSettings();
+      return;
+    }
+
+    // 2. Select source
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              leading: Icon(AppIcons.camera),
-              title: const Text('Kamera'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
+            const Text(
+              'Fotoğraf Kaynağı',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
+                color: AppColors.textPrimary,
+              ),
             ),
-            ListTile(
-              leading: Icon(AppIcons.gallery),
-              title: const Text('Galeri'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSourceCard(
+                    icon: AppIcons.camera,
+                    label: 'Kamera',
+                    color: Colors.blue,
+                    onTap: () => Navigator.pop(context, ImageSource.camera),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildSourceCard(
+                    icon: AppIcons.gallery,
+                    label: 'Galeri',
+                    color: Colors.orange,
+                    onTap: () => Navigator.pop(context, ImageSource.gallery),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
     
     if (source == null) return;
+
+    // Check specific permission based on source
+    if (source == ImageSource.camera) {
+      final status = await Permission.camera.request();
+      if (!status.isGranted) return;
+    } else {
+      // For gallery, permission_handler photos check is enough for iOS and Android 13+
+      // For older Android, it falls back gracefully or isn't strictly required for pickImage
+      final status = await Permission.photos.request();
+      if (!status.isGranted && !status.isLimited) {
+        // Fallback for some Android versions where Permission.photos might not trigger
+        final storageStatus = await Permission.storage.request();
+        if (!storageStatus.isGranted) return;
+      }
+    }
+    
+    if (source == null) return;
     
     final XFile? image = await picker.pickImage(
       source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
     );
 
     if (image == null) return;
+
+    // 3. Crop Image (How it should look)
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: image.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Fotoğrafı Düzenle',
+          toolbarColor: AppColors.primary,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Fotoğrafı Düzenle',
+          cancelButtonTitle: 'Vazgeç',
+          doneButtonTitle: 'Bitti',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return;
 
     setState(() => _isUploadingPhoto = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) throw Exception('Kullanıcı girişi yapılmamış');
 
-      final ref = FirebaseStorage.instance
+      final storageRef = FirebaseStorage.instance
           .ref()
           .child('users')
           .child(user.uid)
-          .child('profile.jpg');
+          .child('profile_${DateTime.now().millisecondsSinceEpoch}.jpg');
       
-      await ref.putFile(File(image.path));
-      final downloadUrl = await ref.getDownloadURL();
+      // Upload task
+      final uploadTask = storageRef.putFile(File(croppedFile.path));
+      
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
 
+      // Update Database
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -305,23 +426,30 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
 
       setState(() {
         _photoUrl = downloadUrl;
-        _userData?['photoUrl'] = downloadUrl;
+        _userData = _userData ?? {};
+        _userData!['photoUrl'] = downloadUrl;
         _isUploadingPhoto = false;
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Profil fotoğrafı güncellendi'),
+            content: Text('✓ Profil fotoğrafın başarıyla güncellendi'),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
+      debugPrint('Photo upload error: $e');
       setState(() => _isUploadingPhoto = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Beklenmedik bir hata oluştu. Lütfen tekrar dene.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -366,82 +494,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     }
   }
 
-  void _showEditNameDialog() {
-    final controller = TextEditingController(text: _userData?['name']?.toString() ?? '');
-    
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: const Duration(milliseconds: 400),
-      ),
-      builder: (context) => Container(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 32,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 40,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-            const Text(
-              'İsminizi Düzenleyin',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: 'Adınızı girin',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              ),
-            ),
-            const SizedBox(height: 28),
-            ElevatedButton(
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  _updateField('name', controller.text.trim());
-                }
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text('Kaydet'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   void _showEditNumberDialog(String field, String title, String unit, int min, int max) {
     int value = _userData?[field] ?? ((min + max) ~/ 2);
@@ -485,7 +538,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.w300,
-                      color: const Color(0xFF4B3126),
+                      color: AppColors.textPrimary,
                       letterSpacing: -1,
                     ),
                   ),
@@ -542,8 +595,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     Navigator.pop(context);
                   },
                   style: TextButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.buttonPrimary,
+                    foregroundColor: AppColors.buttonOnPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -569,9 +622,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -628,7 +681,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : const Color(0xFF4B3126),
+                color: isSelected ? Colors.white : AppColors.textPrimary,
               ),
             ),
           ],
@@ -642,12 +695,12 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     final name = _userData?['name'] ?? 'Kullanıcı';
     
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Profil Bilgileri'),
+        title: const Text('Profil Bilgileri', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: const Color(0xFF4B3126),
+        foregroundColor: AppColors.textPrimary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -712,231 +765,225 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   const SizedBox(height: AppSpacing.xl),
                   
                   // Name - with edit button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'İsim',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: const Color(0xFF714A39),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: _nameController,
-                                focusNode: _nameFocusNode,
-                                enabled: _isEditingName,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF4B3126),
-                                ),
-                                decoration: InputDecoration(
-                                  border: _isEditingName 
-                                      ? UnderlineInputBorder(
-                                          borderSide: BorderSide(color: AppColors.primary),
-                                        )
-                                      : InputBorder.none,
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.primary),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: AppDecorations.glassCard(),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'İsim',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                                  const SizedBox(height: 4),
+                                  TextField(
+                                    controller: _nameController,
+                                    focusNode: _nameFocusNode,
+                                    enabled: _isEditingName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    decoration: InputDecoration(
+                                      border: _isEditingName 
+                                          ? UnderlineInputBorder(
+                                              borderSide: BorderSide(color: AppColors.primary),
+                                            )
+                                          : InputBorder.none,
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(color: AppColors.primary),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(color: AppColors.primary, width: 2),
+                                      ),
+                                      disabledBorder: InputBorder.none,
+                                      isDense: true,
+                                      filled: false,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                    ),
+                                    textCapitalization: TextCapitalization.words,
                                   ),
-                                  disabledBorder: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                ),
-                                textCapitalization: TextCapitalization.words,
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            if (_isEditingName) ...[
+                              // Cancel button
+                              IconButton(
+                                onPressed: _cancelEditingName,
+                                icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                              // Save button
+                              IconButton(
+                                onPressed: _saveName,
+                                icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                            ] else
+                              // Edit button
+                              IconButton(
+                                onPressed: _startEditingName,
+                                icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                          ],
                         ),
-                        if (_isEditingName) ...[
-                          // Cancel button
-                          IconButton(
-                            onPressed: _cancelEditingName,
-                            icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                          // Save button
-                          IconButton(
-                            onPressed: _saveName,
-                            icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                        ] else
-                          // Edit button
-                          IconButton(
-                            onPressed: _startEditingName,
-                            icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                   
                   const SizedBox(height: AppSpacing.md),
                   
                   // Username - with edit button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Kullanıcı Adı',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                        decoration: AppDecorations.glassCard(),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('@', style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: _isEditingUsername ? AppColors.primary : const Color(0xFF4B3126),
-                                  )),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _usernameController,
-                                      focusNode: _usernameFocusNode,
-                                      enabled: _isEditingUsername,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF4B3126),
-                                      ),
-                                      decoration: InputDecoration(
-                                        border: _isEditingUsername 
-                                            ? UnderlineInputBorder(
-                                                borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
-                                              )
-                                            : InputBorder.none,
-                                        enabledBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
-                                        ),
-                                        focusedBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary, width: 2),
-                                        ),
-                                        disabledBorder: InputBorder.none,
-                                        isDense: true,
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                      ),
+                                  Text(
+                                    'Kullanıcı Adı',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Text('@', style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: _isEditingUsername ? AppColors.primary : AppColors.textPrimary,
+                                      )),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _usernameController,
+                                          focusNode: _usernameFocusNode,
+                                          enabled: _isEditingUsername,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                          decoration: InputDecoration(
+                                            border: _isEditingUsername 
+                                                ? UnderlineInputBorder(
+                                                    borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
+                                                  )
+                                                : InputBorder.none,
+                                            enabledBorder: UnderlineInputBorder(
+                                              borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
+                                            ),
+                                            focusedBorder: UnderlineInputBorder(
+                                              borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary, width: 2),
+                                            ),
+                                            disabledBorder: InputBorder.none,
+                                            isDense: true,
+                                            filled: false,
+                                            contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (_usernameError != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        _usernameError!,
+                                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                                      ),
+                                    ),
                                 ],
                               ),
-                              if (_usernameError != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    _usernameError!,
-                                    style: const TextStyle(fontSize: 12, color: Colors.red),
-                                  ),
-                                ),
-                            ],
-                          ),
+                            ),
+                            if (_isEditingUsername) ...[
+                              IconButton(
+                                onPressed: _cancelEditingUsername,
+                                icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                              IconButton(
+                                onPressed: _saveUsername,
+                                icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                            ] else
+                              IconButton(
+                                onPressed: _startEditingUsername,
+                                icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                          ],
                         ),
-                        if (_isEditingUsername) ...[
-                          IconButton(
-                            onPressed: _cancelEditingUsername,
-                            icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                          IconButton(
-                            onPressed: _saveUsername,
-                            icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                        ] else
-                          IconButton(
-                            onPressed: _startEditingUsername,
-                            icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                   
                   const SizedBox(height: AppSpacing.xl),
                   
                   // Other Info Section
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: Container(
+                        decoration: AppDecorations.glassCard(),
+                        child: Column(
+                          children: [
+                            _buildInfoRow(
+                              'Kilo',
+                              _userData?['weight'] != null ? '${_userData!['weight']} kg' : 'Belirtilmemiş',
+                              onTap: () => _showEditNumberDialog('weight', 'Kilonuz', 'kg', 30, 200),
+                            ),
+                            _buildDivider(),
+                            _buildInfoRow(
+                              'Boy',
+                              _userData?['height'] != null ? '${_userData!['height']} cm' : 'Belirtilmemiş',
+                              onTap: () => _showEditNumberDialog('height', 'Boyunuz', 'cm', 100, 250),
+                            ),
+                            _buildDivider(),
+                            _buildInfoRow(
+                              'Yaş',
+                              _userData?['age'] != null ? '${_userData!['age']}' : 'Belirtilmemiş',
+                              onTap: () => _showEditNumberDialog('age', 'Yaşınız', 'yaş', 18, 100),
+                            ),
+                            _buildDivider(),
+                            _buildInfoRow(
+                              'Cinsiyet',
+                              _userData?['gender'] == 'male' ? 'Erkek' : 
+                                _userData?['gender'] == 'female' ? 'Kadın' : 'Belirtilmemiş',
+                              onTap: _showGenderDialog,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildInfoRow(
-                          'Kilo',
-                          _userData?['weight'] != null ? '${_userData!['weight']} kg' : 'Belirtilmemiş',
-                          onTap: () => _showEditNumberDialog('weight', 'Kilonuz', 'kg', 30, 200),
-                        ),
-                        _buildDivider(),
-                        _buildInfoRow(
-                          'Boy',
-                          _userData?['height'] != null ? '${_userData!['height']} cm' : 'Belirtilmemiş',
-                          onTap: () => _showEditNumberDialog('height', 'Boyunuz', 'cm', 100, 250),
-                        ),
-                        _buildDivider(),
-                        _buildInfoRow(
-                          'Yaş',
-                          _userData?['age'] != null ? '${_userData!['age']}' : 'Belirtilmemiş',
-                          onTap: () => _showEditNumberDialog('age', 'Yaşınız', 'yaş', 18, 100),
-                        ),
-                        _buildDivider(),
-                        _buildInfoRow(
-                          'Cinsiyet',
-                          _userData?['gender'] == 'male' ? 'Erkek' : 
-                            _userData?['gender'] == 'female' ? 'Kadın' : 'Belirtilmemiş',
-                          onTap: _showGenderDialog,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                   
@@ -951,27 +998,28 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Row(
           children: [
             Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
-                color: const Color(0xFF714A39),
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
             const Spacer(),
             Text(
               value,
-              style: const TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF4B3126),
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(width: 8),
-            Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
+            Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary.withOpacity(0.3), size: 20),
           ],
         ),
       ),
@@ -983,7 +1031,50 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       height: 1,
       indent: 20,
       endIndent: 20,
-      color: Colors.grey.shade200,
+      color: AppColors.primary.withOpacity(0.05),
     );
+  }
+
+  Widget _buildSourceCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color.darken(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+extension ColorExtension on Color {
+  Color darken([double amount = .1]) {
+    assert(amount >= 0 && amount <= 1);
+    final hsv = HSVColor.fromColor(this);
+    final darkenedHsv = hsv.withValue((hsv.value - amount).clamp(0.0, 1.0));
+    return darkenedHsv.toColor();
   }
 }

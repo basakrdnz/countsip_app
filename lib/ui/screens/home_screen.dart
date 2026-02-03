@@ -1,15 +1,20 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uicons/uicons.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -133,24 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('İçeceği Sil'),
-        content: const Text('Bu içeceği silmek istediğine emin misin? Puanların geri alınacak.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(iconColor: Colors.red),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
     try {
       final batch = FirebaseFirestore.instance.batch();
       batch.delete(FirebaseFirestore.instance.collection('entries').doc(entryId));
@@ -169,23 +156,101 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showYearPicker() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Yıl Seç', textAlign: TextAlign.center),
-        content: SizedBox(
-          width: 300,
-          height: 300,
-          child: YearPicker(
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2030),
-            selectedDate: _focusedDay,
-            onChanged: (DateTime dateTime) {
-              Navigator.pop(context);
-              setState(() {
-                _focusedDay = DateTime(dateTime.year, _focusedDay.month, 1);
-              });
-            },
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.background.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Yıl Seç',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 1.8,
+                  ),
+                  itemCount: 12,
+                  itemBuilder: (context, index) {
+                    final year = 2020 + index;
+                    final isSelected = year == _focusedDay.year;
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          _focusedDay = DateTime(year, _focusedDay.month, 1);
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : AppColors.primary.withOpacity(0.05),
+                            width: 1.5,
+                          ),
+                          boxShadow: isSelected ? [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            )
+                          ] : null,
+                        ),
+                        child: Text(
+                          year.toString(),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                            color: isSelected ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Kapat',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -203,9 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: AppDecorations.glassCard(borderRadius: 36).copyWith(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
           ),
           child: Column(
             children: [
@@ -413,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         GestureDetector(
                                           onTap: () {
                                             Navigator.pop(sheetContext);
-                                            _deleteEntry(entryId, points, quantity);
+                                            _showDeleteConfirmation(entryId, points, quantity);
                                           },
                                           child: Text(
                                             'Sil',
@@ -497,12 +561,13 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             return Scaffold(
-              backgroundColor: AppColors.innerBackground,
+              backgroundColor: AppColors.background,
               body: SafeArea(
-                    child: RefreshIndicator(
-                      onRefresh: () async => setState(() {}),
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
+                bottom: false,
+                child: RefreshIndicator(
+                  onRefresh: () async => setState(() {}),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -519,7 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       fontWeight: FontWeight.w900,
                                       fontFamily: 'Rosaline',
                                       letterSpacing: -1,
-                                      color: AppColors.primary,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   StreamBuilder<QuerySnapshot>(
@@ -536,7 +601,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           IconButton(
                                             onPressed: () => context.push('/notifications'),
                                             icon: Icon(UIcons.regularStraight.bell),
-                                            color: Colors.black87,
+                                            color: AppColors.textSecondary,
                                             iconSize: 26,
                                           ),
                                           if (count > 0)
@@ -581,21 +646,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(24),
                                   child: BackdropFilter(
-                                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.95),
-                                        borderRadius: BorderRadius.circular(24),
-                                        border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.primary.withOpacity(0.1),
-                                            blurRadius: 24,
-                                            offset: const Offset(0, 6),
-                                          ),
-                                        ],
-                                      ),
+                                      decoration: AppDecorations.glassCard(),
                                       child: Row(
                                         children: [
                                           Expanded(
@@ -603,7 +657,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               label: 'PUAN',
                                               value: selectedPoints.toStringAsFixed(1),
                                               icon: UIcons.regularStraight.magic_wand,
-                                              isLight: false,
+                                              isLight: true,
                                             ),
                                           ),
                                           Container(
@@ -617,7 +671,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               label: 'İÇECEK',
                                               value: '$selectedDrinks',
                                               icon: UIcons.regularStraight.drink_alt,
-                                              isLight: false,
+                                              isLight: true,
                                             ),
                                           ),
                                         ],
@@ -629,25 +683,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             
                             const SizedBox(height: AppSpacing.lg),
                             
-                            // Calendar
-                            ClipRRect(
+                            // Calendar Section with Animated Resize
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOutCirc,
+                              child: Column(
+                                children: [
+                                  ClipRRect(
                               borderRadius: BorderRadius.circular(24),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                                 child: Container(
                                   margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.95),
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primary.withOpacity(0.1),
-                                        blurRadius: 24,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
+                                  decoration: AppDecorations.glassCard(),
                                   child: Column(
                                     children: [
                                       TableCalendar(
@@ -665,101 +713,126 @@ class _HomeScreenState extends State<HomeScreen> {
                                           CalendarFormat.week: 'Hafta',
                                         },
                                         calendarStyle: CalendarStyle(
-                                          outsideDaysVisible: false,
-                                          weekendTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-                                          defaultTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-                                          todayDecoration: const BoxDecoration(
-                                            color: AppColors.primary,
-                                            shape: BoxShape.circle,
+                                            outsideDaysVisible: false,
+                                            weekendTextStyle: const TextStyle(
+                                              color: AppColors.textPrimary, 
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                            defaultTextStyle: const TextStyle(
+                                              color: AppColors.textPrimary, 
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                            todayDecoration: BoxDecoration(
+                                              color: AppColors.primary.withOpacity(0.08),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+                                            ),
+                                            todayTextStyle: const TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                            selectedDecoration: BoxDecoration(
+                                              color: AppColors.primary,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppColors.primary.withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            selectedTextStyle: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                            markerDecoration: const BoxDecoration(
+                                              color: AppColors.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            markerSize: 4,
+                                            markersMaxCount: 1,
+                                            markerMargin: const EdgeInsets.only(top: 6),
                                           ),
-                                          todayTextStyle: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
+                                          headerStyle: const HeaderStyle(
+                                            formatButtonVisible: false,
+                                            titleCentered: true,
+                                            leftChevronVisible: false,
+                                            rightChevronVisible: false,
+                                            headerPadding: EdgeInsets.symmetric(vertical: 20, horizontal: 8),
                                           ),
-                                          selectedDecoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            border: Border.all(color: AppColors.primary, width: 2),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          selectedTextStyle: const TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          markerDecoration: const BoxDecoration(
-                                            color: AppColors.primary,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          markerSize: 4.5,
-                                          markersMaxCount: 1,
-                                          markerMargin: const EdgeInsets.only(top: 6),
-                                        ),
-                                        headerStyle: HeaderStyle(
-                                          formatButtonVisible: false,
-                                          titleCentered: true,
-                                          leftChevronIcon: Icon(AppIcons.angleLeft, color: Colors.black54, size: 24),
-                                          rightChevronIcon: Icon(AppIcons.angleRight, color: Colors.black54, size: 24),
-                                          headerPadding: const EdgeInsets.symmetric(vertical: 16),
-                                        ),
                                         calendarBuilders: CalendarBuilders(
                                           headerTitleBuilder: (context, day) {
                                             return Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16),
                                               child: Row(
                                                 children: [
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month - 1, 1);
+                                                      });
+                                                    },
+                                                    icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+                                                  ),
                                                   Expanded(
                                                     child: InkWell(
                                                       onTap: _showYearPicker,
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      child: Row(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      child: Column(
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
-                                                          Flexible(
-                                                            child: Text(
-                                                              DateFormat('MMMM yyyy', 'tr_TR').format(day),
-                                                              style: const TextStyle(
-                                                                fontSize: 18,
-                                                                fontWeight: FontWeight.w900,
-                                                                color: Colors.black,
-                                                                letterSpacing: -0.5,
-                                                              ),
-                                                              overflow: TextOverflow.ellipsis,
+                                                          Text(
+                                                            DateFormat('MMMM yyyy', 'tr_TR').format(day).toUpperCase(),
+                                                            style: const TextStyle(
+                                                              fontSize: 15,
+                                                              fontWeight: FontWeight.w900,
+                                                              color: AppColors.textPrimary,
+                                                              letterSpacing: 0.5,
                                                             ),
                                                           ),
-                                                          const SizedBox(width: 4),
-                                                           Icon(AppIcons.angleDown, size: 20, color: Colors.black54),
+                                                          const SizedBox(height: 2),
+                                                          Text(
+                                                            'TARİH SEÇ',
+                                                            style: TextStyle(
+                                                              fontSize: 8,
+                                                              fontWeight: FontWeight.w800,
+                                                              color: AppColors.primary.withOpacity(0.6),
+                                                              letterSpacing: 1.2,
+                                                            ),
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
                                                   ),
-                                                  TextButton(
+                                                  IconButton(
                                                     onPressed: () {
                                                       setState(() {
-                                                        _focusedDay = DateTime.now();
-                                                        _selectedDay = DateTime.now();
+                                                        _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month + 1, 1);
                                                       });
                                                     },
-                                                    style: TextButton.styleFrom(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                                                      minimumSize: Size.zero,
-                                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                    ),
-                                                    child: const Text(
-                                                      'Bugün',
-                                                      style: TextStyle(
-                                                        color: AppColors.primary,
-                                                        fontWeight: FontWeight.w800,
-                                                        fontSize: 14,
-                                                      ),
-                                                    ),
+                                                    icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                                                   ),
                                                 ],
                                               ),
                                             );
                                           },
                                         ),
-                                        daysOfWeekStyle: const DaysOfWeekStyle(
-                                          weekdayStyle: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.normal),
-                                          weekendStyle: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.normal),
+                                        daysOfWeekStyle: DaysOfWeekStyle(
+                                          weekdayStyle: TextStyle(
+                                            color: AppColors.textTertiary.withOpacity(0.5), 
+                                            fontSize: 12, 
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
+                                          weekendStyle: TextStyle(
+                                            color: AppColors.textTertiary.withOpacity(0.5), 
+                                            fontSize: 12, 
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
                                         ),
                                         onDaySelected: (selectedDay, focusedDay) {
                                           setState(() {
@@ -781,13 +854,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             
-                            if (_selectedDay != null) ...[
-                              const SizedBox(height: 16),
-                              _buildInlineDayDetails(
-                                _selectedDay!, 
-                                activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
+                                  if (_selectedDay != null) ...[
+                                    const SizedBox(height: 16),
+                                    _buildInlineDayDetails(
+                                      _selectedDay!, 
+                                      activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
+                            ),
                             
                             const SizedBox(height: 120),
                           ],
@@ -808,84 +884,62 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    UIcons.regularStraight.calendar,
-                    size: 40,
-                    color: AppColors.primary.withOpacity(0.5),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Günü Seç Geçmişini Gör',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Detayları ve istatistikleri görmek için takvimden bir gün seçebilirsin.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: () => context.go('/add'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              width: double.infinity,
+              child: GestureDetector(
+              onTap: () => context.go('/add'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                decoration: AppDecorations.glassCard(borderRadius: 28),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        UIcons.regularStraight.plus,
+                        size: 26,
+                        color: AppColors.primary,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(UIcons.regularStraight.plus, size: 18, color: AppColors.primary.withOpacity(0.7)),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Eklemeye Başla',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary.withOpacity(0.8),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bugün Neler İçtin?',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.3,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            'İçeceklerini kaydetmek için dokun',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textSecondary.withOpacity(0.3),
+                      size: 28,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -897,22 +951,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.primary.withOpacity(0.12), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.1),
-                blurRadius: 24,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
+          decoration: AppDecorations.glassCard(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -924,34 +967,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         DateFormat('d MMMM EEEE', 'tr_TR').format(day),
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
-                          color: AppColors.primary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
                     ],
                   ),
                   if (entries.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.05),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(UIcons.regularStraight.drink_alt, color: AppColors.primary.withOpacity(0.5), size: 18),
+                    InkWell(
+                      onTap: () {
+                        setState(() => _selectedDay = null);
+                      },
+                      child: Icon(Icons.keyboard_arrow_up_rounded, color: AppColors.textSecondary.withOpacity(0.5), size: 24),
                     ),
                 ],
               ),
               if (entries.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Divider(height: 1, color: Colors.grey.shade100),
-                ListView.builder(
+                const SizedBox(height: 12),
+                Divider(height: 1, color: AppColors.primary.withOpacity(0.08)),
+                ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: entries.length,
+                  separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.primary.withOpacity(0.08)),
                   itemBuilder: (context, index) {
                     final entry = entries[index];
                     final entryId = entry['id'] as String;
@@ -961,100 +1003,130 @@ class _HomeScreenState extends State<HomeScreen> {
                     final quantity = entry['quantity'] as int? ?? 1;
                     final points = (entry['points'] ?? 0).toDouble();
                     final locationName = entry['locationName'] as String? ?? '';
+                    final note = entry['note'] as String? ?? '';
                     final timestamp = entry['timestamp'] as Timestamp?;
+                    final hasImage = entry['hasImage'] as bool? ?? false;
+                    final imagePath = entry['imagePath'] as String?;
                     final time = timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '';
 
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            children: [
-                              Column(
+                    return GestureDetector(
+                      onTap: () => _showEntryDetails(entry),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        decoration: const BoxDecoration(
+                          color: Colors.transparent,
+                        ),
+                        child: Row(
+                          children: [
+                            // Time Section
+                            Container(
+                              width: 50,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     time,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
                                       color: AppColors.primary,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(drinkEmoji, style: const TextStyle(fontSize: 20)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'SAAT',
+                                    style: TextStyle(
+                                      fontSize: 7,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.textTertiary.withOpacity(0.8),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${quantity}x $drinkType',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: -0.3,
-                                      ),
-                                    ),
-                                    if (portion.isNotEmpty)
-                                      Text(
-                                        portion,
-                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                                      ),
-                                    if (locationName.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
-                                        child: Row(
-                                          children: [
-                                            Icon(AppIcons.marker, size: 10, color: AppColors.primary.withOpacity(0.5)),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                locationName,
-                                                style: TextStyle(fontSize: 11, color: AppColors.primary.withOpacity(0.7), fontWeight: FontWeight.w600),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                            ),
+                            
+                            // Separator
+                            Container(
+                              height: 24,
+                              width: 1,
+                              color: AppColors.primary.withOpacity(0.1),
+                              margin: const EdgeInsets.only(right: 14),
+                            ),
+
+                            // Drink & Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '+${points.toStringAsFixed(1)}',
+                                    '$drinkEmoji ${quantity}x $drinkType',
                                     style: const TextStyle(
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.black,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textPrimary,
+                                      letterSpacing: -0.3,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  GestureDetector(
-                                    onTap: () => _deleteEntry(entryId, points, quantity),
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        'Sil',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.primary.withOpacity(0.6),
-                                          fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      if (portion.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: Text(
+                                            portion,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary.withOpacity(0.6),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
+                                      // Attachment Indicators
+                                      if (note.isNotEmpty) 
+                                        const Padding(padding: EdgeInsets.only(right: 4), child: Text('📝', style: TextStyle(fontSize: 10))),
+                                      if (locationName.isNotEmpty) 
+                                        const Padding(padding: EdgeInsets.only(right: 4), child: Text('📍', style: TextStyle(fontSize: 10))),
+                                      if (hasImage) 
+                                        const Padding(padding: EdgeInsets.only(right: 4), child: Text('🖼️', style: TextStyle(fontSize: 10))),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+
+                            // Points & Delete
+                            Row(
+                              children: [
+                                Text(
+                                  '+${points.toStringAsFixed(1)}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                InkWell(
+                                  onTap: () => _showDeleteConfirmation(entryId, points, quantity),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close_rounded, size: 14, color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        if (index != entries.length - 1)
-                          Divider(height: 1, color: Colors.grey.shade50),
-                      ],
+                      ),
                     );
                   },
                 ),
@@ -1063,11 +1135,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 Center(
                   child: Column(
                     children: [
-                      Icon(UIcons.regularStraight.moon, size: 40, color: Colors.grey.shade200),
-                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.04),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1),
+                        ),
+                        child: Icon(UIcons.regularStraight.moon, size: 40, color: AppColors.primary.withOpacity(0.15)),
+                      ),
+                      const SizedBox(height: 16),
                       Text(
-                        'Kayıt bulunmuyor',
-                        style: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.w500),
+                        'Bu gün için henüz kayıt yok',
+                         style: TextStyle(
+                           color: AppColors.textTertiary.withOpacity(0.6), 
+                           fontSize: 14, 
+                           fontWeight: FontWeight.w700,
+                           letterSpacing: -0.2,
+                         ),
                       ),
                     ],
                   ),
@@ -1079,6 +1164,245 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  void _showDeleteConfirmation(String entryId, double points, int quantity) {
+    HapticFeedback.vibrate();
+    showDialog(
+      context: context,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.background.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.red.withOpacity(0.2), width: 1.5),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded, color: Colors.red, size: 32),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Emin misin?',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Bu alkol kaydını silmek üzeresin. Bu işlem geri alınamaz.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary.withOpacity(0.8),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: Text(
+                          'VAZGEÇ',
+                          style: TextStyle(
+                            color: AppColors.textSecondary.withOpacity(0.6),
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _deleteEntry(entryId, points, quantity);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('SİL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEntryDetails(Map<String, dynamic> entry) {
+    HapticFeedback.lightImpact();
+    final drinkType = entry['drinkType'] as String? ?? 'Diğer';
+    final drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+    final portion = entry['portion'] as String? ?? '';
+    final quantity = entry['quantity'] as int? ?? 1;
+    final points = (entry['points'] ?? 0).toDouble();
+    final locationName = entry['locationName'] as String? ?? '';
+    final note = entry['note'] as String? ?? '';
+    final timestamp = entry['timestamp'] as Timestamp?;
+    final hasImage = entry['hasImage'] as bool? ?? false;
+    final imagePath = entry['imagePath'] as String?;
+    final time = timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.background.withOpacity(0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(child: Text(drinkEmoji, style: const TextStyle(fontSize: 32))),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          drinkType,
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                        ),
+                        Text(
+                          '$time • $quantity Adet • $portion',
+                          style: TextStyle(fontSize: 14, color: AppColors.textSecondary.withOpacity(0.6), fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '+${points.toStringAsFixed(1)}',
+                      style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              if (note.isNotEmpty) ...[
+                const Text('NOTLAR', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textSecondary, letterSpacing: 1.2)),
+                const SizedBox(height: 12),
+                Text(note, style: const TextStyle(fontSize: 16, color: AppColors.textPrimary, height: 1.5, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 24),
+              ],
+              if (locationName.isNotEmpty) ...[
+                const Text('KONUM', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textSecondary, letterSpacing: 1.2)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Text(locationName, style: const TextStyle(fontSize: 16, color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+              if (hasImage && imagePath != null) ...[
+                const Text('GÖRSEL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textSecondary, letterSpacing: 1.2)),
+                const SizedBox(height: 12),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.file(
+                        File(imagePath),
+                        width: double.infinity,
+                        height: 250,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: InkWell(
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          await Share.shareXFiles([XFile(imagePath)], text: 'Check out my $drinkType from Countsip!');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+                          ),
+                          child: const Icon(Icons.download_rounded, color: AppColors.primary, size: 20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildDashboardItem({
     required String label,
@@ -1094,13 +1418,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               icon,
               size: 14,
-              color: isLight ? Colors.white.withOpacity(0.8) : AppColors.primary.withOpacity(0.8),
+              color: isLight ? AppColors.textPrimary.withOpacity(0.8) : AppColors.primary.withOpacity(0.8),
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isLight ? Colors.white.withOpacity(0.7) : AppColors.primary.withOpacity(0.6),
+                color: isLight ? AppColors.textSecondary.withOpacity(0.7) : AppColors.primary.withOpacity(0.6),
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
@@ -1112,7 +1436,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           value,
           style: TextStyle(
-            color: isLight ? Colors.white : AppColors.primary,
+            color: isLight ? AppColors.textPrimary : AppColors.primary,
             fontSize: isLight ? 28 : 28,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,

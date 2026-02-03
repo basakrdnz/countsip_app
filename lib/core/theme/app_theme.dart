@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_radius.dart';
@@ -14,6 +15,8 @@ class AppTheme {
       surface: AppColors.surface,
     );
 
+    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme();
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
@@ -24,19 +27,19 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
       ),
-      textTheme: const TextTheme(
-        displayLarge: AppTextStyles.largeTitle,
-        titleLarge: AppTextStyles.title2,
-        titleMedium: AppTextStyles.title3,
-        bodyLarge: AppTextStyles.body,
-        bodyMedium: AppTextStyles.callout,
-        bodySmall: AppTextStyles.subheadline,
-        labelLarge: AppTextStyles.callout,
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: baseTextTheme.displayLarge?.merge(AppTextStyles.largeTitle),
+        titleLarge: baseTextTheme.titleLarge?.merge(AppTextStyles.title2),
+        titleMedium: baseTextTheme.titleMedium?.merge(AppTextStyles.title3),
+        bodyLarge: baseTextTheme.bodyLarge?.merge(AppTextStyles.body),
+        bodyMedium: baseTextTheme.bodyMedium?.merge(AppTextStyles.callout),
+        bodySmall: baseTextTheme.bodySmall?.merge(AppTextStyles.subheadline),
+        labelLarge: baseTextTheme.labelLarge?.merge(AppTextStyles.callout),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.buttonPrimary,
+          foregroundColor: AppColors.buttonOnPrimary,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: 20,
@@ -49,8 +52,8 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.buttonPrimary,
+          foregroundColor: AppColors.buttonOnPrimary,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: 20,
@@ -63,7 +66,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.buttonPrimary,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: 20,
@@ -71,12 +74,12 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          side: const BorderSide(color: AppColors.primary, width: 2),
+          side: const BorderSide(color: AppColors.buttonPrimary, width: 2),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.buttonPrimary,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: AppSpacing.sm,
@@ -88,7 +91,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.cardBackground,
         hintStyle: AppTextStyles.body.copyWith(
           color: AppColors.textTertiary,
         ),
@@ -98,7 +101,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: const BorderSide(color: AppColors.buttonPrimary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,

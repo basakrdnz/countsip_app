@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_decorations.dart';
 
 /// Profile Setup Screen - Collect user info after signup
 /// Height, Weight, Age, Gender (for BAC calculation)
@@ -296,10 +298,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'Profilini Tamamla',
-                        style: TextStyle(
-                          fontFamily: 'Rosaline',
-                          color: const Color(0xFF6A4A3C),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColors.textPrimary,
                           fontSize: 24,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ],
@@ -349,7 +351,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           child: Text(
                             'Şimdilik atla',
                             style: TextStyle(
-                              color: const Color(0xFF6A4A3C).withOpacity(0.6),
+                              color: AppColors.textSecondary.withOpacity(0.6),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -375,7 +377,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             margin: EdgeInsets.symmetric(horizontal: (index != 0) ? 4 : 0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
-              color: isActive ? const Color(0xFF6A4A3C) : const Color(0xFF6A4A3C).withOpacity(0.15),
+              color: isActive ? AppColors.buttonPrimary : AppColors.buttonPrimary.withOpacity(0.15),
             ),
           ),
         );
@@ -393,13 +395,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.xl),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.35),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10)),
-                ],
+              decoration: AppDecorations.glassCard(borderRadius: 32).copyWith(
+                border: Border.all(color: AppColors.cardBorder, width: 1.5),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -419,10 +416,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         Text(
           'Adınız nedir?',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'CalSans',
-            color: const Color(0xFF6A4A3C),
+          style: GoogleFonts.plusJakartaSans(
+            color: AppColors.textPrimary,
             fontSize: 28,
+            fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
@@ -436,7 +433,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           controller: _nameController,
           hintText: 'Adınızı girin',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF4B3126)),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           textCapitalization: TextCapitalization.words,
         ),
         const SizedBox(height: 20),
@@ -500,7 +497,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'CalSans', color: const Color(0xFF6A4A3C), fontSize: 28),
+          style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
@@ -517,7 +514,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 value != null ? '$value $unit' : '-- $unit',
-                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF4B3126)),
+                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
             ),
             _buildRoundIconButton(AppIcons.plus, currentValue < max ? () => onChanged(currentValue + 1) : null),
@@ -526,10 +523,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 32),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: const Color(0xFF6A4A3C),
-            inactiveTrackColor: const Color(0xFF6A4A3C).withOpacity(0.1),
-            thumbColor: const Color(0xFF6A4A3C),
-            overlayColor: const Color(0xFF6A4A3C).withOpacity(0.1),
+            activeTrackColor: AppColors.buttonPrimary,
+            inactiveTrackColor: AppColors.buttonPrimary.withOpacity(0.1),
+            thumbColor: AppColors.buttonPrimary,
+            overlayColor: AppColors.buttonPrimary.withOpacity(0.1),
             trackHeight: 6,
           ),
           child: Slider(
@@ -549,7 +546,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         Text(
           'Cinsiyetiniz?',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'CalSans', color: const Color(0xFF6A4A3C), fontSize: 28),
+          style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
@@ -576,23 +573,23 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6A4A3C).withOpacity(0.1) : Colors.white.withOpacity(0.6),
+          color: isSelected ? AppColors.buttonPrimary.withOpacity(0.1) : AppColors.cardBackground.withOpacity(0.6),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6A4A3C) : Colors.black.withOpacity(0.08),
+            color: isSelected ? AppColors.buttonPrimary : AppColors.cardBorder,
             width: 2,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 40, color: isSelected ? const Color(0xFF6A4A3C) : Colors.black.withOpacity(0.3)),
+            Icon(icon, size: 40, color: isSelected ? AppColors.buttonPrimary : AppColors.textTertiary),
             const SizedBox(height: 12),
             Text(
               label,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? const Color(0xFF6A4A3C) : Colors.black.withOpacity(0.5),
+                color: isSelected ? AppColors.buttonPrimary : AppColors.textSecondary,
               ),
             ),
           ],
@@ -608,11 +605,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBackground,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black.withOpacity(0.1)),
+          border: Border.all(color: AppColors.cardBorder),
         ),
-        child: Icon(icon, size: 20, color: onTap != null ? const Color(0xFF6A4A3C) : Colors.black.withOpacity(0.2)),
+        child: Icon(icon, size: 20, color: onTap != null ? AppColors.buttonPrimary : AppColors.textTertiary.withOpacity(0.5)),
       ),
     );
   }
@@ -626,9 +623,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: TextField(
         controller: controller,
@@ -637,7 +634,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         style: style,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(color: Colors.black.withOpacity(0.2), fontWeight: FontWeight.normal),
+          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5), fontWeight: FontWeight.normal),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
@@ -648,9 +645,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget _buildPrimaryButton(String text, VoidCallback? onPressed) {
     return Container(
       decoration: BoxDecoration(
+        color: AppColors.buttonPrimary,
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(colors: [const Color(0xFF6A4A3C), const Color(0xFF4B3126)]),
-        boxShadow: [BoxShadow(color: const Color(0xFF6A4A3C).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
+        boxShadow: [BoxShadow(color: AppColors.buttonPrimary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
       ),
       child: ElevatedButton(
         onPressed: _isLoading ? null : onPressed,
@@ -661,8 +658,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         ),
         child: _isLoading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text(text, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonOnPrimary))
+            : Text(text, style: TextStyle(fontSize: 16, color: AppColors.buttonOnPrimary, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -672,10 +669,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 18),
-        side: BorderSide(color: const Color(0xFF6A4A3C).withOpacity(0.3)),
+        side: BorderSide(color: AppColors.buttonPrimary.withOpacity(0.3)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
-      child: Text(text, style: const TextStyle(color: Color(0xFF6A4A3C), fontWeight: FontWeight.bold)),
+      child: Text(text, style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
     );
   }
 }

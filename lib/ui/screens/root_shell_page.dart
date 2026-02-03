@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class RootShellPage extends StatefulWidget {
   const RootShellPage({super.key, required this.navigationShell});
@@ -18,6 +20,15 @@ class _RootShellPageState extends State<RootShellPage> {
   bool _isGhostMode = false;
   DateTime? _deletionScheduledAt;
   bool _hasCheckedStatus = false;
+  int _previousIndex = 0;
+
+  @override
+  void didUpdateWidget(RootShellPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.navigationShell.currentIndex != widget.navigationShell.currentIndex) {
+      _previousIndex = oldWidget.navigationShell.currentIndex;
+    }
+  }
 
   @override
   void initState() {
@@ -128,6 +139,7 @@ class _RootShellPageState extends State<RootShellPage> {
     final currentIndex = widget.navigationShell.currentIndex;
     
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           // Ghost Mode Banner
@@ -166,84 +178,107 @@ class _RootShellPageState extends State<RootShellPage> {
                 ),
               ),
             ),
-          // Main content
-          Expanded(child: widget.navigationShell),
+          // Main content with sliding transitions
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeInOut,
+              switchOutCurve: Curves.easeInOut,
+              transitionBuilder: (child, animation) {
+                final isForward = widget.navigationShell.currentIndex >= _previousIndex;
+                final beginOffset = isForward ? const Offset(1, 0) : const Offset(-1, 0);
+                
+                return SlideTransition(
+                  position: animation.drive(
+                    Tween<Offset>(
+                      begin: beginOffset,
+                      end: Offset.zero,
+                    ).chain(CurveTween(curve: Curves.easeOutCubic)),
+                  ),
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey<int>(widget.navigationShell.currentIndex),
+                child: widget.navigationShell,
+              ),
+            ),
+          ),
         ],
       ),
       extendBody: true,
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Container(
-          height: 65,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _NavItem(
-                icon: AppIcons.home,
-                selectedIcon: AppIcons.home, //rs doesn't have filled/outlined usually, we can use same or find counterpart
-                isSelected: currentIndex == 0,
-                onTap: () => _onDestinationSelected(0),
-              ),
-              _NavItem(
-                icon: AppIcons.plus,
-                selectedIcon: AppIcons.plus,
-                isSelected: currentIndex == 1,
-                onTap: () => _onDestinationSelected(1),
-              ),
-              GestureDetector(
-                onTap: () => _onDestinationSelected(1),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primary,
-                        AppColors.primary.withOpacity(0.85),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(35),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              height: 70,
+              decoration: AppDecorations.glassCard(borderRadius: 35, borderWidth: 1.5),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _NavItem(
+                    icon: AppIcons.home,
+                    selectedIcon: AppIcons.home,
+                    isSelected: currentIndex == 0,
+                    onTap: () => _onDestinationSelected(0),
+                  ),
+                  _NavItem(
+                    icon: AppIcons.plus,
+                    selectedIcon: AppIcons.plus,
+                    isSelected: currentIndex == 1,
+                    onTap: () => _onDestinationSelected(1),
+                  ),
+                  GestureDetector(
+                    onTap: () => _onDestinationSelected(1),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withOpacity(0.85),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Icon(
+                        AppIcons.drinkAlt,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
                   ),
-                  child: Icon(
-                    AppIcons.drinkAlt,
-                    color: Colors.white,
-                    size: 26,
+                  _NavItem(
+                    icon: AppIcons.trophyIcon,
+                    selectedIcon: AppIcons.trophyIcon,
+                    isSelected: currentIndex == 2,
+                    onTap: () => _onDestinationSelected(2),
                   ),
-                ),
+                  _NavItem(
+                    icon: AppIcons.user,
+                    selectedIcon: AppIcons.user,
+                    isSelected: currentIndex == 3,
+                    onTap: () => _onDestinationSelected(3),
+                  ),
+                ],
               ),
-              _NavItem(
-                icon: AppIcons.trophyIcon,
-                selectedIcon: AppIcons.trophyIcon,
-                isSelected: currentIndex == 2,
-                onTap: () => _onDestinationSelected(2),
-              ),
-              _NavItem(
-                icon: AppIcons.user,
-                selectedIcon: AppIcons.user,
-                isSelected: currentIndex == 3,
-                onTap: () => _onDestinationSelected(3),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -273,7 +308,7 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Icon(
           isSelected ? selectedIcon : icon,
-          color: isSelected ? AppColors.primary : Colors.grey.shade400,
+          color: isSelected ? AppColors.primary : AppColors.textTertiary,
           size: 26,
         ),
       ),

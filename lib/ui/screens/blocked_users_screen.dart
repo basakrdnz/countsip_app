@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class BlockedUsersScreen extends StatelessWidget {
   const BlockedUsersScreen({super.key});
@@ -12,10 +13,10 @@ class BlockedUsersScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Engeli Kaldır'),
-        content: const Text('Bu kullanıcının engelini kaldırmak istediğine emin misin?'),
+        title: const Text('Engeli Kaldır', style: TextStyle(color: Colors.white)),
+        content: const Text('Bu kullanıcının engelini kaldırmak istediğine emin misin?', style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -57,12 +58,12 @@ class BlockedUsersScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Engellenen Kullanıcılar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.brandDark,
+        foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -82,17 +83,17 @@ class BlockedUsersScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(AppIcons.ban, size: 80, color: Colors.grey.shade300),
+                  Icon(AppIcons.ban, size: 80, color: Colors.white10),
                   const SizedBox(height: 16),
                   Text(
                     'Engellenen kullanıcı yok',
-                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 18, color: Colors.white24),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Bir kullanıcıyı engellemek için\narkadaş listesinden engelle seçeneğini kullan',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 14, color: Colors.white24, height: 1.4),
                   ),
                 ],
               ),
@@ -125,16 +126,7 @@ class BlockedUsersScreen extends StatelessWidget {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
+                    decoration: AppDecorations.glassCard(borderRadius: 20),
                     child: Row(
                       children: [
                         CircleAvatar(
@@ -152,15 +144,16 @@ class BlockedUsersScreen extends StatelessWidget {
                               Text(
                                 userData['name'] ?? 'İsimsiz',
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 16,
+                                  color: Colors.white,
                                 ),
                               ),
                               Text(
                                 '@${userData['username'] ?? ''}',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 14,
+                                  color: Colors.white54,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],

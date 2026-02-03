@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -31,12 +33,12 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.innerBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Arkadaşlar'),
+        title: const Text('Arkadaşlar', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.brandDark,
+        foregroundColor: AppColors.textPrimary,
         actions: [
           IconButton(
             onPressed: () => context.push('/add-friend'),
@@ -45,9 +47,11 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColors.primary,
+          labelColor: AppColors.buttonPrimary,
+          unselectedLabelColor: AppColors.textTertiary,
+          indicatorColor: AppColors.buttonPrimary,
+          indicatorWeight: 3,
+          dividerColor: Colors.transparent,
           tabs: [
             _buildFriendsTabLabel(),
             _buildRequestsTabLabel(),
@@ -176,11 +180,11 @@ class _FriendsListTab extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.users, size: 80, color: Colors.grey.shade300),
+                Icon(AppIcons.users, size: 80, color: Colors.white10),
                 const SizedBox(height: 16),
                 Text(
                   'Henüz arkadaşın yok',
-                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 18, color: Colors.white24),
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
@@ -246,16 +250,7 @@ class _FriendsListTab extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
+                  decoration: AppDecorations.glassCard(borderRadius: 20),
                   child: Row(
                     children: [
                       CircleAvatar(
@@ -273,20 +268,21 @@ class _FriendsListTab extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              friendData['name'] ?? 'İsimsiz',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                              Text(
+                                friendData['name'] ?? 'İsimsiz',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
-                            ),
-                            Text(
-                              '@${friendData['username'] ?? ''}',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
+                              Text(
+                                '@${friendData['username'] ?? ''}',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -344,7 +340,7 @@ class _FriendsListTab extends StatelessWidget {
           children: [
             Icon(AppIcons.ban, color: Colors.red),
             const SizedBox(width: 8),
-            const Text('Kullanıcıyı Engelle'),
+            const Text('Kullanıcıyı Engelle', style: TextStyle(color: Colors.white)),
           ],
         ),
         content: Text(
@@ -353,6 +349,7 @@ class _FriendsListTab extends StatelessWidget {
           '• Arkadaşlığınız sonlanacak\n'
           '• Seni bulamayacak\n'
           '• Sana istek gönderemeyecek',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -434,8 +431,8 @@ class _FriendsListTab extends StatelessWidget {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Arkadaşlıktan Çıkar'),
-        content: Text('$friendName adlı kullanıcıyı arkadaş listenden çıkarmak istediğine emin misin?'),
+        title: const Text('Arkadaşlıktan Çıkar', style: TextStyle(color: Colors.white)),
+        content: Text('$friendName adlı kullanıcıyı arkadaş listenden çıkarmak istediğine emin misin?', style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -505,11 +502,11 @@ class _RequestsTab extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.envelope, size: 80, color: Colors.grey.shade300),
+                Icon(AppIcons.envelope, size: 80, color: Colors.white10),
                 const SizedBox(height: 16),
                 Text(
                   'Bekleyen istek yok',
-                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 18, color: Colors.white24),
                 ),
               ],
             ),
@@ -539,16 +536,7 @@ class _RequestsTab extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
+                  decoration: AppDecorations.glassCard(borderRadius: 20),
                   child: Column(
                     children: [
                       Row(
@@ -571,15 +559,16 @@ class _RequestsTab extends StatelessWidget {
                                 Text(
                                   senderData['name'] ?? 'İsimsiz',
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                     fontSize: 16,
+                                    color: Colors.white,
                                   ),
                                 ),
                                 Text(
                                   '@${senderData['username'] ?? ''}',
                                   style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 14,
+                                    color: Colors.white54,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],

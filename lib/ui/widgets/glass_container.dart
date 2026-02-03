@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_decorations.dart';
 
 class GlassContainer extends StatelessWidget {
   final Widget child;
@@ -20,9 +21,9 @@ class GlassContainer extends StatelessWidget {
     this.height,
     this.padding,
     this.margin,
-    this.opacity = 0.6, 
-    this.blur = 12.0,
-    this.borderRadius = 16.0,
+    this.opacity = 0.85,
+    this.blur = 24.0,
+    this.borderRadius = 24.0,
     this.color,
     this.border,
   });
@@ -39,22 +40,10 @@ class GlassContainer extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
             padding: padding ?? const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
+            decoration: AppDecorations.glassCard(
+              borderRadius: borderRadius,
               color: (color ?? Colors.white).withOpacity(opacity),
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: border ?? Border.all(
-                color: Colors.white.withOpacity(0.5),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
+            ).copyWith(border: border),
             child: child,
           ),
         ),

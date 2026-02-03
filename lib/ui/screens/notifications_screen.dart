@@ -5,6 +5,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -16,7 +17,7 @@ class NotificationsScreen extends StatelessWidget {
     if (user == null) return const Scaffold(body: Center(child: Text('Giriş yapılmadı')));
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Bildirimler',
@@ -25,7 +26,7 @@ class NotificationsScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.brandDark,
+        foregroundColor: AppColors.textPrimary,
         leading: IconButton(
           icon: Icon(AppIcons.angleLeft, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -86,7 +87,7 @@ class NotificationsScreen extends StatelessWidget {
             child: Icon(
               AppIcons.bell,
               size: 64,
-              color: AppColors.primary.withOpacity(0.5),
+              color: AppColors.textTertiary.withOpacity(0.3),
             ),
           ),
           const SizedBox(height: 24),
@@ -95,7 +96,7 @@ class NotificationsScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -103,7 +104,7 @@ class NotificationsScreen extends StatelessWidget {
             'Şu an için yeni bir bildirimin yok.',
             style: TextStyle(
               fontSize: 15,
-              color: Colors.grey.shade500,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -135,18 +136,7 @@ class _NotificationItem extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.grey.shade100, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: AppDecorations.glassCard(),
           child: Column(
             children: [
               Row(
@@ -168,13 +158,13 @@ class _NotificationItem extends StatelessWidget {
                       children: [
                         RichText(
                           text: TextSpan(
-                            style: const TextStyle(color: Colors.black, fontSize: 15),
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
                             children: [
                               TextSpan(
                                 text: senderData['name'] ?? 'İsimsiz',
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.textPrimary),
                               ),
-                              const TextSpan(text: ' sana arkadaşlık isteği gönderdi.'),
+                              const TextSpan(text: ' sana arkadaşlık isteği gönderdi.', style: TextStyle(color: AppColors.textSecondary)),
                             ],
                           ),
                         ),
@@ -182,7 +172,7 @@ class _NotificationItem extends StatelessWidget {
                         Text(
                           '@${senderData['username'] ?? ''}',
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: AppColors.textTertiary,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -232,11 +222,11 @@ class _NotificationItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isPrimary ? AppColors.primary : Colors.grey.shade100,
+          color: isPrimary ? AppColors.primary : AppColors.primary.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
           boxShadow: isPrimary ? [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             )
@@ -246,7 +236,7 @@ class _NotificationItem extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: isPrimary ? Colors.white : Colors.grey.shade700,
+            color: isPrimary ? Colors.white : AppColors.textSecondary,
             fontWeight: FontWeight.w800,
             fontSize: 14,
           ),

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -145,6 +146,13 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _buildGlassIconButton(
+                                    AppIcons.angleLeft,
+                                    () => context.go('/onboarding?page=2'),
+                                  ),
+                                ),
                                 Image.asset(
                                   'assets/images/applogowname.png',
                                   height: 60,
@@ -186,10 +194,10 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                                         Text(
                                           'Tekrar Hoş Geldin!',
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontFamily: 'CalSans',
-                                            color: const Color(0xFF4B3126),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: AppColors.textPrimary,
                                             fontSize: 28,
+                                            fontWeight: FontWeight.bold,
                                             letterSpacing: -0.5,
                                           ),
                                         ),
@@ -237,7 +245,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                                               child: const Text(
                                                 'Hesap Oluştur',
                                                 style: TextStyle(
-                                                  color: Color(0xFF6A4A3C),
+                                                  color: AppColors.primary,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -276,7 +284,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
-        child: Icon(icon, color: const Color(0xFF6A4A3C), size: 22),
+        child: Icon(icon, color: AppColors.primary, size: 22),
       ),
     );
   }
@@ -299,7 +307,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           children: [
             // Country Picker
             Container(
-              height: 56,
+              height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -331,13 +339,13 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 decoration: InputDecoration(
                   hintText: '5XX XXX XX XX',
                   hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
-                  prefixIcon: Icon(AppIcons.phoneCall, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20),
+                  prefixIcon: Icon(AppIcons.phoneCall, color: AppColors.primary.withOpacity(0.6), size: 20),
                   filled: true,
                   fillColor: Colors.white,
                   border: roundedBorder(Colors.transparent),
                   enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
-                  focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  focusedBorder: roundedBorder(AppColors.primary),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
               ),
             ),
@@ -356,12 +364,12 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           decoration: InputDecoration(
             hintText: 'Şifren',
             hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
-            prefixIcon: Icon(AppIcons.lock, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20),
+            prefixIcon: Icon(AppIcons.lock, color: AppColors.primary.withOpacity(0.6), size: 20),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? AppIcons.eyeIcon : AppIcons.eyeCrossed,
                 size: 20,
-                color: const Color(0xFF6A4A3C).withOpacity(0.5),
+                color: AppColors.primary.withOpacity(0.5),
               ),
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
@@ -369,8 +377,8 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
             fillColor: Colors.white,
             border: roundedBorder(Colors.transparent),
             enabledBorder: roundedBorder(Colors.black.withOpacity(0.08)),
-            focusedBorder: roundedBorder(const Color(0xFF6A4A3C)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            focusedBorder: roundedBorder(AppColors.primary),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           ),
         ),
 
@@ -382,7 +390,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
             child: const Text(
               'Şifremi Unuttum',
               style: TextStyle(
-                color: Color(0xFF6A4A3C),
+                color: AppColors.primary,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -402,7 +410,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   Widget _buildInputLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF4B3126)),
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
     );
   }
 
@@ -433,10 +441,10 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.normal),
-          prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A4A3C).withOpacity(0.6), size: 20) : null,
+          prefixIcon: icon != null ? Icon(icon, color: AppColors.primary.withOpacity(0.6), size: 20) : null,
           suffixIcon: suffixIcon,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
       ),
     );
@@ -448,15 +456,15 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF6A4A3C),
-            const Color(0xFF4B3126),
+            AppColors.primary,
+            AppColors.textPrimary,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6A4A3C).withOpacity(0.3),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -17,13 +19,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.innerBackground,
+      backgroundColor: AppColors.background,
+      extendBody: true,
       appBar: AppBar(
         title: const Text(
           'Liderlik Tablosu',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: Color(0xFF4B3126),
+            color: AppColors.textPrimary,
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -84,11 +87,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget _buildRankingToggle() {
     return Container(
       height: 44,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+      decoration: AppDecorations.glassCard(borderRadius: 12),
       child: Row(
         children: [
           Expanded(
@@ -129,7 +128,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: isSelected ? Colors.white : const Color(0xFF4B3126),
+            color: isSelected ? Colors.white : AppColors.textSecondary,
           ),
         ),
       ),
@@ -160,28 +159,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       medalIcon = AppIcons.trophyIcon;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isCurrentUser
-            ? AppColors.primary.withOpacity(0.15)
-            : Colors.white.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCurrentUser
-              ? AppColors.primary.withOpacity(0.25)
-              : AppColors.primary.withOpacity(0.12),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: AppDecorations.glassCard(
+            color: isCurrentUser ? AppColors.primary.withOpacity(0.4) : null,
+            borderRadius: 16,
+            borderWidth: 1.2,
           ),
-        ],
-      ),
       child: Row(
         children: [
           // Rank
@@ -220,7 +209,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
-                color: const Color(0xFF4B3126),
+                color: AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -232,7 +221,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 16,
-              color: AppColors.primary,
+              color: AppColors.textPrimary,
             ),
           ),
           Text(
@@ -244,6 +233,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
           ),
         ],
+      ),
+    ),
       ),
     );
   }

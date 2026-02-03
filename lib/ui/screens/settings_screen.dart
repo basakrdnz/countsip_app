@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -228,12 +230,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.innerBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Ayarlar'),
+        title: const Text('Ayarlar', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppColors.brandDark,
+        foregroundColor: AppColors.textPrimary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -242,37 +244,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             // About Section
             _buildSectionTitle('Hakkında'),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  decoration: AppDecorations.glassCard(),
+                  child: Column(
+                    children: [
+                      _buildTapRow(
+                        icon: AppIcons.document,
+                        title: 'Gizlilik Politikası',
+                        onTap: () {},
+                      ),
+                      _buildDivider(),
+                      _buildTapRow(
+                        icon: AppIcons.memoPad,
+                        title: 'Kullanım Şartları',
+                        onTap: () {},
+                      ),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: AppIcons.infoCircle,
+                        title: 'Versiyon',
+                        value: '1.0.0',
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildTapRow(
-                    icon: AppIcons.document,
-                    title: 'Gizlilik Politikası',
-                    onTap: () {},
-                  ),
-                  _buildDivider(),
-                  _buildTapRow(
-                    icon: AppIcons.memoPad,
-                    title: 'Kullanım Şartları',
-                    onTap: () {},
-                  ),
-                  _buildDivider(),
-                  _buildInfoRow(
-                    icon: AppIcons.infoCircle,
-                    title: 'Versiyon',
-                    value: '1.0.0',
-                  ),
-                ],
+                ),
               ),
             ),
             
@@ -280,37 +279,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             
             // Coming Soon Section
             _buildSectionTitle('Yakında'),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  decoration: AppDecorations.glassCard(),
+                  child: Column(
+                    children: [
+                      _buildDisabledRow(
+                        icon: AppIcons.moon,
+                        title: 'Karanlık Mod',
+                        subtitle: 'Yakında',
+                      ),
+                      _buildDivider(),
+                      _buildDisabledRow(
+                        icon: AppIcons.bell,
+                        title: 'Bildirimler',
+                        subtitle: 'Yakında',
+                      ),
+                      _buildDivider(),
+                      _buildDisabledRow(
+                        icon: AppIcons.world,
+                        title: 'Dil',
+                        subtitle: 'Yakında',
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildDisabledRow(
-                    icon: AppIcons.moon,
-                    title: 'Karanlık Mod',
-                    subtitle: 'Yakında',
-                  ),
-                  _buildDivider(),
-                  _buildDisabledRow(
-                    icon: AppIcons.bell,
-                    title: 'Bildirimler',
-                    subtitle: 'Yakında',
-                  ),
-                  _buildDivider(),
-                  _buildDisabledRow(
-                    icon: AppIcons.world,
-                    title: 'Dil',
-                    subtitle: 'Yakında',
-                  ),
-                ],
+                ),
               ),
             ),
             
@@ -318,136 +314,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             
             // Account Management Section
             _buildSectionTitle('Hesap Yönetimi'),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Ghost Mode Toggle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(
-                      children: [
-                        Icon(AppIcons.eyeCrossed, color: Colors.purple, size: 24),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Hayalet Mod',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                'Kimse aktivitelerini göremez',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _isFrozen,
-                          onChanged: _toggleFreeze,
-                          activeColor: Colors.purple,
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildDivider(),
-                  // Blocked Users
-                  _buildTapRow(
-                    icon: AppIcons.ban,
-                    title: 'Engellenen Kullanıcılar',
-                    onTap: () => context.push('/blocked-users'),
-                  ),
-                  _buildDivider(),
-                  // Delete Account
-                  if (_deletionScheduledAt != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Icon(AppIcons.exclamation, color: Colors.orange, size: 24),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Silme Planlandı',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.orange,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${_deletionScheduledAt!.day}/${_deletionScheduledAt!.month}/${_deletionScheduledAt!.year} tarihinde silinecek',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: _cancelDelete,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.green,
-                                side: const BorderSide(color: Colors.green),
-                              ),
-                              child: const Text('Silmeyi İptal Et'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    InkWell(
-                      onTap: _scheduleDelete,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  decoration: AppDecorations.glassCard(),
+                  child: Column(
+                    children: [
+                      // Ghost Mode Toggle
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         child: Row(
                           children: [
-                            Icon(AppIcons.trash, color: Colors.red, size: 24),
+                            Icon(AppIcons.eyeCrossed, color: Colors.purple, size: 24),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'Hesabı Sil',
+                                    'Hayalet Mod',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.red,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   Text(
-                                    '7 gün sonra kalıcı olarak silinir',
+                                    'Kimse aktivitelerini göremez',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
@@ -456,19 +351,118 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                             ),
-                             Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
+                            Switch(
+                              value: _isFrozen,
+                              onChanged: _toggleFreeze,
+                              activeColor: Colors.purple,
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  _buildDivider(),
-                  // Reset All Data
-                  _buildTapRow(
-                    icon: AppIcons.refresh,
-                    title: 'İstatistikleri Sıfırla',
-                    onTap: _resetAllData,
+                      _buildDivider(),
+                      // Blocked Users
+                      _buildTapRow(
+                        icon: AppIcons.ban,
+                        title: 'Engellenen Kullanıcılar',
+                        onTap: () => context.push('/blocked-users'),
+                      ),
+                      _buildDivider(),
+                      // Delete Account
+                      if (_deletionScheduledAt != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(AppIcons.exclamation, color: Colors.orange, size: 24),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Silme Planlandı',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_deletionScheduledAt!.day}/${_deletionScheduledAt!.month}/${_deletionScheduledAt!.year} tarihinde silinecek',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed: _cancelDelete,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.green,
+                                    side: const BorderSide(color: Colors.green),
+                                  ),
+                                  child: const Text('Silmeyi İptal Et'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        InkWell(
+                          onTap: _scheduleDelete,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            child: Row(
+                              children: [
+                                Icon(AppIcons.trash, color: Colors.red, size: 24),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Hesabı Sil',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.error,
+                                        ),
+                                      ),
+                                      Text(
+                                        '7 gün sonra kalıcı olarak silinir',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                 Icon(AppIcons.angleRight, color: AppColors.textTertiary, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      _buildDivider(),
+                      // Reset All Data
+                      _buildTapRow(
+                        icon: AppIcons.refresh,
+                        title: 'İstatistikleri Sıfırla',
+                        onTap: _resetAllData,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
             
@@ -514,6 +508,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -522,11 +517,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value,
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: Colors.white70,
                 ),
               ),
             const SizedBox(width: 8),
-            Icon(AppIcons.angleRight, color: Colors.grey.shade400, size: 18),
+            Icon(AppIcons.angleRight, color: AppColors.textTertiary, size: 18),
           ],
         ),
       ),
@@ -550,6 +545,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -574,7 +570,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Icon(icon, color: Colors.grey.shade400, size: 24),
+          Icon(icon, color: AppColors.textTertiary, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -585,14 +581,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade500,
+                    color: AppColors.textTertiary,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade400,
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ],
@@ -608,7 +604,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       height: 1,
       indent: 56,
       endIndent: 20,
-      color: Colors.grey.shade200,
+      color: AppColors.primary.withOpacity(0.1),
     );
   }
 }

@@ -49,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
           
           Center(
             child: LoadingAnimationWidget.hexagonDots(
-              color: AppColors.primaryLight, 
+              color: AppColors.primary, 
               size: 50,
             ),
           ),
