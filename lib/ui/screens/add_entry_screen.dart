@@ -427,15 +427,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           ),
         ),
         centerTitle: false,
-        backgroundColor: Colors.transparent,
+        titleSpacing: 24,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: _buildTimeSelector(),
-          ),
-        ],
+        automaticallyImplyLeading: false,
       ),
       body: FadeTransition(
         opacity: _entranceController,

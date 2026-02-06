@@ -182,6 +182,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    // Stats Strip - Slim horizontal bar
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.06),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Total Drinks
+                          _buildStatItem(
+                            label: 'İÇECEK',
+                            value: '${(userData?['totalDrinks'] as num?)?.toInt() ?? 0}',
+                          ),
+                          // Divider
+                          Container(
+                            width: 1,
+                            height: 32,
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          // Total Points
+                          _buildStatItem(
+                            label: 'PUAN',
+                            value: '${(userData?['totalPoints'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
+                          ),
+                        ],
+                      ),
+                    ),
+                    
                     const SizedBox(height: AppSpacing.xl),
                     
                     // Main Menu Items
@@ -305,18 +341,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // Icon with rounded pink bg (very subtle, like profile photo glow)
+            // Icon with rounded pink bg
             if (showIconBg)
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.06),
-                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon, 
-                  color: iconColor ?? AppColors.primary.withOpacity(0.6), 
-                  size: 18,
+                  color: iconColor ?? AppColors.primary, 
+                  size: 20,
                 ),
               )
             else
@@ -339,7 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (showArrow)
               Icon(
                 AppIcons.angleRight, 
-                color: AppColors.primary.withOpacity(0.3), 
+                color: AppColors.textTertiary.withOpacity(0.5), 
                 size: 14,
               ),
           ],
@@ -354,6 +390,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       indent: 54,
       endIndent: 16,
       color: Colors.white.withOpacity(0.04),
+    );
+  }
+  
+  Widget _buildStatItem({required String label, required String value}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textTertiary,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primary,
+          ),
+        ),
+      ],
     );
   }
 }

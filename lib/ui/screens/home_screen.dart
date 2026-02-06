@@ -766,9 +766,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           Text(
                                                             'TARİH SEÇ',
                                                             style: TextStyle(
-                                                              fontSize: 8,
-                                                              fontWeight: FontWeight.w800,
-                                                              color: AppColors.primary.withOpacity(0.6),
+                                                              fontSize: 9,
+                                                              fontWeight: FontWeight.w900,
+                                                              color: AppColors.primary,
                                                               letterSpacing: 1.2,
                                                             ),
                                                           ),
@@ -1105,13 +1105,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.04),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1),
+                          color: AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Icon(UIcons.regularStraight.moon, size: 40, color: AppColors.primary.withOpacity(0.15)),
+                        child: Icon(UIcons.regularStraight.moon, size: 36, color: AppColors.primary),
                       ),
                       const SizedBox(height: 16),
                       Text(

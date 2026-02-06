@@ -256,17 +256,26 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     final proceed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Profil Fotoğrafı Seç'),
-        content: const Text(
+        title: Text(
+          'Profil Fotoğrafı Seç',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
           'Profilini kişiselleştirmek için galerinden bir fotoğraf seçebilir veya yeni bir tane çekebilirsin.',
-          style: TextStyle(fontSize: 15, color: Colors.black54),
+          style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Vazgeç'),
+            child: Text(
+              'Vazgeç',
+              style: TextStyle(color: AppColors.textTertiary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -715,36 +724,46 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
-                  // Profile Picture Section with camera icon
+                  // Profile Picture Section with coral glow ring
                   GestureDetector(
                     onTap: _pickAndUploadPhoto,
                     child: Stack(
                       children: [
+                        // Glow container
                         Container(
-                          width: 120,
-                          height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.grey.shade200,
-                            image: _photoUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(_photoUrl!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 30,
+                                spreadRadius: 5,
                               ),
                             ],
                           ),
-                          child: _isUploadingPhoto
-                              ? const Center(child: CircularProgressIndicator())
-                              : _photoUrl == null
-                                  ? Icon(AppIcons.user, size: 60, color: Colors.grey.shade400)
+                          child: Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.surface,
+                              image: _photoUrl != null
+                                  ? DecorationImage(
+                                      image: NetworkImage(_photoUrl!),
+                                      fit: BoxFit.cover,
+                                    )
                                   : null,
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.5),
+                                width: 3,
+                              ),
+                            ),
+                            child: _isUploadingPhoto
+                                ? const Center(child: CircularProgressIndicator())
+                                : _photoUrl == null
+                                    ? Icon(AppIcons.user, size: 50, color: AppColors.textTertiary)
+                                    : null,
+                          ),
                         ),
                         // Camera badge
                         Positioned(
@@ -755,248 +774,304 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
+                              border: Border.all(color: AppColors.background, width: 3),
                             ),
-                            child: Icon(AppIcons.camera, size: 18, color: Colors.white),
+                            child: Icon(AppIcons.camera, size: 16, color: Colors.white),
                           ),
                         ),
                       ],
                     ),
                   ),
                   
-                  TextButton(
-                    onPressed: _pickAndUploadPhoto,
-                    child: const Text('Fotoğrafı Değiştir'),
-                  ),
-                  
                   const SizedBox(height: AppSpacing.xl),
                   
-                  // Name - with edit button
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        decoration: AppDecorations.glassCard(),
-                        child: Row(
+                  // TEMEL BİLGİLER Section Header
+                  _buildSectionHeader('TEMEL BİLGİLER'),
+                  
+                  const SizedBox(height: AppSpacing.md),
+                  
+                  // Name Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.06),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'İsim',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  TextField(
-                                    controller: _nameController,
-                                    focusNode: _nameFocusNode,
-                                    enabled: _isEditingName,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    decoration: InputDecoration(
-                                      border: _isEditingName 
-                                          ? UnderlineInputBorder(
-                                              borderSide: BorderSide(color: AppColors.primary),
-                                            )
-                                          : InputBorder.none,
-                                      enabledBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(color: AppColors.primary),
-                                      ),
-                                      focusedBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(color: AppColors.primary, width: 2),
-                                      ),
-                                      disabledBorder: InputBorder.none,
-                                      isDense: true,
-                                      filled: false,
-                                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                    ),
-                                    textCapitalization: TextCapitalization.words,
-                                  ),
-                                ],
+                            Text(
+                              'ADI SOYADI',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textTertiary,
+                                letterSpacing: 1,
                               ),
                             ),
                             if (_isEditingName) ...[
-                              // Cancel button
-                              IconButton(
-                                onPressed: _cancelEditingName,
-                                icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
-                              ),
-                              // Save button
-                              IconButton(
-                                onPressed: _saveName,
-                                icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _cancelEditingName,
+                                    child: Text(
+                                      'İPTAL',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textTertiary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  GestureDetector(
+                                    onTap: _saveName,
+                                    child: Text(
+                                      'KAYDET',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ] else
-                              // Edit button
-                              IconButton(
-                                onPressed: _startEditingName,
-                                icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
+                              GestureDetector(
+                                onTap: _startEditingName,
+                                child: Text(
+                                  'DÜZENLE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _nameController,
+                          focusNode: _nameFocusNode,
+                          enabled: _isEditingName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            border: _isEditingName 
+                                ? UnderlineInputBorder(
+                                    borderSide: BorderSide(color: AppColors.primary),
+                                  )
+                                : InputBorder.none,
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.primary),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.primary, width: 2),
+                            ),
+                            disabledBorder: InputBorder.none,
+                            isDense: true,
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                        ),
+                      ],
                     ),
                   ),
                   
                   const SizedBox(height: AppSpacing.md),
                   
                   // Username - with edit button
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                        decoration: AppDecorations.glassCard(),
-                        child: Row(
+                  // Username Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.06),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Kullanıcı Adı',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Text('@', style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: _isEditingUsername ? AppColors.primary : AppColors.textPrimary,
-                                      )),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _usernameController,
-                                          focusNode: _usernameFocusNode,
-                                          enabled: _isEditingUsername,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                          decoration: InputDecoration(
-                                            border: _isEditingUsername 
-                                                ? UnderlineInputBorder(
-                                                    borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
-                                                  )
-                                                : InputBorder.none,
-                                            enabledBorder: UnderlineInputBorder(
-                                              borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
-                                            ),
-                                            focusedBorder: UnderlineInputBorder(
-                                              borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary, width: 2),
-                                            ),
-                                            disabledBorder: InputBorder.none,
-                                            isDense: true,
-                                            filled: false,
-                                            contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (_usernameError != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        _usernameError!,
-                                        style: const TextStyle(fontSize: 12, color: Colors.red),
-                                      ),
-                                    ),
-                                ],
+                            Text(
+                              'KULLANICI ADI',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textTertiary,
+                                letterSpacing: 1,
                               ),
                             ),
                             if (_isEditingUsername) ...[
-                              IconButton(
-                                onPressed: _cancelEditingUsername,
-                                icon: Icon(AppIcons.cross, color: Colors.grey.shade500, size: 20),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
-                              ),
-                              IconButton(
-                                onPressed: _saveUsername,
-                                icon: Icon(AppIcons.check, color: AppColors.primary, size: 20),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _cancelEditingUsername,
+                                    child: Text(
+                                      'İPTAL',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textTertiary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  GestureDetector(
+                                    onTap: _saveUsername,
+                                    child: Text(
+                                      'KAYDET',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ] else
-                              IconButton(
-                                onPressed: _startEditingUsername,
-                                icon: Icon(AppIcons.edit, color: AppColors.primary, size: 20),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
+                              GestureDetector(
+                                onTap: _startEditingUsername,
+                                child: Text(
+                                  'DÜZENLE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Text('@', style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: _isEditingUsername ? AppColors.primary : AppColors.textPrimary,
+                            )),
+                            Expanded(
+                              child: TextField(
+                                controller: _usernameController,
+                                focusNode: _usernameFocusNode,
+                                enabled: _isEditingUsername,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                                decoration: InputDecoration(
+                                  border: _isEditingUsername 
+                                      ? UnderlineInputBorder(
+                                          borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
+                                        )
+                                      : InputBorder.none,
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary),
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: _usernameError != null ? Colors.red : AppColors.primary, width: 2),
+                                  ),
+                                  disabledBorder: InputBorder.none,
+                                  isDense: true,
+                                  filled: false,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_usernameError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              _usernameError!,
+                              style: const TextStyle(fontSize: 12, color: Colors.red),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   
                   const SizedBox(height: AppSpacing.xl),
                   
-                  // Other Info Section
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(
-                        decoration: AppDecorations.glassCard(),
-                        child: Column(
-                          children: [
-                            _buildInfoRow(
-                              'Kilo',
-                              _userData?['weight'] != null ? '${_userData!['weight']} kg' : 'Belirtilmemiş',
-                              icon: Icons.monitor_weight_outlined,
-                              onTap: () => _showEditNumberDialog('weight', 'Kilonuz', 'kg', 30, 200),
-                            ),
-                            _buildDivider(),
-                            _buildInfoRow(
-                              'Boy',
-                              _userData?['height'] != null ? '${_userData!['height']} cm' : 'Belirtilmemiş',
-                              icon: Icons.height_rounded,
-                              onTap: () => _showEditNumberDialog('height', 'Boyunuz', 'cm', 100, 250),
-                            ),
-                            _buildDivider(),
-                            _buildInfoRow(
-                              'Yaş',
-                              _userData?['age'] != null ? '${_userData!['age']}' : 'Belirtilmemiş',
-                              icon: Icons.calendar_today_rounded,
-                              onTap: () => _showEditNumberDialog('age', 'Yaşınız', 'yaş', 18, 100),
-                            ),
-                            _buildDivider(),
-                            _buildInfoRow(
-                              'Cinsiyet',
-                              _userData?['gender'] == 'male' ? 'Erkek' : 
-                                _userData?['gender'] == 'female' ? 'Kadın' : 'Belirtilmemiş',
-                              icon: Icons.person_outline_rounded,
-                              onTap: _showGenderDialog,
-                            ),
-                          ],
+                  // FİZİKSEL ÖZELLİKLER Section Header
+                  _buildSectionHeader('FİZİKSEL ÖZELLİKLER'),
+                  
+                  const SizedBox(height: AppSpacing.md),
+                  
+                  // 2x2 Grid for Physical Stats
+                  Row(
+                    children: [
+                      // Cinsiyet
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.people_outline_rounded,
+                          label: 'CİNSİYET',
+                          value: _userData?['gender'] == 'male' ? 'ERKEK' : 
+                            _userData?['gender'] == 'female' ? 'KADIN' : '-',
+                          onTap: _showGenderDialog,
                         ),
                       ),
-                    ),
+                      const SizedBox(width: AppSpacing.sm),
+                      // Yaş
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.calendar_today_outlined,
+                          label: 'YAŞ',
+                          value: _userData?['age'] != null ? '${_userData!['age']}' : '-',
+                          onTap: () => _showEditNumberDialog('age', 'Yaşınız', 'yaş', 18, 100),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: AppSpacing.sm),
+                  
+                  Row(
+                    children: [
+                      // Boy
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.straighten_rounded,
+                          label: 'BOY',
+                          value: _userData?['height'] != null ? '${_userData!['height']} CM' : '-',
+                          onTap: () => _showEditNumberDialog('height', 'Boyunuz', 'cm', 100, 250),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      // Kilo
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.monitor_weight_outlined,
+                          label: 'KİLO',
+                          value: _userData?['weight'] != null ? '${_userData!['weight']} KG' : '-',
+                          onTap: () => _showEditNumberDialog('weight', 'Kilonuz', 'kg', 30, 200),
+                        ),
+                      ),
+                    ],
                   ),
                   
                   const SizedBox(height: 100),
@@ -1061,6 +1136,85 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       indent: 54,
       endIndent: 16,
       color: Colors.white.withOpacity(0.04),
+    );
+  }
+  
+  Widget _buildSectionHeader(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 16,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.06),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textTertiary,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
