@@ -163,6 +163,30 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }
   }
 
+  Color _getCategoryColor(String categoryId) {
+    switch (categoryId) {
+      case 'beer':
+        return AppColors.tertiary; // Yellow
+      case 'wine':
+        return AppColors.primary; // Coral Red
+      case 'raki':
+        return AppColors.secondary; // Teal
+      case 'whiskey':
+        return AppColors.primary; // Coral Red
+      case 'vodka':
+        return AppColors.secondary; // Teal
+      case 'gin':
+        return AppColors.secondary; // Teal
+      case 'cocktail':
+        return AppColors.primary; // Coral Red
+      case 'champagne':
+        return AppColors.tertiary; // Yellow
+      default:
+        return AppColors.primary;
+    }
+  }
+
+
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
   late AnimationController _bounceController;
@@ -492,7 +516,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1),
+        border: Border.all(color: AppColors.primary.withOpacity(0.4), width: 1.5),
       ),
       child: Material(
         color: Colors.transparent,
@@ -785,7 +809,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     child: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withOpacity(0.6),
                     ),
                   ),
                 ],

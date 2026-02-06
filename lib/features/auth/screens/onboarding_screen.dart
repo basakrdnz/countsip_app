@@ -16,8 +16,8 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerProviderStateMixin {
   late PageController _pageController;
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
+  late AnimationController _floatController;
+  late Animation<double> _floatAnimation;
   int _currentPage = 0;
   final int _totalPages = 3;
 
@@ -27,21 +27,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
     _currentPage = widget.initialPage;
     _pageController = PageController(initialPage: widget.initialPage);
     
-    // Bounce animation
-    _bounceController = AnimationController(
+    // Float animation for icons
+    _floatController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 3000),
     )..repeat(reverse: true);
     
-    _bounceAnimation = Tween<double>(begin: 0, end: 6).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+    _floatAnimation = Tween<double>(begin: 0, end: 16).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _bounceController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
 
@@ -53,7 +53,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
         curve: Curves.easeOutExpo,
       );
     } else {
-      // Son sayfada login'e git
       context.go('/login');
     }
   }
@@ -61,9 +60,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background, // #0A0E14 base
       body: Stack(
         children: [
-          // Background
+          // Background Photo (blurred cocktail)
           Positioned.fill(
             child: Image.asset(
               'assets/images/mainbg.png',
@@ -71,37 +71,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             ),
           ),
           
-          // White overlay with blur
+          // Dark overlay: rgba(10,14,20,0.8) to rgba(10,14,20,0.95)
+          // This matches #0A0E14 tone
           Positioned.fill(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
               child: Container(
-                color: Colors.white.withOpacity(0.3),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF0A0E14).withOpacity(0.8),  // rgba(10,14,20,0.8)
+                      const Color(0xFF0A0E14).withOpacity(0.95), // rgba(10,14,20,0.95)
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
 
-          // Slide İçerikleri (PageView)
+          // Content
           SafeArea(
             child: Column(
               children: [
-                // Page Indicator
+                // Progress Dots
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_totalPages, (index) {
                       final isActive = index == _currentPage;
                       return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 4,
-                        width: isActive ? 32 : 12,
+                        height: 8,
+                        width: isActive ? 32 : 8,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(4),
                           color: isActive
-                              ? AppColors.primary
-                              : AppColors.primary.withOpacity(0.2),
+                              ? null
+                              : Colors.white.withOpacity(0.25),
+                          gradient: isActive
+                              ? LinearGradient(
+                                  colors: [AppColors.primary, const Color(0xFFEE5A6F)],
+                                )
+                              : null,
+                          boxShadow: isActive
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                       );
                     }),
@@ -114,7 +139,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                     controller: _pageController,
                     onPageChanged: (index) {
                       if (index == _totalPages) {
-                        // 4. sayfaya (boş sayfa) geçmeye çalışınca login'e git
                         context.go('/login');
                         return;
                       }
@@ -122,19 +146,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                     },
                     dragStartBehavior: DragStartBehavior.down,
                     children: [
+                      _buildSlide(0),
                       _buildSlide(1),
                       _buildSlide(2),
-                      _buildLastSlide(), // Use a special build for the last slide
-                      // Swipe-to-Next için gizli sayfa
                       const SizedBox.shrink(),
                     ],
                   ),
                 ),
 
-                // Bottom Button (Sabit Konum)
+                // Button
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
-                  child: _buildGlassButton(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 60),
+                  child: _buildGradientButton(
                     _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
                     _nextPage,
                   ),
@@ -147,12 +170,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildLastSlide() {
-    return _buildSlide(3);
-  }
-
-  Widget _buildSlide(int slideNumber) {
-    // 3D ikonlar ve içerikler
+  Widget _buildSlide(int index) {
     final slideData = [
       {
         'icon': 'assets/images/3d/glass3d.png',
@@ -171,49 +189,80 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
       },
     ];
 
-    final data = slideData[slideNumber - 1];
+    final data = slideData[index];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 3D Icon with bounce animation
+          // Floating Icon with shadow
           AnimatedBuilder(
-            animation: _bounceAnimation,
+            animation: _floatAnimation,
             builder: (context, child) {
               return Transform.translate(
-                offset: Offset(0, -_bounceAnimation.value),
-                child: child,
+                offset: Offset(0, -_floatAnimation.value),
+                child: Container(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: child,
+                ),
               );
             },
             child: Image.asset(
               data['icon']!,
-              width: 120, // Reduced from 140
-              height: 120, // Reduced from 140
+              width: 200,
+              height: 200,
               fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(height: 14),
-          // Title
+          
+          const SizedBox(height: 32),
+          
+          // Title with shadow for readability
           Text(
             data['title']!,
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+            style: GoogleFonts.inter(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -1,
+              shadows: [
+                Shadow(
+                  offset: const Offset(0, 2),
+                  blurRadius: 12,
+                  color: Colors.black.withOpacity(0.5),
+                ),
+              ],
             ),
           ),
+          
           const SizedBox(height: 16),
-          // Description
+          
+          // Description with shadow
           Text(
             data['description']!,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.primary.withOpacity(0.7),
-              height: 1.5,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textTertiary,
+              height: 1.6,
+              shadows: [
+                Shadow(
+                  offset: const Offset(0, 1),
+                  blurRadius: 8,
+                  color: Colors.black.withOpacity(0.6),
+                ),
+              ],
             ),
           ),
         ],
@@ -221,18 +270,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildGlassButton(String text, VoidCallback onPressed) {
+  Widget _buildGradientButton(String text, VoidCallback onPressed) {
     return Container(
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, const Color(0xFFEE5A6F)],
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: AppColors.primary.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -240,15 +293,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Center(
             child: Text(
               text,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
             ),
           ),

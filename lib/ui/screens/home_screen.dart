@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import '../widgets/animated_notification_bell.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -595,41 +596,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         .snapshots(),
                                     builder: (context, snapshot) {
                                       final count = snapshot.data?.docs.length ?? 0;
-                                      return Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          IconButton(
-                                            onPressed: () => context.push('/notifications'),
-                                            icon: Icon(UIcons.regularStraight.bell),
-                                            color: AppColors.textSecondary,
-                                            iconSize: 26,
-                                          ),
-                                          if (count > 0)
-                                            Positioned(
-                                              right: 8,
-                                              top: 8,
-                                              child: Container(
-                                                padding: const EdgeInsets.all(4),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.red,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 16,
-                                                  minHeight: 16,
-                                                ),
-                                                child: Text(
-                                                  '$count',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
+                                      return AnimatedNotificationBell(
+                                        count: count,
+                                        onTap: () => context.push('/notifications'),
                                       );
                                     },
                                   ),

@@ -131,7 +131,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                   constraints: const BoxConstraints(
@@ -192,15 +192,15 @@ class _FriendsListTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, Color(0xFFEE5A6F)],
                       ),
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: AppColors.primary.withOpacity(0.25),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -208,13 +208,14 @@ class _FriendsListTab extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(AppIcons.addUser, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         const Text(
                           'Arkadaş Ekle',
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -250,20 +251,25 @@ class _FriendsListTab extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
-                  decoration: AppDecorations.glassCard(borderRadius: 20),
+                  decoration: AppDecorations.glassCard(borderRadius: 24),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        backgroundImage: friendData['photoUrl'] != null
-                            ? NetworkImage(friendData['photoUrl'])
-                            : null,
-                        child: friendData['photoUrl'] == null
-                            ? Icon(AppIcons.user, color: AppColors.primary)
-                            : null,
+                      // Avatar with matching style
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.06),
+                          shape: BoxShape.circle,
+                        ),
+                        child: friendData['photoUrl'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: Image.network(friendData['photoUrl'], fit: BoxFit.cover),
+                              )
+                            : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,23 +278,29 @@ class _FriendsListTab extends StatelessWidget {
                                 friendData['name'] ?? 'İsimsiz',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  color: AppColors.textPrimary,
+                                  fontSize: 14,
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
                               Text(
                                 '@${friendData['username'] ?? ''}',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 13,
+                                  color: AppColors.textTertiary.withOpacity(0.6),
+                                  fontSize: 12,
                                 ),
                               ),
                           ],
                         ),
                       ),
                       PopupMenuButton<String>(
-                        icon: Icon(AppIcons.menuDotsVertical, color: Colors.grey.shade400, size: 18),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        icon: Icon(AppIcons.menuDotsVertical, color: AppColors.textTertiary.withOpacity(0.5), size: 18),
+                        color: AppColors.surface, // Dark background
+                        elevation: 8,
+                        offset: const Offset(0, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Colors.white.withOpacity(0.05)),
+                        ),
                         onSelected: (value) {
                           if (value == 'block') {
                             _showBlockDialog(context, friendUid, friendData['name'] ?? 'Bu kullanıcı', friendships[index].id);
@@ -299,21 +311,29 @@ class _FriendsListTab extends StatelessWidget {
                         itemBuilder: (context) => [
                           PopupMenuItem(
                             value: 'remove',
+                            height: 44,
                             child: Row(
                               children: [
-                                Icon(AppIcons.userRemoveIcon, color: Colors.orange, size: 20),
+                                Icon(AppIcons.userRemoveIcon, color: Colors.orange.withOpacity(0.8), size: 18),
                                 const SizedBox(width: 12),
-                                const Text('Arkadaşlıktan Çıkar'),
+                                const Text(
+                                  'Arkadaşlıktan Çıkar',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                                ),
                               ],
                             ),
                           ),
                           PopupMenuItem(
                             value: 'block',
+                            height: 44,
                             child: Row(
                               children: [
-                                Icon(AppIcons.ban, color: Colors.red, size: 20),
+                                Icon(AppIcons.ban, color: AppColors.error.withOpacity(0.8), size: 18),
                                 const SizedBox(width: 12),
-                                const Text('Engelle'),
+                                const Text(
+                                  'Engelle',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                                ),
                               ],
                             ),
                           ),
@@ -334,35 +354,58 @@ class _FriendsListTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            Icon(AppIcons.ban, color: Colors.red),
-            const SizedBox(width: 8),
-            const Text('Kullanıcıyı Engelle', style: TextStyle(color: Colors.white)),
+            Icon(AppIcons.ban, color: AppColors.primary),
+            const SizedBox(width: 12),
+            const Text(
+              'Kullanıcıyı Engelle', 
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
         content: Text(
           '$friendName adlı kullanıcıyı engellemek istediğine emin misin?\n\n'
           'Engeeldiğinde:\n'
           '• Arkadaşlığınız sonlanacak\n'
           '• Seni bulamayacak\n'
           '• Sana istek gönderemeyecek',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondary, height: 1.4),
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Vazgeç'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _blockUser(context, friendUid, friendshipId);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Engelle', style: TextStyle(color: Colors.white)),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Vazgeç', 
+                    style: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _blockUser(context, friendUid, friendshipId);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Engelle', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -429,22 +472,54 @@ class _FriendsListTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Arkadaşlıktan Çıkar', style: TextStyle(color: Colors.white)),
-        content: Text('$friendName adlı kullanıcıyı arkadaş listenden çıkarmak istediğine emin misin?', style: TextStyle(color: Colors.white70)),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Icon(AppIcons.userRemoveIcon, color: AppColors.primary),
+            const SizedBox(width: 12),
+            const Text(
+              'Arkadaşlıktan Çıkar', 
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+        content: Text(
+          '$friendName adlı kullanıcıyı arkadaş listenden çıkarmak istediğine emin misin?', 
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Vazgeç'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _removeFriend(context, friendshipId);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Çıkar', style: TextStyle(color: Colors.white)),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Vazgeç', 
+                    style: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _removeFriend(context, friendshipId);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Çıkar', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -536,22 +611,27 @@ class _RequestsTab extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
-                  decoration: AppDecorations.glassCard(borderRadius: 20),
+                  decoration: AppDecorations.glassCard(borderRadius: 24),
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
-                            backgroundImage: senderData['photoUrl'] != null
-                                ? NetworkImage(senderData['photoUrl'])
-                                : null,
-                            child: senderData['photoUrl'] == null
-                                ? Icon(AppIcons.user, color: AppColors.primary)
-                                : null,
+                          // Avatar with matching style
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.06),
+                              shape: BoxShape.circle,
+                            ),
+                            child: senderData['photoUrl'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Image.network(senderData['photoUrl'], fit: BoxFit.cover),
+                                  )
+                                : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,15 +640,15 @@ class _RequestsTab extends StatelessWidget {
                                   senderData['name'] ?? 'İsimsiz',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    color: Colors.white,
+                                    fontSize: 14,
+                                    color: AppColors.textTertiary,
                                   ),
                                 ),
                                 Text(
                                   '@${senderData['username'] ?? ''}',
                                   style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 13,
+                                    color: AppColors.textTertiary.withOpacity(0.6),
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
@@ -576,27 +656,60 @@ class _RequestsTab extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _rejectRequest(context, request.id),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                                side: const BorderSide(color: Colors.red),
+                            child: GestureDetector(
+                              onTap: () => _rejectRequest(context, request.id),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.error.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.error.withOpacity(0.2)),
+                                ),
+                                child: Text(
+                                  'Reddet',
+                                  style: TextStyle(
+                                    color: AppColors.error.withOpacity(0.8),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
-                              child: const Text('Reddet'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _acceptRequest(context, request.id, fromUid),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
+                            child: GestureDetector(
+                              onTap: () => _acceptRequest(context, request.id, fromUid),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [AppColors.primary, Color(0xFFEE5A6F)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Text(
+                                  'Kabul Et',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
-                              child: const Text('Kabul Et', style: TextStyle(color: Colors.white)),
                             ),
                           ),
                         ],

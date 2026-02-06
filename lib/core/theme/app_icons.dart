@@ -33,7 +33,7 @@ class AppIcons {
   static final IconData eyeCrossed = UIcons.regularStraight.crossed_eye;
   static final IconData exclamation = UIcons.regularStraight.exclamation;
   static final IconData tachometerFast = UIcons.regularStraight.tachometer_fast;
-  static final IconData trophyIcon = UIcons.regularStraight.trophy;
+  static const IconData trophyIcon = Icons.workspace_premium_rounded; // Used material icon for stability
   static final IconData addUser = UIcons.regularStraight.user_add;
   static final IconData users = UIcons.regularStraight.users;
   static final IconData settingsSliders = UIcons.regularStraight.settings_sliders;

@@ -509,23 +509,24 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Handle bar
               Container(
-                width: 36,
+                width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
               // Value with unit - big and centered
               Row(
@@ -562,7 +563,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                   overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
                   activeTrackColor: AppColors.primary,
-                  inactiveTrackColor: Colors.grey.shade200,
+                  inactiveTrackColor: Colors.white.withOpacity(0.05),
                   thumbColor: AppColors.primary,
                 ),
                 child: Slider(
@@ -579,8 +580,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('$min', style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
-                    Text('$max', style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+                    Text('$min', style: TextStyle(fontSize: 12, color: AppColors.textTertiary.withOpacity(0.4))),
+                    Text('$max', style: TextStyle(fontSize: 12, color: AppColors.textTertiary.withOpacity(0.4))),
                   ],
                 ),
               ),
@@ -623,18 +624,19 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       builder: (context) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle bar
             Container(
-              width: 36,
+              width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -663,25 +665,30 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         Navigator.pop(context);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        height: 100,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.05),
+            width: isSelected ? 2 : 1,
+          ),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              value == 'male' ? AppIcons.mars : AppIcons.venus,
-              size: 32,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
+              value == 'male' ? AppIcons.user : AppIcons.user, // Add gender specific if available
+              color: isSelected ? AppColors.primary : AppColors.textTertiary.withOpacity(0.5),
+              size: 28,
             ),
             const SizedBox(height: 8),
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textTertiary.withOpacity(0.8),
               ),
             ),
           ],
@@ -782,7 +789,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                     'İsim',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textTertiary,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -854,7 +862,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                         decoration: AppDecorations.glassCard(),
                         child: Row(
                           children: [
@@ -864,18 +872,18 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                 children: [
                                   Text(
                                     'Kullanıcı Adı',
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textTertiary,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      Text('@', style: GoogleFonts.plusJakartaSans(
+                                      Text('@', style: TextStyle(
                                         fontSize: 18,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.bold,
                                         color: _isEditingUsername ? AppColors.primary : AppColors.textPrimary,
                                       )),
                                       Expanded(
@@ -883,9 +891,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                           controller: _usernameController,
                                           focusNode: _usernameFocusNode,
                                           enabled: _isEditingUsername,
-                                          style: GoogleFonts.plusJakartaSans(
+                                          style: const TextStyle(
                                             fontSize: 18,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.bold,
                                             color: AppColors.textPrimary,
                                           ),
                                           decoration: InputDecoration(
@@ -960,18 +968,21 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                             _buildInfoRow(
                               'Kilo',
                               _userData?['weight'] != null ? '${_userData!['weight']} kg' : 'Belirtilmemiş',
+                              icon: Icons.monitor_weight_outlined,
                               onTap: () => _showEditNumberDialog('weight', 'Kilonuz', 'kg', 30, 200),
                             ),
                             _buildDivider(),
                             _buildInfoRow(
                               'Boy',
                               _userData?['height'] != null ? '${_userData!['height']} cm' : 'Belirtilmemiş',
+                              icon: Icons.height_rounded,
                               onTap: () => _showEditNumberDialog('height', 'Boyunuz', 'cm', 100, 250),
                             ),
                             _buildDivider(),
                             _buildInfoRow(
                               'Yaş',
                               _userData?['age'] != null ? '${_userData!['age']}' : 'Belirtilmemiş',
+                              icon: Icons.calendar_today_rounded,
                               onTap: () => _showEditNumberDialog('age', 'Yaşınız', 'yaş', 18, 100),
                             ),
                             _buildDivider(),
@@ -979,6 +990,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                               'Cinsiyet',
                               _userData?['gender'] == 'male' ? 'Erkek' : 
                                 _userData?['gender'] == 'female' ? 'Kadın' : 'Belirtilmemiş',
+                              icon: Icons.person_outline_rounded,
                               onTap: _showGenderDialog,
                             ),
                           ],
@@ -994,32 +1006,49 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {required VoidCallback onTap}) {
+  Widget _buildInfoRow(String label, String value, {required IconData icon, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.06),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon, 
+                color: AppColors.primary.withOpacity(0.6), 
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 14),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textTertiary,
               ),
             ),
             const Spacer(),
             Text(
               value,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textTertiary.withOpacity(0.6),
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary.withOpacity(0.3), size: 20),
+            Icon(
+              Icons.chevron_right_rounded, 
+              color: AppColors.primary.withOpacity(0.3), 
+              size: 14,
+            ),
           ],
         ),
       ),
@@ -1029,9 +1058,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   Widget _buildDivider() {
     return Divider(
       height: 1,
-      indent: 20,
-      endIndent: 20,
-      color: AppColors.primary.withOpacity(0.05),
+      indent: 54,
+      endIndent: 16,
+      color: Colors.white.withOpacity(0.04),
     );
   }
 

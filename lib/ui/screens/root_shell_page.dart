@@ -227,18 +227,20 @@ class _RootShellPageState extends State<RootShellPage> {
                     selectedIcon: AppIcons.home,
                     isSelected: currentIndex == 0,
                     onTap: () => _onDestinationSelected(0),
+                    iconSize: 24,
                   ),
                   _NavItem(
                     icon: AppIcons.plus,
                     selectedIcon: AppIcons.plus,
                     isSelected: currentIndex == 1,
                     onTap: () => _onDestinationSelected(1),
+                    iconSize: 24,
                   ),
                   GestureDetector(
                     onTap: () => _onDestinationSelected(1),
                     child: Container(
-                      width: 52,
-                      height: 52,
+                      width: 58,
+                      height: 58,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
@@ -252,15 +254,15 @@ class _RootShellPageState extends State<RootShellPage> {
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.primary.withOpacity(0.35),
-                            blurRadius: 10,
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: Icon(
-                        AppIcons.drinkAlt,
+                      child: const Icon(
+                        Icons.wine_bar_rounded,
                         color: Colors.white,
-                        size: 26,
+                        size: 34,
                       ),
                     ),
                   ),
@@ -269,12 +271,14 @@ class _RootShellPageState extends State<RootShellPage> {
                     selectedIcon: AppIcons.trophyIcon,
                     isSelected: currentIndex == 2,
                     onTap: () => _onDestinationSelected(2),
+                    iconSize: 29, // Keeping leaderboard larger as requested
                   ),
                   _NavItem(
                     icon: AppIcons.user,
                     selectedIcon: AppIcons.user,
                     isSelected: currentIndex == 3,
                     onTap: () => _onDestinationSelected(3),
+                    iconSize: 24,
                   ),
                 ],
               ),
@@ -291,12 +295,14 @@ class _NavItem extends StatelessWidget {
   final IconData selectedIcon;
   final bool isSelected;
   final VoidCallback onTap;
+  final double iconSize;
 
   const _NavItem({
     required this.icon,
     required this.selectedIcon,
     required this.isSelected,
     required this.onTap,
+    this.iconSize = 25,
   });
 
   @override
@@ -309,7 +315,7 @@ class _NavItem extends StatelessWidget {
         child: Icon(
           isSelected ? selectedIcon : icon,
           color: isSelected ? AppColors.primary : AppColors.textTertiary,
-          size: 26,
+          size: iconSize,
         ),
       ),
     );

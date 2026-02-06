@@ -227,6 +227,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  Future<bool?> _showConfirmDialog(BuildContext context, {
+    required String title,
+    required String content,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          title,
+          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          content,
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Vazgeç',
+                    style: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Onayla', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,12 +339,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     children: [
                       _buildDisabledRow(
-                        icon: AppIcons.moon,
-                        title: 'Karanlık Mod',
-                        subtitle: 'Yakında',
-                      ),
-                      _buildDivider(),
-                      _buildDisabledRow(
                         icon: AppIcons.bell,
                         title: 'Bildirimler',
                         subtitle: 'Yakında',
@@ -322,13 +367,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: AppDecorations.glassCard(),
                   child: Column(
                     children: [
-                      // Ghost Mode Toggle
+                      // Ghost Mode Row
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
-                            Icon(AppIcons.eyeCrossed, color: Colors.purple, size: 24),
-                            const SizedBox(width: 16),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.06),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                AppIcons.eyeCrossed, 
+                                color: AppColors.primary.withOpacity(0.6), 
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,16 +392,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   const Text(
                                     'Hayalet Mod',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.textTertiary,
                                     ),
                                   ),
                                   Text(
                                     'Kimse aktivitelerini göremez',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.textTertiary.withOpacity(0.5),
                                     ),
                                   ),
                                 ],
@@ -354,7 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Switch(
                               value: _isFrozen,
                               onChanged: _toggleFreeze,
-                              activeColor: Colors.purple,
+                              activeColor: AppColors.primary,
+                              activeTrackColor: AppColors.primary.withOpacity(0.3),
                             ),
                           ],
                         ),
@@ -417,48 +474,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         )
                       else
-                        InkWell(
+                        _buildTapRow(
+                          icon: AppIcons.trash,
+                          title: 'Hesabı Sil',
+                          titleColor: AppColors.error.withOpacity(0.8),
+                          iconColor: AppColors.error.withOpacity(0.8),
                           onTap: _scheduleDelete,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                            child: Row(
-                              children: [
-                                Icon(AppIcons.trash, color: Colors.red, size: 24),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Hesabı Sil',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.error,
-                                        ),
-                                      ),
-                                      Text(
-                                        '7 gün sonra kalıcı olarak silinir',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                 Icon(AppIcons.angleRight, color: AppColors.textTertiary, size: 18),
-                              ],
-                            ),
-                          ),
                         ),
                       _buildDivider(),
                       // Reset All Data
                       _buildTapRow(
                         icon: AppIcons.refresh,
                         title: 'İstatistikleri Sıfırla',
-                        onTap: _resetAllData,
+                        onTap: () async {
+                          final confirm = await _showConfirmDialog(
+                            context,
+                            title: 'İstatistikleri Sıfırla',
+                            content: 'Tüm içim geçmişin ve puanların kalıcı olarak sıfırlanacak. Bu işlem geri alınamaz.',
+                          );
+                          if (confirm == true) _resetAllData();
+                        },
                       ),
                     ],
                   ),
@@ -492,23 +527,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     String? value,
     required VoidCallback onTap,
+    Color? iconColor,
+    Color? titleColor,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: AppColors.primary, size: 24),
-            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (iconColor ?? AppColors.primary).withOpacity(0.06),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon, 
+                color: (iconColor ?? AppColors.primary).withOpacity(0.6), 
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: titleColor ?? AppColors.textTertiary,
                 ),
               ),
             ),
@@ -516,12 +564,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
+                  fontSize: 13,
+                  color: AppColors.textTertiary.withOpacity(0.6),
                 ),
               ),
             const SizedBox(width: 8),
-            Icon(AppIcons.angleRight, color: AppColors.textTertiary, size: 18),
+            Icon(
+              AppIcons.angleRight, 
+              color: AppColors.primary.withOpacity(0.3), 
+              size: 14,
+            ),
           ],
         ),
       ),
@@ -534,26 +586,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String value,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 24),
-          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.06),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon, 
+              color: AppColors.primary.withOpacity(0.6), 
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: AppColors.textTertiary,
               ),
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
+              fontSize: 13,
+              color: AppColors.textTertiary.withOpacity(0.6),
             ),
           ),
         ],
@@ -567,11 +630,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String subtitle,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.textTertiary, size: 24),
-          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.04),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon, 
+              color: AppColors.textTertiary.withOpacity(0.3), 
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,16 +653,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textTertiary,
+                    color: AppColors.textTertiary.withOpacity(0.5),
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textTertiary,
+                    fontSize: 11,
+                    color: AppColors.textTertiary.withOpacity(0.3),
                   ),
                 ),
               ],
@@ -602,9 +676,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildDivider() {
     return Divider(
       height: 1,
-      indent: 56,
-      endIndent: 20,
-      color: AppColors.primary.withOpacity(0.1),
+      indent: 54,
+      endIndent: 16,
+      color: Colors.white.withOpacity(0.04),
     );
   }
 }

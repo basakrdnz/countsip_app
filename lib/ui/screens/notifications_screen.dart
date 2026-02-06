@@ -134,70 +134,101 @@ class _NotificationItem extends StatelessWidget {
         if (senderData == null) return const SizedBox();
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: AppDecorations.glassCard(),
-          child: Column(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    backgroundImage: senderData['photoUrl'] != null 
-                        ? NetworkImage(senderData['photoUrl']) 
-                        : null,
-                    child: senderData['photoUrl'] == null 
-                        ? Icon(AppIcons.user, color: AppColors.primary, size: 28) 
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-                            children: [
-                              TextSpan(
-                                text: senderData['name'] ?? 'İsimsiz',
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.textPrimary),
-                              ),
-                              const TextSpan(text: ' sana arkadaşlık isteği gönderdi.', style: TextStyle(color: AppColors.textSecondary)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '@${senderData['username'] ?? ''}',
-                          style: TextStyle(
-                            color: AppColors.textTertiary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              // Avatar
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.surfaceElevated,
+                backgroundImage: senderData['photoUrl'] != null 
+                    ? NetworkImage(senderData['photoUrl']) 
+                    : null,
+                child: senderData['photoUrl'] == null 
+                    ? Icon(AppIcons.user, color: AppColors.textTertiary, size: 20) 
+                    : null,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(width: 12),
+              
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      senderData['name'] ?? 'İsimsiz',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700, 
+                        fontSize: 14, 
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'sana arkadaşlık isteği gönderdi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Compact action buttons (Instagram-style)
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: _buildActionButton(
-                      label: 'Reddet',
-                      isPrimary: false,
-                      onTap: () => _rejectRequest(context),
+                  // Reject button (X)
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _rejectRequest(context);
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildActionButton(
-                      label: 'Kabul Et',
-                      isPrimary: true,
-                      onTap: () => _acceptRequest(context, fromUid),
+                  const SizedBox(width: 8),
+                  // Accept button
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      _acceptRequest(context, fromUid);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: AppColors.primaryGradient,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Kabul Et',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ],

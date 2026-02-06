@@ -93,30 +93,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     const SizedBox(height: AppSpacing.lg),
                     
-                    // Profile Picture
+                    // Profile Picture with Glow
                     Container(
-                      width: 100,
-                      height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.grey.shade200,
-                        image: photoUrl != null
-                            ? DecorationImage(
-                                image: NetworkImage(photoUrl),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 30,
+                            spreadRadius: 5,
                           ),
                         ],
                       ),
-                      child: photoUrl == null
-                          ? Icon(AppIcons.user, size: 50, color: Colors.grey.shade400)
-                          : null,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.surfaceElevated,
+                          image: photoUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(photoUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: photoUrl == null
+                            ? Icon(AppIcons.user, size: 50, color: AppColors.textTertiary)
+                            : null,
+                      ),
                     ),
                     
                     const SizedBox(height: AppSpacing.md),
@@ -259,25 +268,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     
                     const SizedBox(height: AppSpacing.lg),
                     
-                    // Logout Button
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                        child: Container(
-                          width: double.infinity,
-                          decoration: AppDecorations.glassCard(),
-                        child: _buildMenuItem(
-                          icon: AppIcons.exit,
-                          title: 'Çıkış Yap',
-                          iconColor: AppColors.error,
-                          titleColor: AppColors.error,
-                          showArrow: false,
-                          onTap: () => _signOut(context),
-                        ),
-                      ),
+                    // Logout Button (prominent)
+                    _buildMenuItem(
+                      icon: AppIcons.exit,
+                      title: 'Çıkış Yap',
+                      iconColor: AppColors.primary,
+                      titleColor: AppColors.primary,
+                      showArrow: false,
+                      showIconBg: false,
+                      onTap: () => _signOut(context),
                     ),
-                  ),
                     
                     const SizedBox(height: 100), // Bottom padding for nav bar
                   ],
@@ -296,28 +296,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Color? iconColor,
     Color? titleColor,
     bool showArrow = true,
+    bool showIconBg = true,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 24),
-            const SizedBox(width: 16),
+            // Icon with rounded pink bg (very subtle, like profile photo glow)
+            if (showIconBg)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon, 
+                  color: iconColor ?? AppColors.primary.withOpacity(0.6), 
+                  size: 18,
+                ),
+              )
+            else
+              Icon(
+                icon, 
+                color: iconColor ?? AppColors.primary, 
+                size: 20,
+              ),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: titleColor ?? AppColors.textPrimary,
+                  color: titleColor ?? AppColors.textTertiary,
                 ),
               ),
             ),
             if (showArrow)
-              Icon(AppIcons.angleRight, color: AppColors.textTertiary, size: 18),
+              Icon(
+                AppIcons.angleRight, 
+                color: AppColors.primary.withOpacity(0.3), 
+                size: 14,
+              ),
           ],
         ),
       ),
@@ -327,9 +351,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildDivider() {
     return Divider(
       height: 1,
-      indent: 56,
-      endIndent: 20,
-      color: AppColors.primary.withOpacity(0.1),
+      indent: 54,
+      endIndent: 16,
+      color: Colors.white.withOpacity(0.04),
     );
   }
 }

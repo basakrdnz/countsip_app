@@ -292,19 +292,21 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.blue.shade100,
-            borderRadius: BorderRadius.circular(20),
+            color: AppColors.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.primary.withOpacity(0.12)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(AppIcons.checkCircle, size: 16, color: Colors.blue.shade700),
-              const SizedBox(width: 4),
-              Text(
+              Icon(AppIcons.checkCircle, size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
+              const Text(
                 'Arkadaş',
                 style: TextStyle(
-                  color: Colors.blue.shade700,
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -317,19 +319,21 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.cross, size: 16, color: Colors.orange.shade700),
-                const SizedBox(width: 4),
-                Text(
+                Icon(AppIcons.cross, size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                const Text(
                   'İptal Et',
                   style: TextStyle(
-                    color: Colors.orange.shade700,
-                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -344,12 +348,12 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Colors.green, Color(0xFF4CAF50)],
+                colors: [AppColors.primary, Color(0xFFEE5A6F)],
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
+                  color: AppColors.primary.withOpacity(0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -358,13 +362,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.check, size: 16, color: Colors.white),
-                const SizedBox(width: 4),
+                Icon(AppIcons.check, size: 14, color: Colors.white),
+                const SizedBox(width: 6),
                 const Text(
                   'Kabul Et',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -376,19 +381,20 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.red.shade100,
-            borderRadius: BorderRadius.circular(20),
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(AppIcons.ban, size: 16, color: Colors.red.shade700),
-              const SizedBox(width: 4),
-              Text(
+              Icon(AppIcons.ban, size: 14, color: AppColors.textTertiary),
+              const SizedBox(width: 6),
+              const Text(
                 'Engelli',
                 style: TextStyle(
-                  color: Colors.red.shade700,
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -402,13 +408,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, Color(0xFFEE5A6F)],
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withOpacity(0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -417,13 +423,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.addUser, size: 16, color: Colors.white),
-                const SizedBox(width: 4),
+                Icon(AppIcons.addUser, size: 14, color: Colors.white),
+                const SizedBox(width: 6),
                 const Text(
                   'Ekle',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -456,34 +463,44 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           if (_myUsername != null)
             Container(
               margin: const EdgeInsets.all(AppSpacing.lg),
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-                ),
-                borderRadius: BorderRadius.circular(20),
+              padding: const EdgeInsets.all(20),
+              decoration: AppDecorations.glassCard(
+                borderRadius: 24,
+                color: AppColors.primary.withOpacity(0.08),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(AppIcons.share, color: Colors.white, size: 20),
-                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(AppIcons.share, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Kullanıcı adını paylaş',
-                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                              style: TextStyle(
+                                color: AppColors.textTertiary, 
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             Text(
                               '@$_myUsername',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ],
@@ -491,34 +508,76 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
+                        child: GestureDetector(
+                          onTap: () {
                             Clipboard.setData(ClipboardData(text: '@$_myUsername'));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Kopyalandı!')),
                             );
                           },
-                          icon: Icon(AppIcons.copy, size: 18),
-                          label: const Text('Kopyala'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white54),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(AppIcons.copy, size: 16, color: AppColors.textSecondary),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Kopyala',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _shareUsername,
-                          icon: Icon(AppIcons.paperPlane, size: 18),
-                          label: const Text('Paylaş'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppColors.primary,
+                        child: GestureDetector(
+                          onTap: _shareUsername,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.primary, Color(0xFFEE5A6F)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(AppIcons.paperPlane, size: 16, color: Colors.white),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Paylaş',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -590,20 +649,25 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
-                        decoration: AppDecorations.glassCard(borderRadius: 20),
+                        decoration: AppDecorations.glassCard(borderRadius: 24),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: AppColors.primary.withOpacity(0.1),
-                              backgroundImage: user['photoUrl'] != null
-                                  ? NetworkImage(user['photoUrl'])
-                                  : null,
-                              child: user['photoUrl'] == null
-                                  ? Icon(UIcons.regularStraight.user, color: AppColors.primary)
-                                  : null,
+                            // Avatar with matching style
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.06),
+                                shape: BoxShape.circle,
+                              ),
+                              child: user['photoUrl'] != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: Image.network(user['photoUrl'], fit: BoxFit.cover),
+                                    )
+                                  : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,15 +676,15 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                                       user['name'] ?? 'İsimsiz',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                        color: AppColors.textPrimary,
+                                        fontSize: 14,
+                                        color: AppColors.textTertiary,
                                       ),
                                     ),
                                     Text(
                                       '@${user['username']}',
                                       style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 13,
+                                        color: AppColors.textTertiary.withOpacity(0.6),
+                                        fontSize: 12,
                                       ),
                                     ),
                                 ],

@@ -129,14 +129,21 @@ class BlockedUsersScreen extends StatelessWidget {
                     decoration: AppDecorations.glassCard(borderRadius: 20),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.red.shade100,
-                          child: userData['photoUrl'] == null
-                              ? Icon(AppIcons.user, color: Colors.red.shade400)
-                              : null,
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.06),
+                            shape: BoxShape.circle,
+                          ),
+                          child: userData['photoUrl'] != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Image.network(userData['photoUrl'], fit: BoxFit.cover),
+                                )
+                              : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,15 +152,15 @@ class BlockedUsersScreen extends StatelessWidget {
                                 userData['name'] ?? 'İsimsiz',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  color: Colors.white,
+                                  fontSize: 14,
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
                               Text(
                                 '@${userData['username'] ?? ''}',
                                 style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 13,
+                                  color: AppColors.textTertiary.withOpacity(0.6),
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -162,13 +169,17 @@ class BlockedUsersScreen extends StatelessWidget {
                         OutlinedButton(
                           onPressed: () => _unblockUser(context, block.id, blockedUid),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.green,
-                            side: const BorderSide(color: Colors.green),
+                            foregroundColor: AppColors.textSecondary,
+                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                           ),
-                          child: const Text('Engeli Kaldır'),
+                          child: const Text(
+                            'Kaldır',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ],
                     ),
