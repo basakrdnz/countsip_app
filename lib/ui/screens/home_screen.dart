@@ -154,106 +154,139 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showYearPicker() {
-    showDialog(
+  void _showMonthYearPicker() {
+    int selectedMonth = _focusedDay.month;
+    int selectedYear = _focusedDay.year;
+    
+    // Create controllers with initial values
+    final monthController = FixedExtentScrollController(initialItem: selectedMonth - 1);
+    final yearController = FixedExtentScrollController(initialItem: selectedYear - 2020);
+    
+    showModalBottomSheet(
       context: context,
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            height: 430,
+            padding: const EdgeInsets.only(bottom: 90),
             decoration: BoxDecoration(
-              color: AppColors.background.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              color: AppColors.background.withOpacity(0.95),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+              border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Yıl Seç',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.5,
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 24),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 1.8,
-                  ),
-                  itemCount: 12,
-                  itemBuilder: (context, index) {
-                    final year = 2020 + index;
-                    final isSelected = year == _focusedDay.year;
-                    return InkWell(
-                      onTap: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          _focusedDay = DateTime(year, _focusedDay.month, 1);
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.primary.withOpacity(0.05),
-                            width: 1.5,
-                          ),
-                          boxShadow: isSelected ? [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ] : null,
-                        ),
-                        child: Text(
-                          year.toString(),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-                            color: isSelected ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
-                          ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Tarih Seç',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Kapat',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _focusedDay = DateTime(selectedYear, selectedMonth, 1);
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        ),
+                        child: Text(
+                          'Tamam',
+                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      // Month List
+                      Expanded(
+                        flex: 3,
+                        child: _buildPickerList(
+                          controller: monthController,
+                          items: [
+                            'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                            'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+                          ],
+                          selectedIndex: selectedMonth - 1,
+                          onSelected: (index) => setModalState(() => selectedMonth = index + 1),
+                        ),
+                      ),
+                      // Year List
+                      Expanded(
+                        flex: 2,
+                        child: _buildPickerList(
+                          controller: yearController,
+                          items: List.generate(11, (i) => (2020 + i).toString()),
+                          selectedIndex: selectedYear - 2020,
+                          onSelected: (index) => setModalState(() => selectedYear = 2020 + index),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPickerList({
+    required FixedExtentScrollController controller,
+    required List<String> items,
+    required int selectedIndex,
+    required Function(int) onSelected,
+  }) {
+    return ListWheelScrollView.useDelegate(
+      controller: controller,
+      itemExtent: 44,
+      perspective: 0.005,
+      diameterRatio: 1.2,
+      physics: const FixedExtentScrollPhysics(),
+      onSelectedItemChanged: onSelected,
+      childDelegate: ListWheelChildBuilderDelegate(
+        childCount: items.length,
+        builder: (context, index) {
+          final isSelected = index == selectedIndex;
+          return Center(
+            child: Text(
+              items[index],
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: isSelected ? 18 : 16,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary.withOpacity(0.4),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -732,23 +765,39 @@ class _HomeScreenState extends State<HomeScreen> {
                                             rightChevronVisible: false,
                                             headerPadding: EdgeInsets.symmetric(vertical: 20, horizontal: 8),
                                           ),
-                                        calendarBuilders: CalendarBuilders(
-                                          headerTitleBuilder: (context, day) {
-                                            return Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                                              child: Row(
-                                                children: [
-                                                  IconButton(
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month - 1, 1);
-                                                      });
-                                                    },
-                                                    icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
-                                                  ),
-                                                  Expanded(
-                                                    child: InkWell(
-                                                      onTap: _showYearPicker,
+                                          calendarBuilders: CalendarBuilders(
+                                            headerTitleBuilder: (context, day) {
+                                              return Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                                child: Stack(
+                                                  alignment: Alignment.center,
+                                                  children: [
+                                                    // Chevrons and Center Info
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        IconButton(
+                                                          onPressed: () {
+                                                            setState(() {
+                                                              _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month - 1, 1);
+                                                            });
+                                                          },
+                                                          icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+                                                        ),
+                                                        const Spacer(),
+                                                        IconButton(
+                                                          onPressed: () {
+                                                            setState(() {
+                                                              _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month + 1, 1);
+                                                            });
+                                                          },
+                                                          icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    // Month Year + Tarih Seç
+                                                    InkWell(
+                                                      onTap: _showMonthYearPicker,
                                                       borderRadius: BorderRadius.circular(12),
                                                       child: Column(
                                                         mainAxisSize: MainAxisSize.min,
@@ -765,30 +814,47 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           const SizedBox(height: 2),
                                                           Text(
                                                             'TARİH SEÇ',
-                                                            style: TextStyle(
-                                                              fontSize: 9,
+                                                            style: GoogleFonts.plusJakartaSans(
+                                                              fontSize: 10,
                                                               fontWeight: FontWeight.w900,
                                                               color: AppColors.primary,
-                                                              letterSpacing: 1.2,
+                                                              letterSpacing: 0.4,
                                                             ),
                                                           ),
                                                         ],
                                                       ),
                                                     ),
-                                                  ),
-                                                  IconButton(
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month + 1, 1);
-                                                      });
-                                                    },
-                                                    icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
+                                                    // Bugün on the right
+                                                    Positioned(
+                                                      right: 48, // Offset from right chevron
+                                                      child: InkWell(
+                                                        onTap: () {
+                                                          final now = DateTime.now();
+                                                          setState(() {
+                                                            _focusedDay = now;
+                                                            _selectedDay = now;
+                                                          });
+                                                        },
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          child: Text(
+                                                            'BUGÜN',
+                                                            style: GoogleFonts.plusJakartaSans(
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.w900,
+                                                              color: AppColors.primary,
+                                                              letterSpacing: 0.4,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
                                         daysOfWeekStyle: DaysOfWeekStyle(
                                           weekdayStyle: TextStyle(
                                             color: AppColors.textTertiary.withOpacity(0.5), 
@@ -815,7 +881,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         },
                                         onFormatChanged: (format) => setState(() => _calendarFormat = format),
                                         onPageChanged: (focusedDay) => _focusedDay = focusedDay,
-                                        onHeaderTapped: (_) => _showYearPicker(),
+                                        onHeaderTapped: (_) => _showMonthYearPicker(),
                                       ),
                                     ],
                                   ),

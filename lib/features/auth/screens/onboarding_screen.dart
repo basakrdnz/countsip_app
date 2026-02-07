@@ -16,8 +16,6 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerProviderStateMixin {
   late PageController _pageController;
-  late AnimationController _floatController;
-  late Animation<double> _floatAnimation;
   int _currentPage = 0;
   final int _totalPages = 3;
 
@@ -26,22 +24,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
     super.initState();
     _currentPage = widget.initialPage;
     _pageController = PageController(initialPage: widget.initialPage);
-    
-    // Float animation for icons
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat(reverse: true);
-    
-    _floatAnimation = Tween<double>(begin: 0, end: 16).animate(
-      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _floatController.dispose();
     super.dispose();
   }
 
@@ -60,112 +47,122 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background, // #0A0E14 base
-      body: Stack(
-        children: [
-          // Background Photo (blurred cocktail)
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/mainbg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          
-          // Dark overlay: rgba(10,14,20,0.8) to rgba(10,14,20,0.95)
-          // This matches #0A0E14 tone
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF0A0E14).withOpacity(0.8),  // rgba(10,14,20,0.8)
-                      const Color(0xFF0A0E14).withOpacity(0.95), // rgba(10,14,20,0.95)
-                    ],
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. HEADER (Atla + Progress Indicators)
+            Padding(
+              padding: const EdgeInsets.only(top: 10, left: 16, right: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: Text(
+                      'Atla',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Progress Dots
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  
+                  // PROGRESS INDICATORS (Moved here)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: List.generate(_totalPages, (index) {
                       final isActive = index == _currentPage;
                       return AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
+                        duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOutCubic,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 8,
-                        width: isActive ? 32 : 8,
+                        height: 6,
+                        width: isActive ? 24 : 6,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          color: isActive
-                              ? null
-                              : Colors.white.withOpacity(0.25),
                           gradient: isActive
-                              ? LinearGradient(
-                                  colors: [AppColors.primary, const Color(0xFFEE5A6F)],
+                              ? const LinearGradient(
+                                  colors: [AppColors.primary, AppColors.accentPrimary],
                                 )
                               : null,
-                          boxShadow: isActive
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.4),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
+                          color: isActive ? null : const Color(0xFF94A3B8).withOpacity(0.3),
                         ),
                       );
                     }),
                   ),
-                ),
-
-                // Slides
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      if (index == _totalPages) {
-                        context.go('/login');
-                        return;
-                      }
-                      setState(() => _currentPage = index);
-                    },
-                    dragStartBehavior: DragStartBehavior.down,
-                    children: [
-                      _buildSlide(0),
-                      _buildSlide(1),
-                      _buildSlide(2),
-                      const SizedBox.shrink(),
-                    ],
-                  ),
-                ),
-
-                // Button
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 60),
-                  child: _buildGradientButton(
-                    _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
-                    _nextPage,
-                  ),
-                ),
-              ],
+                  
+                  const SizedBox(width: 50), // Balanced with "Atla"
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // 2. SLIDES Content moves up as indicators are now in header
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  if (index == _totalPages) {
+                    context.go('/login');
+                    return;
+                  }
+                  setState(() => _currentPage = index);
+                },
+                children: [
+                  _buildSlide(0),
+                  _buildSlide(1),
+                  _buildSlide(2),
+                  const SizedBox.shrink(),
+                ],
+              ),
+            ),
+
+            // 5. BUTTON
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              child: Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.accentPrimary],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _nextPage,
+                    borderRadius: BorderRadius.circular(16),
+                    splashColor: Colors.white.withOpacity(0.2),
+                    highlightColor: Colors.white.withOpacity(0.1),
+                    child: Center(
+                      child: Text(
+                        _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
+                        style: GoogleFonts.inter(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -179,134 +176,81 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
       },
       {
         'icon': 'assets/images/3d/people3d.png',
-        'title': 'Arkadaşlarınla Yarış',
-        'description': 'Haftalık liderlik tablosunda arkadaşlarınla rekabet et. Kim kazanacak? 🏆',
+        'title': 'Anlarını Paylaş',
+        'description': 'Arkadaşlarınla ne içtiğini paylaş, kimin ne yaptığından haberdar ol. Sosyal kalmak bu kadar kolay!',
       },
       {
         'icon': 'assets/images/3d/lock3d.png',
-        'title': 'Sadece Arkadaşlarına Görünür',
+        'title': 'Arkadaşlarına Özel',
         'description': 'Veriler gizli kalır, sadece arkadaş listendekilere açık. Güvenle eğlen!',
       },
     ];
 
     final data = slideData[index];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Floating Icon with shadow
-          AnimatedBuilder(
-            animation: _floatAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, -_floatAnimation.value),
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: child,
-                ),
-              );
-            },
-            child: Image.asset(
-              data['icon']!,
-              width: 200,
-              height: 200,
-              fit: BoxFit.contain,
-            ),
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Title with shadow for readability
-          Text(
-            data['title']!,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1,
-              shadows: [
-                Shadow(
-                  offset: const Offset(0, 2),
-                  blurRadius: 12,
-                  color: Colors.black.withOpacity(0.5),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Description with shadow
-          Text(
-            data['description']!,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textTertiary,
-              height: 1.6,
-              shadows: [
-                Shadow(
-                  offset: const Offset(0, 1),
-                  blurRadius: 8,
-                  color: Colors.black.withOpacity(0.6),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGradientButton(String text, VoidCallback onPressed) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, const Color(0xFFEE5A6F)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
+    return Column(
+      children: [
+        // Illustration
+        Expanded(
+          flex: 5,
           child: Center(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey(index),
+              tween: Tween<double>(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOutBack,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: 0.8 + (value * 0.2),
+                  child: Opacity(
+                    opacity: value.clamp(0.0, 1.0),
+                    child: Image.asset(
+                      data['icon']!,
+                      height: (index == 0 || index == 2) ? 340 : 280,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
-      ),
+        
+        // Text Content
+        Expanded(
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              children: [
+                const SizedBox(height: 32),
+                Text(
+                  data['title']!,
+                  style: GoogleFonts.inter(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.1,
+                    letterSpacing: -1,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  data['description']!,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFFCBD5E1),
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
