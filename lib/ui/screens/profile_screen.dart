@@ -317,6 +317,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               _buildDivider(),
                               _buildMenuItem(
+                                icon: Icons.emoji_events_outlined,
+                                title: 'Rozetlerim',
+                                onTap: () => context.push('/badges'),
+                              ),
+                              _buildDivider(),
+                              _buildMenuItem(
                                 icon: AppIcons.settingsSliders,
                                 title: 'Ayarlar',
                                 onTap: () => context.push('/settings'),

@@ -52,6 +52,8 @@
 		<string>Profil fotoğrafı seçmek için galeri erişimi gerekli</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Fotoğraf kaydetmek için galeri erişimi gerekli</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>İçeceklerinizi eklerken konumunuzu bulmak ve yakındaki mekanları listelemek için konum erişimi gerekli.</string>
 		<key>UIStatusBarHidden</key>
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>

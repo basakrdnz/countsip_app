@@ -16,6 +16,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../../core/services/badge_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -148,6 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       await batch.commit();
+      
+      // Sync badges after deletion
+      await BadgeService.syncBadges(user.uid);
+      
       _loadData(); // Refresh list
     } catch (e) {
       debugPrint('Error deleting entry: $e');

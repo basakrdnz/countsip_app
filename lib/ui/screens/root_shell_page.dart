@@ -252,32 +252,7 @@ class _RootShellPageState extends State<RootShellPage> {
             ),
           // Main content with sliding transitions
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeInOut,
-              switchOutCurve: Curves.easeInOut,
-              transitionBuilder: (child, animation) {
-                final isForward = widget.navigationShell.currentIndex >= _previousIndex;
-                final beginOffset = isForward ? const Offset(1, 0) : const Offset(-1, 0);
-                
-                return SlideTransition(
-                  position: animation.drive(
-                    Tween<Offset>(
-                      begin: beginOffset,
-                      end: Offset.zero,
-                    ).chain(CurveTween(curve: Curves.easeOutCubic)),
-                  ),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<int>(widget.navigationShell.currentIndex),
-                child: widget.navigationShell,
-              ),
-            ),
+            child: widget.navigationShell,
           ),
         ],
       ),

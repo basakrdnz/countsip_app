@@ -31,6 +31,8 @@ import 'ui/screens/friends_screen.dart';
 import 'ui/screens/add_friend_screen.dart';
 import 'ui/screens/blocked_users_screen.dart';
 import 'ui/screens/notifications_screen.dart';
+import 'ui/screens/badges_screen.dart';
+import 'ui/screens/location_picker_screen.dart';
 
 /// Toggle emulator with a compile-time define:
 /// flutter run --dart-define=USE_FIREBASE_EMULATOR=true
@@ -371,6 +373,38 @@ GoRouter _createRouter() {
                 Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
               ),
               child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/badges',
+        name: 'badges',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const BadgesScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1, 0), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/location-picker',
+        name: 'location-picker',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const LocationPickerScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(0, 1), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
+              ),
+              child: child,
             );
           },
         ),
