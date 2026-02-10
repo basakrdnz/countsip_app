@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PhoneSignupScreen extends ConsumerStatefulWidget {
   const PhoneSignupScreen({super.key});
@@ -558,7 +559,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: '5XX XXX XX XX',
+                hintText: AppLocalizations.of(context)?.phoneHint ?? '5XX XXX XX XX',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 15,
                   color: AppColors.textTertiary.withOpacity(0.5),

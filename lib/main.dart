@@ -8,11 +8,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
-// flutter_native_splash import removed - splash disabled
-// firebase_ui_auth removed - using custom phone auth screens
 
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
@@ -48,8 +47,9 @@ const int _authEmulatorPort =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Turkish date formatting
+  // Initialize date formatting for supported locales
   await initializeDateFormatting('tr', null);
+  await initializeDateFormatting('en', null);
   
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -93,14 +93,23 @@ class CountSipApp extends StatelessWidget {
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('tr', 'TR'),
+        Locale('en'),
+        Locale('tr'),
       ],
-      locale: const Locale('tr', 'TR'),
+      localeResolutionCallback: (locale, supportedLocales) {
+        for (final supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale?.languageCode) {
+            return supportedLocale;
+          }
+        }
+        return const Locale('en');
+      },
     );
   }
 }

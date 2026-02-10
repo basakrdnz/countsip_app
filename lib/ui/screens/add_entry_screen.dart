@@ -21,6 +21,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/dual_camera_widget.dart';
 import '../../core/services/badge_service.dart';
 import '../../data/models/badge_model.dart' as model;
+import '../../data/drink_categories.dart';
 
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({super.key});
@@ -30,159 +31,8 @@ class AddEntryScreen extends StatefulWidget {
 }
 
 class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStateMixin {
-  // --- Data Structure ---
-  static const List<Map<String, dynamic>> _categories = [
-    {
-      'id': 'beer',
-      'name': 'Bira',
-      'emoji': '🍺',
-      'image': 'assets/images/drinks/beer.png',
-      'portions': [
-        {'name': 'Standart (330ml)', 'variety': 'Standart', 'volume': 330, 'abv': 5.0},
-        {'name': 'Standart (500ml)', 'variety': 'Standart', 'volume': 500, 'abv': 5.0},
-        {'name': 'Filtresiz (330ml)', 'variety': 'Filtresiz', 'volume': 330, 'abv': 6.0},
-        {'name': 'Filtresiz (500ml)', 'variety': 'Filtresiz', 'volume': 500, 'abv': 6.0},
-        {'name': 'Strong (330ml)', 'variety': 'Strong', 'volume': 330, 'abv': 8.5},
-        {'name': 'Strong (500ml)', 'variety': 'Strong', 'volume': 500, 'abv': 8.5},
-      ],
-    },
-    {
-      'id': 'wine',
-      'name': 'Şarap',
-      'emoji': '🍷',
-      'image': 'assets/images/drinks/wine.png',
-      'portions': [
-        {'name': 'Kırmızı (150ml)', 'variety': 'Kırmızı', 'volume': 150, 'abv': 13.0},
-        {'name': 'Kırmızı (200ml)', 'variety': 'Kırmızı', 'volume': 200, 'abv': 13.0},
-        {'name': 'Beyaz (150ml)', 'variety': 'Beyaz', 'volume': 150, 'abv': 11.0},
-        {'name': 'Beyaz (200ml)', 'variety': 'Beyaz', 'volume': 200, 'abv': 11.0},
-        {'name': 'Rosé (150ml)', 'variety': 'Rosé', 'volume': 150, 'abv': 12.0},
-        {'name': 'Rosé (200ml)', 'variety': 'Rosé', 'volume': 200, 'abv': 12.0},
-      ],
-    },
-    {
-      'id': 'raki',
-      'name': 'Rakı',
-      'emoji': '🥃',
-      'image': 'assets/images/drinks/raki.png',
-      'portions': [
-        {'name': 'Tek (50ml)', 'volume': 50, 'abv': 45.0},
-        {'name': 'Duble (100ml)', 'volume': 100, 'abv': 45.0},
-      ],
-    },
-    {
-      'id': 'whiskey',
-      'name': 'Viski',
-      'emoji': '🥃',
-      'image': 'assets/images/drinks/whiskey.png',
-      'portions': [
-        {'name': 'Tek (40ml)', 'volume': 40, 'abv': 40.0},
-        {'name': 'Duble (80ml)', 'volume': 80, 'abv': 40.0},
-      ],
-    },
-    {
-      'id': 'vodka',
-      'name': 'Votka',
-      'emoji': '🍸',
-      'image': 'assets/images/drinks/vodka_enerji.png',
-      'portions': [
-        {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
-        {'name': 'Duble (80ml)', 'volume': 80, 'abv': 40.0},
-        {'name': 'Enerji (200ml)', 'volume': 200, 'abv': 10.0},
-        {'name': 'Meyve Suyu (200ml)', 'volume': 200, 'abv': 8.0},
-      ],
-    },
-    {
-      'id': 'gin',
-      'name': 'Cin',
-      'emoji': '�',
-      'image': 'assets/images/drinks/gin.png',
-      'portions': [
-        {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
-        {'name': 'Gin Tonik (250ml)', 'volume': 250, 'abv': 10.0},
-      ],
-    },
-    {
-      'id': 'tequila',
-      'name': 'Tekila',
-      'emoji': '🌵',
-      'image': 'assets/images/drinks/tequila.png',
-      'portions': [
-        {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
-        {'name': 'Duble (80ml)', 'volume': 80, 'abv': 40.0},
-      ],
-    },
-    {
-      'id': 'rum',
-      'name': 'Rom',
-      'emoji': '🥃',
-      'image': 'assets/images/drinks/rum.png',
-      'portions': [
-        {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
-        {'name': 'Rom Kola (250ml)', 'volume': 250, 'abv': 10.0},
-      ],
-    },
-    {
-      'id': 'cocktail',
-      'name': 'Kokteyl',
-      'emoji': '�',
-      'image': 'assets/images/drinks/kokteyl.png',
-      'portions': [
-        {'name': 'AMF', 'volume': 300, 'abv': 26.0},
-        {'name': 'Long Island', 'volume': 300, 'abv': 25.0},
-        {'name': 'Zombie', 'volume': 300, 'abv': 22.0},
-        {'name': 'Margarita', 'volume': 200, 'abv': 17.0},
-        {'name': 'Mojito', 'volume': 300, 'abv': 12.0},
-        {'name': 'Old Fashioned', 'volume': 100, 'abv': 35.0},
-        {'name': 'Negroni', 'volume': 100, 'abv': 26.0},
-        {'name': 'Martini', 'volume': 120, 'abv': 32.0},
-        {'name': 'Pina Colada', 'volume': 300, 'abv': 13.0},
-        {'name': 'Moscow Mule', 'volume': 250, 'abv': 10.0},
-        {'name': 'Cosmopolitan', 'volume': 120, 'abv': 20.0},
-        {'name': 'Bloody Mary', 'volume': 200, 'abv': 14.0},
-        {'name': 'Manhattan', 'volume': 100, 'abv': 30.0},
-        {'name': 'Daiquiri', 'volume': 120, 'abv': 22.0},
-        {'name': 'Screwdriver', 'volume': 200, 'abv': 10.0},
-        {'name': 'Sex on the Beach', 'volume': 250, 'abv': 13.0},
-        {'name': 'Tequila Sunrise', 'volume': 250, 'abv': 12.0},
-        {'name': 'White Russian', 'volume': 180, 'abv': 15.0},
-        {'name': 'Godfather', 'volume': 100, 'abv': 34.0},
-        {'name': 'Rusty Nail', 'volume': 100, 'abv': 35.0},
-        {'name': 'Sazerac', 'volume': 100, 'abv': 35.0},
-        {'name': 'Aperol Spritz', 'volume': 200, 'abv': 9.0},
-        {'name': 'Campari Spritz', 'volume': 200, 'abv': 10.0},
-        {'name': 'Hugo', 'volume': 200, 'abv': 8.0},
-        {'name': 'Americano', 'volume': 180, 'abv': 12.0},
-        {'name': 'Negroni Sbagliato', 'volume': 180, 'abv': 14.0},
-        {'name': 'Mimosa', 'volume': 150, 'abv': 6.0},
-        {'name': 'Bellini', 'volume': 150, 'abv': 7.0},
-        {'name': 'Kir Royale', 'volume': 150, 'abv': 11.0},
-        {'name': 'Kamikaze', 'volume': 60, 'abv': 30.0},
-        {'name': 'Irish Car Bomb', 'volume': 300, 'abv': 12.0},
-      ],
-    },
-    {
-      'id': 'liqueur',
-      'name': 'Likör',
-      'emoji': '🍹',
-      'image': 'assets/images/drinks/liqueur.png',
-      'portions': [
-        {'name': 'Kremsi (Baileys)', 'volume': 50, 'abv': 17.0},
-        {'name': 'Bitki (Jäger)', 'volume': 40, 'abv': 35.0},
-        {'name': 'Meyve (Limoncello)', 'volume': 40, 'abv': 30.0},
-        {'name': 'Anason (Sambuca)', 'volume': 40, 'abv': 40.0},
-      ],
-    },
-    {
-      'id': 'custom',
-      'name': 'Kendin Yarat',
-      'emoji': '✨',
-      'image': 'assets/images/drinks/custom.png',
-      'portions': [
-        {'name': 'Talep Et', 'abv': 0.0, 'volume': 0},
-      ],
-    },
-  ];
+  // Drink data is imported from lib/data/drink_categories.dart
+  static const List<Map<String, dynamic>> _categories = drinkCategories;
 
   // --- State ---
   String? _selectedPortionKey; // Combined key: categoryId|portionName

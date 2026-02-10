@@ -835,15 +835,20 @@ class BadgeService {
           stillQualifies = allDrinks.any((d) => _isSameDay(d.timestamp, badge!.requiredDate!));
           break;
         case BadgeCondition.leaderboardRank:
-          // For now, assume true or handle if data is available
-          stillQualifies = true; 
+          // TODO: Implement leaderboard rank check - query user's current rank
+          // and compare with badge.requiredRank. Keeping badge for now to avoid
+          // incorrectly revoking earned badges until backend supports this.
+          stillQualifies = true;
           break;
         case BadgeCondition.firstNUsers:
-          // For now, assume true
+          // TODO: Implement early adopter check - compare user's registration
+          // order against badge.requiredCount. Once granted, this badge should
+          // never be revoked, so keeping true is correct behavior.
           stillQualifies = true;
           break;
         case BadgeCondition.allBadges:
-          // Special condition, usually true if they have all other badges
+          // TODO: Implement collection check - verify user has all other badges
+          // except this one. For now keeping true to avoid circular revocation.
           stillQualifies = true;
           break;
       }
@@ -999,17 +1004,17 @@ class BadgeService {
           }
           break;
         case BadgeCondition.leaderboardRank:
-          // Placeholder
+          // TODO: Query leaderboard for user's rank and unlock if within requiredRank
           shouldUnlock = false;
           progress = 0.0;
           break;
         case BadgeCondition.firstNUsers:
-          // Placeholder
+          // TODO: Check user registration order against requiredCount threshold
           shouldUnlock = false;
           progress = 0.0;
           break;
         case BadgeCondition.allBadges:
-          // Special logic: check if user has all other badges
+          // TODO: Check if user has all other badges to award collector badge
           shouldUnlock = false;
           progress = 0.0;
           break;

@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PhoneLoginScreen extends ConsumerStatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -321,7 +322,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: '5XX XXX XX XX',
+                hintText: AppLocalizations.of(context)?.phoneHint ?? '5XX XXX XX XX',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 15,
                   color: AppColors.textTertiary.withOpacity(0.5),

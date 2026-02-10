@@ -154,4 +154,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get next => 'Next';
+
+  @override
+  String get phoneHint => '(XXX) XXX-XXXX';
+
+  @override
+  String get phoneLabel => 'Phone Number';
+
+  @override
+  String get verificationCodeSent => 'Verification code sent!';
+
+  @override
+  String get enterVerificationCode => 'Enter the verification code';
+
+  @override
+  String get verify => 'Verify';
+
+  @override
+  String get resendCode => 'Resend Code';
+
+  @override
+  String get resetPassword => 'Reset Password';
+
+  @override
+  String get resetPasswordSubtitle => 'Enter your phone number to reset your password';
+
+  @override
+  String get home => 'Home';
+
+  @override
+  String get addDrink => 'Add Drink';
+
+  @override
+  String get leaderboard => 'Leaderboard';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get friends => 'Friends';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get badges => 'Badges';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String get noData => 'No data available';
+
+  @override
+  String get todaysDrinks => 'Today\'s Drinks';
+
+  @override
+  String get totalPoints => 'Total Points';
+
+  @override
+  String get weeklyPoints => 'Weekly Points';
 }
