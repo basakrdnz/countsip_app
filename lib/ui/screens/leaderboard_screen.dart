@@ -15,8 +15,21 @@ class LeaderboardScreen extends StatefulWidget {
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
+class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTickerProviderStateMixin {
   String _rankingType = 'totalPoints'; // 'totalPoints' or 'totalDrinks'
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +38,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       extendBody: true,
       appBar: AppBar(
         title: Text(
-          'Liderlik Tablosu',
+          'Sıralama',
           style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.white24,
+          tabs: const [
+            Tab(text: 'Global'),
+            Tab(text: 'Arkadaşlar'),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -42,53 +65,111 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           
           // List
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .orderBy(_rankingType, descending: true)
-                  .limit(50)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Henüz veri yok',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  );
-                }
-
-                final docs = snapshot.data!.docs;
-                final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final user = docs[index].data() as Map<String, dynamic>;
-                    final userId = docs[index].id;
-                    final isCurrentUser = userId == currentUserId;
-
-                    return _buildUserRankItem(
-                      rank: index + 1,
-                      user: user,
-                      isCurrentUser: isCurrentUser,
-                    );
-                  },
-                );
-              },
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildGlobalLeaderboard(),
+                _buildFriendsLeaderboard(),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGlobalLeaderboard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .orderBy(_rankingType, descending: true)
+          .limit(50)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final docs = snapshot.data!.docs;
+        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final user = docs[index].data() as Map<String, dynamic>;
+            final userId = docs[index].id;
+            final isCurrentUser = userId == currentUserId;
+            
+            // Anonymize for global
+            final anonymizedUser = Map<String, dynamic>.from(user);
+            if (!isCurrentUser) {
+              final name = user['name'] as String? ?? 'Kullanıcı';
+              anonymizedUser['name'] = '${name[0]}${'*' * (name.length - 1)}';
+              anonymizedUser['photoUrl'] = null;
+            }
+
+            return _buildUserRankItem(
+              rank: index + 1,
+              user: anonymizedUser,
+              isCurrentUser: isCurrentUser,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFriendsLeaderboard() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return const SizedBox();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('friendships')
+          .where('users', arrayContains: currentUserId)
+          .snapshots(),
+      builder: (context, friendshipsSnapshot) {
+        if (!friendshipsSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+        
+        final friendIds = friendshipsSnapshot.data!.docs.map((doc) {
+          final users = (doc.data() as Map<String, dynamic>)['users'] as List;
+          return users.firstWhere((id) => id != currentUserId) as String;
+        }).toList();
+
+        final allInterestedIds = [currentUserId, ...friendIds];
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: allInterestedIds.take(10).toList())
+              .snapshots(),
+          builder: (context, usersSnapshot) {
+            if (!usersSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+            
+            final users = usersSnapshot.data!.docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              data['uid'] = doc.id;
+              return data;
+            }).toList();
+
+            // Sort manually since whereIn order isn't guaranteed and we can't combine whereIn with orderBy easily without complex indexes
+            users.sort((a, b) => (b[_rankingType] ?? 0).compareTo(a[_rankingType] ?? 0));
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                final isCurrentUser = user['uid'] == currentUserId;
+
+                return _buildUserRankItem(
+                  rank: index + 1,
+                  user: user,
+                  isCurrentUser: isCurrentUser,
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 

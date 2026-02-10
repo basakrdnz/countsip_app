@@ -113,3 +113,60 @@
 - Add drink modal formunu tamamla
 - Leaderboard sorgularını yaz
 - Profile istatistiklerini göster
+
+> Tarih: 2026-02-10
+
+## Ne yaptık? (bugün - PRD v2.0 Sosyal Evrim)
+
+### İçecek Kayıt Sistemi (Gelişmiş ✅)
+- **Tek İçecek Kısıtlaması**: Aynı kayıt ekranında birden fazla içecek seçimi kaldırıldı, "Single Drink Entry" mantığına geçildi.
+- **Dual Camera (PIP)**: `DualCameraWidget` ile ön ve arka kameradan aynı anda fotoğraf çekme özelliği eklendi.
+- **Sosyal Etiketleme**: "Kiminle içiyorsun?" özelliği ile arkadaş etiketleme sistemi kuruldu.
+- **Su Hatırlatıcısı**: Günlük 2. içecekten sonra otomatik "Su içmeyi unutma" uyarısı eklendi.
+- **İçki Sihirbazı**: Özel içecek talepleri için adım adım ilerleyen "Custom Drink Wizard" formu implemente edildi.
+
+### Sosyal Akış (Ana Ekran ✅)
+- **Kalıcı Sosyal Akış**: `HomeScreen` tamamen yenilendi; Instagram tarzı kalıcı bir sosyal akışa geçildi. 24 saat kısıtlaması kaldırıldı.
+- **Şerefe (Interactions)**: Paylaşımlara "Şerefe" (Cheers) deme özelliği ve yorum alanı altyapısı eklendi.
+- **Geçmiş Kayıtlar**: Takvim görünümü ana ekrandan alt sayfaya (Sheet) taşındı ve UI hataları giderildi.
+
+### Seviye ve Dinamik Temalar (Oyunlaştırma ✅)
+- **APS tabanlı Seviye**: Her 50 APS puanı için 1 seviye artışı hesaplayan sistem kuruldu.
+- **Dinamik Temalandırma**: Kullanıcı seviyesine göre açılan 4 farklı tema (Midnight, Neon, Gradient, Gold VIP) eklendi.
+- **Dinamik UI**: Seçilen temaya göre uygulamanın arka plan gradyanı ve aksan renklerinin otomatik değişmesi sağlandı.
+
+### Liderlik Tablosu (Gizlilik & Sosyallik ✅)
+- **Global & Arkadaşlar**: Sıralama ekranına Global ve Arkadaş sekmeleri eklendi.
+- **Anonimlik**: Global sıralamada arkadaş olmayan kullanıcıların isimleri "B***" şeklinde gizlendi ve profil fotoğrafları kaldırıldı.
+
+### Kritik Hata Düzeltmeleri (✅)
+- **HomeScreen Sözdizimi**: `_showCalendarSheet` metodundaki eksik parantez ve süslü parantez hataları giderildi, takvim görünümü tamamen uçuruldu (Sheet içindeki State yönetimi düzeltildi).
+- **RootShellPage UI**: Navigasyon barındaki süslü parantez hatası ve yanlış iç içe geçmiş `StreamBuilder` yapısı düzeltildi.
+- **AddEntryScreen Temizliği**: Rebundant `_saveDetailed` fonksiyonu optimize edildi ve state yönetimi `_closeSheet` ile tutarlı hale getirildi.
+- **FeedService Persistent Feed**: `get24HourFeed` metodu `getSocialFeed` olarak güncellendi ve zaman filtresi kaldırılarak kalıcı feed yapısına geçildi.
+## Neden yaptık?
+- PRD v2.0 "The Social Evolution" gerekliliklerini karşılamak için.
+- Uygulamanın sosyal etkileşimini artırmak ve oyunlaştırma (gamification) öğelerini güçlendirmek için.
+- Kullanıcıların sadece "kayıt tutan" değil, "sosyalleşen ve bilinçli içen" bir topluluğa dönüşmesini sağlamak için.
+
+> Tarih: 2026-02-10 (Akşam)
+ 
+ ## Ne yaptık? (Son Güncellemeler - Sosyal Hub Evrimi ✅)
+ 
+ ### Sosyal Hub & Bildirimler (Hub'a Dönüşüm ✅)
+ - **Akış Taşıma**: Ana ekrandaki (HomeScreen) sosyal akış tamamen `NotificationsScreen`'e taşındı ve bir "Sosyal Hub" yapısı oluşturuldu.
+ - **Kalıcı Feed**: Sosyal akıştaki 24 saat kısıtlaması kaldırıldı; artık tüm arkadaş aktiviteleri kronolojik olarak görülebiliyor.
+ - **NotificationsScreen Redesign**: 
+     - **Arkadaşlık İstekleri**: Glassmorphism (cam efekti) tabanlı premium kart tasarımı uygulandı.
+     - **Aksiyon Butonları**: "Onayla" butonu için taze yeşil gradyan, "Reddet" için ise soft gri ikonik tasarıma geçildi.
+     - **Akış Kartları**: Köşe yuvarlaklıkları 32px'e çıkarıldı, içecek emojileri profil resminde şık bir badge olarak konumlandırıldı.
+     - **Avatar Stacks**: Gönderileri kimlerin alkışladığını gösteren dinamik avatar yığınları eklendi.
+     - **Boş Durum (Empty State)**: Bildirim olmadığında görünen ekran, daha zarif ikonografi ve samimi bir dille yenilendi.
+ 
+ ### Mimari Temizlik (✅)
+ - **HomeScreen Sadeleştirme**: Sosyal akış mantığı ana ekrandan tamamen temizlendi, odak noktası Takvim ve kişisel istatistiklere çekildi.
+ - **Kod Akışı**: Bildirimlerin hem istekleri hem de arkadaş aktivitelerini tek bir akışta yönetmesi sağlandı.
+ 
+ ## Sıradaki önerilen adımlar
+ - Navigasyon barındaki (Bottom Nav) orta "Add" butonunu premium özelliklerle (glow, animasyon, sub-menu) güçlendirmek.
+ - Profil ekranındaki Seviye/Puan gösterimlerini yeni görsel dile (glassmorphism) uyarlamak.

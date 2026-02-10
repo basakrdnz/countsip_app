@@ -11,6 +11,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../../core/services/theme_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -295,6 +296,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             label: 'PUAN',
                             value: '${(userData?['totalPoints'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
                           ),
+                          // Divider
+                          Container(
+                            width: 1,
+                            height: 32,
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          // Level (PRD 5.1)
+                          _buildStatItem(
+                            label: 'SEVİYE',
+                            value: '${ThemeService.calculateLevel((userData?['totalPoints'] as num?)?.toDouble() ?? 0.0)}',
+                          ),
                         ],
                       ),
                     ),
@@ -320,6 +332,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 icon: Icons.emoji_events_outlined,
                                 title: 'Rozetlerim',
                                 onTap: () => context.push('/badges'),
+                              ),
+                              _buildDivider(),
+                              // Theme Selector (PRD 5.3)
+                              _buildMenuItem(
+                                icon: Icons.palette_outlined,
+                                title: 'Temalar',
+                                onTap: () => _showThemeSelectionSheet(context, userData),
                               ),
                               _buildDivider(),
                               _buildMenuItem(
@@ -512,6 +531,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+  void _showThemeSelectionSheet(BuildContext context, Map<String, dynamic>? userData) {
+    final totalPoints = (userData?['totalPoints'] as num?)?.toDouble() ?? 0.0;
+    final userLevel = ThemeService.calculateLevel(totalPoints);
+    final userTheme = userData?['theme'] ?? 'defaultMode';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: AppDecorations.glassCard().copyWith(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            Text('TEMA SEÇİMİ', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2)),
+            const SizedBox(height: 24),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: AppThemeMode.values.map((mode) {
+                  final requiredLevel = ThemeService.getRequiredLevel(mode);
+                  final isUnlocked = userLevel >= requiredLevel;
+                  final isSelected = userTheme == mode.name;
+
+                  return ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      color: isSelected ? AppColors.primary : Colors.white24,
+                    ),
+                    title: Text(
+                      mode.displayName,
+                      style: TextStyle(
+                        color: isUnlocked ? Colors.white : Colors.white30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: isUnlocked 
+                      ? null 
+                      : Text('Seviye $requiredLevel gerekir', style: const TextStyle(color: Colors.white24, fontSize: 12)),
+                    trailing: isUnlocked ? null : const Icon(Icons.lock, size: 16, color: Colors.white10),
+                    onTap: () async {
+                      if (isUnlocked) {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser?.uid)
+                            .update({'theme': mode.name});
+                        Navigator.pop(context);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

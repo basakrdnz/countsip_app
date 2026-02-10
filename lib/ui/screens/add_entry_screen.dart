@@ -18,6 +18,7 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
 import 'package:uicons/uicons.dart';
 import 'package:image_picker/image_picker.dart';
+import '../widgets/dual_camera_widget.dart';
 import '../../core/services/badge_service.dart';
 import '../../data/models/badge_model.dart' as model;
 
@@ -184,7 +185,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   ];
 
   // --- State ---
-  final Map<String, int> _selectedEntries = {};
+  String? _selectedPortionKey; // Combined key: categoryId|portionName
   final TextEditingController _noteController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   DateTime _selectedTime = DateTime.now();
@@ -201,7 +202,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   // Custom Drink Request Controllers
   final _customNameController = TextEditingController();
   final _customAbvController = TextEditingController();
+  final _customVolumeController = TextEditingController(); // Added
   final _customDescController = TextEditingController();
+  int _currentRequestStep = 0; // Added for Wizard
   
   XFile? _pickedImage;
   int _quantity = 1;
@@ -357,29 +360,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   double _getTotalScore() {
-    double total = 0;
-    _selectedEntries.forEach((key, count) {
-      if (count > 0) {
-        final categoryId = key.split('|')[0];
-        final portionName = key.split('|')[1];
-        final category = _categories.firstWhere((c) => c['id'] == categoryId);
-        final portion = (category['portions'] as List).firstWhere((p) => p['name'] == portionName);
-        total += _calculateScore(portion['volume'], portion['abv']) * count;
-      }
-    });
-    return total;
+    if (_selectedPortion == null) return 0.0;
+    return _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']) * _quantity;
   }
 
   int _getTotalCount() {
-    int total = 0;
-    _selectedEntries.forEach((_, count) => total += count);
-    return total;
+    return _selectedPortion != null ? _quantity : 0;
   }
 
 
   void _resetForm() {
     setState(() {
-      _selectedEntries.clear();
+      _selectedPortionKey = null;
       _noteController.clear();
       _locationController.clear();
       _selectedTime = DateTime.now();
@@ -396,10 +388,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Future<void> _save() async {
-    if (_getTotalCount() == 0) {
+    if (_selectedPortion == null) {
       HapticFeedback.vibrate();
       Fluttertoast.showToast(
-        msg: 'Lütfen en az bir içecek seçin',
+        msg: 'Lütfen bir içecek seçin',
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
@@ -412,87 +404,52 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // 1. Hızlı içim uyarısı kontrolü
+      // Sorumlu İçme Kontrolü (PRD 5.7)
       final now = DateTime.now();
-      final fiveMinsAgo = now.subtract(const Duration(minutes: 5));
-      final oneMinAgo = now.subtract(const Duration(minutes: 1));
-
-      final recentEntries = await FirebaseFirestore.instance
+      final todayStart = DateTime(now.year, now.month, now.day);
+      
+      final todayEntries = await FirebaseFirestore.instance
           .collection('entries')
           .where('userId', isEqualTo: user.uid)
-          .where('timestamp', isGreaterThan: Timestamp.fromDate(fiveMinsAgo))
+          .where('timestamp', isGreaterThan: Timestamp.fromDate(todayStart))
           .get();
 
-      final entriesCount5Min = recentEntries.docs.length;
-      final entriesCount1Min = recentEntries.docs.where((doc) {
-        final ts = doc['timestamp'] as Timestamp;
-        return ts.toDate().isAfter(oneMinAgo);
-      }).length;
+      final entriesCountToday = todayEntries.docs.length;
 
-      if (entriesCount1Min >= 3 || entriesCount5Min >= 5) {
-        bool? proceed = await showDialog<bool>(
-          context: context,
-          builder: (context) => BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AlertDialog(
-              backgroundColor: AppColors.background.withOpacity(0.9),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text(' Biraz hızlı gitmiyor musun? 🏃‍♂️💨', 
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              content: const Text(
-                'Çok kısa sürede çok fazla içecek kaydettin. Her şey yolunda mı?',
-                style: TextStyle(color: Colors.white70),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Durayım', style: TextStyle(color: Colors.white30)),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Devam Et', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-        );
-        
-        if (proceed != true) return;
+      // Su Hatırlatıcısı (PRD 477)
+      if (entriesCountToday >= 2) { 
+        // 3. içki kaydedilirken (yani 2 zaten var) banner gösterilecek
+        _showWaterReminder();
       }
 
       setState(() => _isLoading = true);
       
       final batch = FirebaseFirestore.instance.batch();
-      final totalScore = _getTotalScore();
-      final totalCount = _getTotalCount();
+      final totalScore = _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']);
+      final totalCount = 1;
 
-      _selectedEntries.forEach((key, count) {
-        if (count > 0) {
-          final categoryId = key.split('|')[0];
-          final portionName = key.split('|')[1];
-          final category = _categories.firstWhere((c) => c['id'] == categoryId);
-          final portion = (category['portions'] as List).firstWhere((p) => p['name'] == portionName);
+      final category = _categories.firstWhere((c) => c['id'] == _focusedCategoryId);
+      final portionName = _selectedPortion!['name'];
 
-          final entryRef = FirebaseFirestore.instance.collection('entries').doc();
-          batch.set(entryRef, {
-            'userId': user.uid,
-            'drinkType': category['name'],
-            'drinkEmoji': category['emoji'],
-            'portion': portionName,
-            'volume': portion['volume'],
-            'abv': portion['abv'],
-            'quantity': count,
-            'points': _calculateScore(portion['volume'], portion['abv']) * count,
-            'note': _noteController.text.trim(),
-            'locationName': _locationController.text.trim(),
-            'intoxicationLevel': _feelingScale,
-            'timestamp': Timestamp.fromDate(_selectedTime),
-            'createdAt': FieldValue.serverTimestamp(),
-            // In a real app we'd upload this to Firebase Storage first
-            'hasImage': _pickedImage != null,
-            'imagePath': _pickedImage?.path, 
-          });
-        }
+      final entryRef = FirebaseFirestore.instance.collection('entries').doc();
+      batch.set(entryRef, {
+        'userId': user.uid,
+        'drinkType': category['name'],
+        'drinkEmoji': category['emoji'],
+        'portion': portionName,
+        'volume': _selectedPortion!['volume'],
+        'abv': _selectedPortion!['abv'],
+        'quantity': 1,
+        'points': totalScore,
+        'note': _noteController.text.trim(),
+        'locationName': _locationController.text.trim(),
+        'intoxicationLevel': _feelingScale,
+        'timestamp': Timestamp.fromDate(_selectedTime),
+        'createdAt': FieldValue.serverTimestamp(),
+        'hasImage': _pickedImage != null,
+        'imagePath': _pickedImage?.path,
+        // PRD 5.4: Drinking With
+        'taggedFriendIds': _taggedFriendIds,
       });
 
       batch.set(
@@ -520,7 +477,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         HapticFeedback.heavyImpact();
         
         await Fluttertoast.showToast(
-          msg: "✓ Başarıyla kaydedildi! +${totalScore.toStringAsFixed(1)} puan 🎉",
+          msg: "✓ Başarıyla kaydedildi! +${totalScore.toStringAsFixed(1)} APS 🎉",
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.TOP,
           backgroundColor: Colors.green,
@@ -539,6 +496,32 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  void _showWaterReminder() {
+    // Top banner reminder logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.water_drop, color: Colors.blue),
+            SizedBox(width: 12),
+            Expanded(child: Text('Dengeyi hatırla! Bir bardak su içmeye ne dersin? 💧')),
+          ],
+        ),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 160,
+          left: 20,
+          right: 20,
+        ),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  final List<String> _taggedFriendIds = [];
 
   Future<void> _showBadgeNotification(model.Badge badge) async {
     if (!mounted) return;
@@ -947,19 +930,22 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 85,
+  void _pickImage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          body: DualCameraWidget(
+            onCaptured: (mainPath, pipPath) {
+              setState(() {
+                _pickedImage = XFile(mainPath);
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      ),
     );
-    if (image != null) {
-      setState(() {
-        _pickedImage = image;
-      });
-    }
   }
 
   // Obsolete: _buildGuidance removed.
@@ -1295,9 +1281,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     _buildTimeSelector(),
                     const SizedBox(height: 32),
 
-                    // --- Adet Seçimi (Counter) ---
-                  _buildCounter(),
-                  const SizedBox(height: 40),
+                    const SizedBox(height: 24),
+                    _buildDrinkingWithSelector(),
+                    const SizedBox(height: 32),
 
                   // --- Info Cards ---
                   Row(
@@ -1918,13 +1904,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Future<void> _saveDetailed(double totalAPS) async {
-    final category = _categories.firstWhere((c) => c['id'] == _focusedCategoryId);
-    final currentPortion = _selectedPortion ?? category['portions'][0];
-    
-    _selectedEntries.clear();
-    final key = '$_focusedCategoryId|${currentPortion['name']}';
-    _selectedEntries[key] = _quantity;
-    
     if (_tempNote != null) _noteController.text = _tempNote!;
     if (_tempLocationName != null) _locationController.text = _tempLocationName!;
     if (_tempPickedImage != null) _pickedImage = _tempPickedImage;
@@ -1932,7 +1911,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     await _save();
     if (!_isLoading) {
        _showSuccessToast(totalAPS);
-       _closeSheet(); // Smoothly close the sheet after saving
+       _closeSheet();
     }
   }
 
@@ -1940,10 +1919,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Center(
+        Center(
           child: Text(
-            'İçecek Talebi Oluştur',
-            style: TextStyle(
+            'İçki Sihirbazı',
+            style: GoogleFonts.inter(
               fontSize: 28,
               fontWeight: FontWeight.w900,
               color: Colors.white,
@@ -1952,49 +1931,123 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           ),
         ),
         const SizedBox(height: 12),
-        Center(
-          child: Text(
-            'Aradığın içeceği bulamadın mı? Bilgileri gir, yönetici onaylayınca listeye eklensin!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
+        _buildStepIndicator(),
+        const SizedBox(height: 32),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _buildCurrentStep(),
+        ),
+        const SizedBox(height: 40),
+        _buildWizardControls(),
+      ],
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (index) {
+        final isActive = index <= _currentRequestStep;
+        return Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentRequestStep) {
+      case 0:
+        return _buildRequestField('İçecek Adı', 'Örn: Hibiscus Gin Tonic', _customNameController);
+      case 1:
+        return _buildCategoryPickerForRequest();
+      case 2:
+        return _buildRequestField('Yaklaşık Hacim (ml)', 'Örn: 330', _customVolumeController, keyboardType: TextInputType.number);
+      case 3:
+        return _buildRequestField('Alkol Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number);
+      default:
+        return const SizedBox();
+    }
+  }
+
+  Widget _buildCategoryPickerForRequest() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'KATEGORİ SEÇİN',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Colors.white30, letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _categories.where((c) => c['id'] != 'custom').map((c) {
+            final isSelected = _customDescController.text == c['name'];
+            return GestureDetector(
+              onTap: () => setState(() => _customDescController.text = c['name']),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1)),
+                ),
+                child: Text(
+                  '${c['emoji']} ${c['name']}',
+                  style: TextStyle(color: isSelected ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWizardControls() {
+    return Row(
+      children: [
+        if (_currentRequestStep > 0)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: OutlinedButton(
+                onPressed: () => setState(() => _currentRequestStep--),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                child: const Text('GERİ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 32),
-        _buildRequestField('İçecek Adı', 'Örn: Hibiscus Gin Tonic', _customNameController),
-        const SizedBox(height: 20),
-        _buildRequestField('Alkol Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number),
-        const SizedBox(height: 20),
-        _buildRequestField('Not / Açıklama', 'Bardak boyutu veya özel içerik...', _customDescController, maxLines: 3),
-        const SizedBox(height: 40),
-        Container(
-          width: double.infinity,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF8902).withOpacity(0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+        Expanded(
+          flex: 2,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : _submitRequest,
+            onPressed: _currentRequestStep < 3 
+                ? () {
+                    // Validation
+                    if (_currentRequestStep == 0 && _customNameController.text.isEmpty) return;
+                    setState(() => _currentRequestStep++);
+                  }
+                : _submitRequest,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF8902),
-              foregroundColor: Colors.white,
-              elevation: 0,
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-            child: _isLoading 
-              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-              : const Text('İsteği Gönder', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5)),
+            child: Text(
+              _currentRequestStep < 3 ? 'DEVAM ET' : 'TALEBİ GÖNDER',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
@@ -2051,9 +2104,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       await FirebaseFirestore.instance.collection('drink_requests').add({
         'name': _customNameController.text.trim(),
         'abv': double.tryParse(_customAbvController.text) ?? 0.0,
-        'description': _customDescController.text.trim(),
+        'volume': int.tryParse(_customVolumeController.text) ?? 0,
+        'category': _customDescController.text.trim(),
         'requestedBy': user?.uid,
-        'userEmail': user?.email,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -2075,6 +2128,110 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       setState(() => _isLoading = false);
       Fluttertoast.showToast(msg: "Hata oluştu: $e");
     }
+  }
+
+  Widget _buildDrinkingWithSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.people_outline, size: 16, color: Colors.white.withOpacity(0.5)),
+            const SizedBox(width: 8),
+            Text(
+              'KİMİNLE İÇİYORSUN?',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: Colors.white.withOpacity(0.5),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildAddFriendTag(),
+              ..._taggedFriendIds.map((id) => _buildFriendTag(id)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddFriendTag() {
+    return GestureDetector(
+      onTap: _showFriendSelectionSheet,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.add, size: 16, color: AppColors.primary),
+            const SizedBox(width: 4),
+            Text(
+              'Arkadaş Ekle',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFriendTag(String friendId) {
+    // In a real app, we'd look up the friend's name/photo
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const Text('👤', style: TextStyle(fontSize: 12)),
+          const SizedBox(width: 6),
+          Text(
+            'Arkadaş', // Simplified for now
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => setState(() => _taggedFriendIds.remove(friendId)),
+            child: Icon(Icons.close, size: 14, color: Colors.white.withOpacity(0.5)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFriendSelectionSheet() {
+    // Selection logic would go here
+    // For now, let's just add a placeholder ID
+    setState(() {
+      if (_taggedFriendIds.length < 5) {
+        _taggedFriendIds.add('friend_${_taggedFriendIds.length}');
+      }
+    });
   }
 
   Widget _buildModernQtyBtn(IconData icon, VoidCallback onTap) {

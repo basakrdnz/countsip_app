@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../../core/services/theme_service.dart';
 
 class RootShellPage extends StatefulWidget {
   const RootShellPage({super.key, required this.navigationShell});
@@ -22,6 +24,9 @@ class _RootShellPageState extends State<RootShellPage> {
   DateTime? _deletionScheduledAt;
   bool _hasCheckedStatus = false;
   int _previousIndex = 0;
+  AppThemeMode _currentTheme = AppThemeMode.defaultMode;
+  late Stream<DocumentSnapshot<Map<String, dynamic>>> _userThemeStream;
+  bool _isAddButtonPressed = false;
 
   @override
   void didUpdateWidget(RootShellPage oldWidget) {
@@ -35,6 +40,13 @@ class _RootShellPageState extends State<RootShellPage> {
   void initState() {
     super.initState();
     _checkAccountStatus();
+    
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _userThemeStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
+    } else {
+      _userThemeStream = const Stream.empty();
+    }
   }
 
   Future<void> _checkAccountStatus() async {
@@ -210,10 +222,23 @@ class _RootShellPageState extends State<RootShellPage> {
   Widget build(BuildContext context) {
     final currentIndex = widget.navigationShell.currentIndex;
     
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userThemeStream,
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data();
+        _currentTheme = AppThemeMode.fromName(userData?['theme'] ?? 'defaultMode');
+        final gradient = ThemeService.getBackgroundGradient(_currentTheme);
+        final accentColor = ThemeService.getAccentColor(_currentTheme);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            gradient: gradient,
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
+              children: [
           // Ghost Mode Banner
           if (_isGhostMode && _hasCheckedStatus)
             Container(
@@ -256,7 +281,6 @@ class _RootShellPageState extends State<RootShellPage> {
           ),
         ],
       ),
-      extendBody: true,
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         child: ClipRRect(
@@ -265,7 +289,9 @@ class _RootShellPageState extends State<RootShellPage> {
             filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
             child: Container(
               height: 70,
-              decoration: AppDecorations.glassCard(borderRadius: 35, borderWidth: 1.5),
+              decoration: AppDecorations.glassCard(borderRadius: 35, borderWidth: 1.5).copyWith(
+                color: Colors.white.withOpacity(0.05),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -275,6 +301,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 0,
                     onTap: () => _onDestinationSelected(0),
                     iconSize: 24,
+                    accentColor: accentColor,
                   ),
                   _NavItem(
                     icon: AppIcons.plus,
@@ -282,34 +309,47 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 1,
                     onTap: () => _onDestinationSelected(1),
                     iconSize: 24,
+                    accentColor: accentColor,
                   ),
                   GestureDetector(
-                    onTap: () => _onDestinationSelected(1),
-                    child: Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary,
-                            AppColors.primary.withOpacity(0.85),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                    onTapDown: (_) => setState(() => _isAddButtonPressed = true),
+                    onTapUp: (_) => setState(() => _isAddButtonPressed = false),
+                    onTapCancel: () => setState(() => _isAddButtonPressed = false),
+                    onTap: () {
+                      HapticFeedback.heavyImpact();
+                      context.push('/add');
+                    },
+                    child: AnimatedScale(
+                      scale: _isAddButtonPressed ? 0.94 : 1.0,
+                      duration: const Duration(milliseconds: 100),
+                      curve: Curves.easeOutCubic,
+                      child: Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              accentColor,
+                              accentColor.withOpacity(0.85),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.wine_bar_rounded,
-                        color: Colors.white,
-                        size: 34,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withOpacity(0.5),
+                              blurRadius: _isAddButtonPressed ? 20 : 30,
+                              spreadRadius: _isAddButtonPressed ? 2 : 4,
+                            ),
+                          ],
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+                        ),
+                        child: const Icon(
+                          Icons.wine_bar_rounded,
+                          color: Colors.white,
+                          size: 34,
+                        ),
                       ),
                     ),
                   ),
@@ -318,7 +358,8 @@ class _RootShellPageState extends State<RootShellPage> {
                     selectedIcon: AppIcons.trophyIcon,
                     isSelected: currentIndex == 2,
                     onTap: () => _onDestinationSelected(2),
-                    iconSize: 29, // Keeping leaderboard larger as requested
+                    iconSize: 29,
+                    accentColor: accentColor,
                   ),
                   _NavItem(
                     icon: AppIcons.user,
@@ -326,6 +367,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 3,
                     onTap: () => _onDestinationSelected(3),
                     iconSize: 24,
+                    accentColor: accentColor,
                   ),
                 ],
               ),
@@ -333,8 +375,11 @@ class _RootShellPageState extends State<RootShellPage> {
           ),
         ),
       ),
+      ),
     );
-  }
+  },
+);
+}
 }
 
 class _NavItem extends StatelessWidget {
@@ -343,12 +388,14 @@ class _NavItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final double iconSize;
+  final Color accentColor;
 
   const _NavItem({
     required this.icon,
     required this.selectedIcon,
     required this.isSelected,
     required this.onTap,
+    required this.accentColor,
     this.iconSize = 25,
   });
 
@@ -361,7 +408,7 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Icon(
           isSelected ? selectedIcon : icon,
-          color: isSelected ? AppColors.primary : AppColors.textTertiary,
+          color: isSelected ? accentColor : AppColors.textTertiary,
           size: iconSize,
         ),
       ),

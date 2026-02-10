@@ -35,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _totalPoints = 0;
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
   late Stream<QuerySnapshot<Map<String, dynamic>>> _entriesStream;
+  late Stream<QuerySnapshot<Map<String, dynamic>>> _friendRequestsStream;
 
   @override
   void initState() {
@@ -47,11 +48,16 @@ class _HomeScreenState extends State<HomeScreen> {
           .where('userId', isEqualTo: user.uid)
           .orderBy('timestamp', descending: true)
           .snapshots();
+      _friendRequestsStream = FirebaseFirestore.instance
+          .collection('friend_requests')
+          .where('to', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'pending')
+          .snapshots();
     } else {
       _userStream = const Stream.empty();
       _entriesStream = const Stream.empty();
+      _friendRequestsStream = const Stream.empty();
     }
-    _loadData();
   }
 
   Future<void> _loadData() async {
@@ -548,6 +554,199 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+  Widget _buildCalendarSection() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _entriesStream,
+      builder: (context, entriesSnapshot) {
+        final Map<DateTime, List<Map<String, dynamic>>> currentEvents = {};
+        if (entriesSnapshot.hasData) {
+          for (final doc in entriesSnapshot.data!.docs) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            final timestamp = data['timestamp'] as Timestamp?;
+            if (timestamp != null) {
+              final date = timestamp.toDate();
+              final normalizedDate = DateTime.utc(date.year, date.month, date.day);
+              currentEvents.putIfAbsent(normalizedDate, () => []);
+              currentEvents[normalizedDate]!.add(data);
+            }
+          }
+        }
+        final activeEvents = entriesSnapshot.hasData ? currentEvents : _events;
+
+        double selectedPoints = 0;
+        int selectedDrinks = 0;
+        if (_selectedDay != null) {
+          final selectedKey = DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
+          if (activeEvents.containsKey(selectedKey)) {
+            for (var e in activeEvents[selectedKey]!) {
+              selectedPoints += (e['points'] ?? 0).toDouble();
+              selectedDrinks += (e['quantity'] ?? 1) as int;
+            }
+          }
+        }
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    decoration: AppDecorations.glassCard(),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildDashboardItem(
+                            label: 'PUAN',
+                            value: selectedPoints.toStringAsFixed(1),
+                            icon: UIcons.regularStraight.magic_wand,
+                            isLight: true,
+                          ),
+                        ),
+                        Container(
+                          height: 30,
+                          width: 1,
+                          color: AppColors.primary.withOpacity(0.1),
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                        ),
+                        Expanded(
+                          child: _buildDashboardItem(
+                            label: 'İÇECEK',
+                            value: '$selectedDrinks',
+                            icon: UIcons.regularStraight.drink_alt,
+                            isLight: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOutCirc,
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        decoration: AppDecorations.glassCard(),
+                        child: TableCalendar(
+                          locale: 'tr_TR',
+                          firstDay: DateTime.utc(2020, 1, 1),
+                          lastDay: DateTime.utc(2030, 12, 31),
+                          focusedDay: _focusedDay,
+                          calendarFormat: _calendarFormat,
+                          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                          eventLoader: (day) => activeEvents[DateTime.utc(day.year, day.month, day.day)] ?? [],
+                          startingDayOfWeek: StartingDayOfWeek.monday,
+                          availableGestures: AvailableGestures.none,
+                          calendarStyle: CalendarStyle(
+                            outsideDaysVisible: false,
+                            weekendTextStyle: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+                            defaultTextStyle: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+                            todayDecoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            todayTextStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900),
+                            selectedDecoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                            selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                            markerDecoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                            markerSize: 4,
+                          ),
+                          headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true, leftChevronVisible: false, rightChevronVisible: false),
+                          calendarBuilders: CalendarBuilders(
+                            headerTitleBuilder: (context, day) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month - 1, 1);
+                                            });
+                                          },
+                                          icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+                                        ),
+                                        const Spacer(),
+                                        IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month + 1, 1);
+                                            });
+                                          },
+                                          icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                    InkWell(
+                                      onTap: _showMonthYearPicker,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            DateFormat('MMMM yyyy', 'tr_TR').format(day).toUpperCase(),
+                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textPrimary, letterSpacing: 0.5),
+                                          ),
+                                          Text(
+                                            'TARİH SEÇ',
+                                            style: GoogleFonts.plusJakartaSans(fontSize: 9, fontWeight: FontWeight.w900, color: AppColors.primary, letterSpacing: 0.4),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          onDaySelected: (selectedDay, focusedDay) {
+                            setState(() {
+                              if (isSameDay(_selectedDay, selectedDay)) {
+                                _selectedDay = null;
+                              } else {
+                                _selectedDay = selectedDay;
+                              }
+                              _focusedDay = focusedDay;
+                            });
+                          },
+                          onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_selectedDay != null) ...[
+                    const SizedBox(height: 16),
+                    _buildInlineDayDetails(
+                      _selectedDay!, 
+                      activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -557,435 +756,68 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: _userStream,
       builder: (context, userSnapshot) {
-        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: _entriesStream,
-          builder: (context, entriesSnapshot) {
-            if (userSnapshot.connectionState == ConnectionState.waiting && _userData == null) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
-            }
-
-            final userData = userSnapshot.data?.data();
-            
-            // Group entries by date
-            final Map<DateTime, List<Map<String, dynamic>>> currentEvents = {};
-            if (entriesSnapshot.hasData) {
-              for (final doc in entriesSnapshot.data!.docs) {
-                final data = doc.data();
-                data['id'] = doc.id;
-                final timestamp = data['timestamp'] as Timestamp?;
-                if (timestamp != null) {
-                  final date = timestamp.toDate();
-                  final normalizedDate = DateTime.utc(date.year, date.month, date.day);
-                  currentEvents.putIfAbsent(normalizedDate, () => []);
-                  currentEvents[normalizedDate]!.add(data);
-                }
-              }
-              // Update local cache without triggering rebuild
-              _events = currentEvents; 
-            }
-            
-            final activeEvents = entriesSnapshot.hasData ? currentEvents : _events;
-
-            // Selected Day Stats
-            double selectedPoints = 0;
-            int selectedDrinks = 0;
-            if (_selectedDay != null) {
-              final selectedKey = DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
-              if (activeEvents.containsKey(selectedKey)) {
-                for (var e in activeEvents[selectedKey]!) {
-                  selectedPoints += (e['points'] ?? 0).toDouble();
-                  selectedDrinks += (e['quantity'] ?? 1) as int;
-                }
-              }
-            }
-
-            return Scaffold(
-              backgroundColor: AppColors.background,
-              body: SafeArea(
-                bottom: false,
-                child: RefreshIndicator(
-                  onRefresh: () async => setState(() {}),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header
-                            Padding(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'CountSip',
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w900,
-                                      fontFamily: 'Rosaline',
-                                      letterSpacing: -1,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  StreamBuilder<QuerySnapshot>(
-                                    stream: FirebaseFirestore.instance
-                                        .collection('friend_requests')
-                                        .where('to', isEqualTo: user.uid)
-                                        .where('status', isEqualTo: 'pending')
-                                        .snapshots(),
-                                    builder: (context, snapshot) {
-                                      final count = snapshot.data?.docs.length ?? 0;
-                                      return AnimatedNotificationBell(
-                                        count: count,
-                                        onTap: () => context.push('/notifications'),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            // Welcome Placeholder or Stats Dashboard
-                            if (_selectedDay == null)
-                              _buildInitialPlaceholder()
-                            else
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                                      decoration: AppDecorations.glassCard(),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: _buildDashboardItem(
-                                              label: 'PUAN',
-                                              value: selectedPoints.toStringAsFixed(1),
-                                              icon: UIcons.regularStraight.magic_wand,
-                                              isLight: true,
-                                            ),
-                                          ),
-                                          Container(
-                                            height: 30,
-                                            width: 1,
-                                            color: AppColors.primary.withOpacity(0.1),
-                                            margin: const EdgeInsets.symmetric(horizontal: 24),
-                                          ),
-                                          Expanded(
-                                            child: _buildDashboardItem(
-                                              label: 'İÇECEK',
-                                              value: '$selectedDrinks',
-                                              icon: UIcons.regularStraight.drink_alt,
-                                              isLight: true,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            
-                            const SizedBox(height: AppSpacing.lg),
-                            
-                            // Calendar Section with Animated Resize
-                            AnimatedSize(
-                              duration: const Duration(milliseconds: 400),
-                              curve: Curves.easeInOutCirc,
-                              child: Column(
-                                children: [
-                                  ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                                  decoration: AppDecorations.glassCard(),
-                                  child: Column(
-                                    children: [
-                                      TableCalendar(
-                                        locale: 'tr_TR',
-                                        firstDay: DateTime.utc(2020, 1, 1),
-                                        lastDay: DateTime.utc(2030, 12, 31),
-                                        focusedDay: _focusedDay,
-                                        calendarFormat: _calendarFormat,
-                                        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                                        eventLoader: (day) => activeEvents[DateTime.utc(day.year, day.month, day.day)] ?? [],
-                                        startingDayOfWeek: StartingDayOfWeek.monday,
-                                        availableGestures: AvailableGestures.none,
-                                        availableCalendarFormats: const {
-                                          CalendarFormat.month: 'Ay',
-                                          CalendarFormat.week: 'Hafta',
-                                        },
-                                        calendarStyle: CalendarStyle(
-                                            outsideDaysVisible: false,
-                                            weekendTextStyle: const TextStyle(
-                                              color: AppColors.textPrimary, 
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 14,
-                                            ),
-                                            defaultTextStyle: const TextStyle(
-                                              color: AppColors.textPrimary, 
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 14,
-                                            ),
-                                            todayDecoration: BoxDecoration(
-                                              color: AppColors.primary.withOpacity(0.08),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
-                                            ),
-                                            todayTextStyle: const TextStyle(
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                            selectedDecoration: BoxDecoration(
-                                              color: AppColors.primary,
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: AppColors.primary.withOpacity(0.3),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 4),
-                                                ),
-                                              ],
-                                            ),
-                                            selectedTextStyle: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                            markerDecoration: const BoxDecoration(
-                                              color: AppColors.primary,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            markerSize: 4,
-                                            markersMaxCount: 1,
-                                            markerMargin: const EdgeInsets.only(top: 6),
-                                          ),
-                                          headerStyle: const HeaderStyle(
-                                            formatButtonVisible: false,
-                                            titleCentered: true,
-                                            leftChevronVisible: false,
-                                            rightChevronVisible: false,
-                                            headerPadding: EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-                                          ),
-                                          calendarBuilders: CalendarBuilders(
-                                            headerTitleBuilder: (context, day) {
-                                              return Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                                child: Stack(
-                                                  alignment: Alignment.center,
-                                                  children: [
-                                                    // Chevrons and Center Info
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        IconButton(
-                                                          onPressed: () {
-                                                            setState(() {
-                                                              _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month - 1, 1);
-                                                            });
-                                                          },
-                                                          icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
-                                                        ),
-                                                        const Spacer(),
-                                                        IconButton(
-                                                          onPressed: () {
-                                                            setState(() {
-                                                              _focusedDay = DateTime.utc(_focusedDay.year, _focusedDay.month + 1, 1);
-                                                            });
-                                                          },
-                                                          icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    // Month Year + Tarih Seç
-                                                    InkWell(
-                                                      onTap: _showMonthYearPicker,
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      child: Column(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          Text(
-                                                            DateFormat('MMMM yyyy', 'tr_TR').format(day).toUpperCase(),
-                                                            style: const TextStyle(
-                                                              fontSize: 15,
-                                                              fontWeight: FontWeight.w900,
-                                                              color: AppColors.textPrimary,
-                                                              letterSpacing: 0.5,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(height: 2),
-                                                          Text(
-                                                            'TARİH SEÇ',
-                                                            style: GoogleFonts.plusJakartaSans(
-                                                              fontSize: 10,
-                                                              fontWeight: FontWeight.w900,
-                                                              color: AppColors.primary,
-                                                              letterSpacing: 0.4,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    // Bugün on the right
-                                                    Positioned(
-                                                      right: 48, // Offset from right chevron
-                                                      child: InkWell(
-                                                        onTap: () {
-                                                          final now = DateTime.now();
-                                                          setState(() {
-                                                            _focusedDay = now;
-                                                            _selectedDay = now;
-                                                          });
-                                                        },
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        child: Padding(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                          child: Text(
-                                                            'BUGÜN',
-                                                            style: GoogleFonts.plusJakartaSans(
-                                                              fontSize: 10,
-                                                              fontWeight: FontWeight.w900,
-                                                              color: AppColors.primary,
-                                                              letterSpacing: 0.4,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        daysOfWeekStyle: DaysOfWeekStyle(
-                                          weekdayStyle: TextStyle(
-                                            color: AppColors.textTertiary.withOpacity(0.5), 
-                                            fontSize: 12, 
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
-                                          ),
-                                          weekendStyle: TextStyle(
-                                            color: AppColors.textTertiary.withOpacity(0.5), 
-                                            fontSize: 12, 
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                        onDaySelected: (selectedDay, focusedDay) {
-                                          setState(() {
-                                            if (isSameDay(_selectedDay, selectedDay)) {
-                                              _selectedDay = null; // Toggle off
-                                            } else {
-                                              _selectedDay = selectedDay;
-                                            }
-                                            _focusedDay = focusedDay;
-                                          });
-                                        },
-                                        onFormatChanged: (format) => setState(() => _calendarFormat = format),
-                                        onPageChanged: (focusedDay) => _focusedDay = focusedDay,
-                                        onHeaderTapped: (_) => _showMonthYearPicker(),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            
-                                  if (_selectedDay != null) ...[
-                                    const SizedBox(height: 16),
-                                    _buildInlineDayDetails(
-                                      _selectedDay!, 
-                                      activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 120),
-                          ],
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                _buildHeader(user.uid),
+                // Removed banner as per request, logic to be moved to notifications screen/bell
+                Expanded(
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      // Calendar Section (Takvimli Kısım)
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        sliver: SliverToBoxAdapter(
+                          child: _buildCalendarSection(),
                         ),
                       ),
-                    ),
-              ),
-            );
-          },
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildInitialPlaceholder() {
+  Widget _buildHeader(String userId) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              width: double.infinity,
-              child: GestureDetector(
-              onTap: () => context.go('/add'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                decoration: AppDecorations.glassCard(borderRadius: 28),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        UIcons.regularStraight.plus,
-                        size: 26,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bugün Neler İçtin?',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'İçeceklerini kaydetmek için dokun',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary.withOpacity(0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textSecondary.withOpacity(0.3),
-                      size: 28,
-                    ),
-                  ],
-                ),
-              ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'CountSip',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1,
+              color: AppColors.primary,
             ),
           ),
-        ),
+          StreamBuilder<QuerySnapshot>(
+            stream: _friendRequestsStream,
+            builder: (context, snapshot) {
+              final count = snapshot.data?.docs.length ?? 0;
+              return AnimatedNotificationBell(
+                count: count,
+                onTap: () => context.push('/notifications'),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
+
+
+
 
   Widget _buildInlineDayDetails(DateTime day, List<Map<String, dynamic>> entries) {
     return ClipRRect(
