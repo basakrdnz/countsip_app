@@ -11,6 +11,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PhoneForgotPasswordScreen extends ConsumerStatefulWidget {
   const PhoneForgotPasswordScreen({super.key});
@@ -489,7 +490,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: '5XX XXX XX XX',
+                hintText: AppLocalizations.of(context)?.phoneHint ?? '5XX XXX XX XX',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 15,
                   color: AppColors.textTertiary.withOpacity(0.5),

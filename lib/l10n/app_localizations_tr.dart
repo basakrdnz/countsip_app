@@ -154,4 +154,79 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get next => 'İleri';
+
+  @override
+  String get phoneHint => '5XX XXX XX XX';
+
+  @override
+  String get phoneLabel => 'Telefon Numarası';
+
+  @override
+  String get verificationCodeSent => 'Doğrulama kodu gönderildi!';
+
+  @override
+  String get enterVerificationCode => 'Doğrulama kodunu girin';
+
+  @override
+  String get verify => 'Doğrula';
+
+  @override
+  String get resendCode => 'Kodu Tekrar Gönder';
+
+  @override
+  String get resetPassword => 'Şifre Sıfırla';
+
+  @override
+  String get resetPasswordSubtitle => 'Şifreni sıfırlamak için telefon numaranı gir';
+
+  @override
+  String get home => 'Ana Sayfa';
+
+  @override
+  String get addDrink => 'İçecek Ekle';
+
+  @override
+  String get leaderboard => 'Sıralama';
+
+  @override
+  String get profile => 'Profil';
+
+  @override
+  String get settings => 'Ayarlar';
+
+  @override
+  String get friends => 'Arkadaşlar';
+
+  @override
+  String get notifications => 'Bildirimler';
+
+  @override
+  String get badges => 'Rozetler';
+
+  @override
+  String get save => 'Kaydet';
+
+  @override
+  String get cancel => 'İptal';
+
+  @override
+  String get delete => 'Sil';
+
+  @override
+  String get edit => 'Düzenle';
+
+  @override
+  String get loading => 'Yükleniyor...';
+
+  @override
+  String get noData => 'Veri bulunamadı';
+
+  @override
+  String get todaysDrinks => 'Bugünkü İçecekler';
+
+  @override
+  String get totalPoints => 'Toplam Puan';
+
+  @override
+  String get weeklyPoints => 'Haftalık Puan';
 }
