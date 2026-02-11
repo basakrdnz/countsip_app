@@ -116,13 +116,6 @@ class AppDecorations {
         colors: AppColors.primaryGradient,
       ),
       borderRadius: BorderRadius.circular(borderRadius),
-      boxShadow: [
-        BoxShadow(
-          color: AppColors.primary.withOpacity(0.4),
-          blurRadius: 14,
-          offset: const Offset(0, 4),
-        ),
-      ],
     );
   }
 

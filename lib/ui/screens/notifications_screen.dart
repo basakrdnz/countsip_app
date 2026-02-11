@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -9,6 +11,7 @@ import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/services/feed_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -49,6 +52,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .where('status', isEqualTo: 'pending')
             .snapshots(),
         builder: (context, requestsSnapshot) {
+          if (requestsSnapshot.hasError) {
+            debugPrint('Friend requests stream error: ${requestsSnapshot.error}');
+          }
           // 2. Friend Activity Stream (Last 24h)
           // We need friend IDs. For simplicity in UI, we fetch friendships here.
           return StreamBuilder<QuerySnapshot>(
@@ -57,33 +63,44 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 .where('users', arrayContains: user.uid)
                 .snapshots(),
             builder: (context, friendshipsSnapshot) {
+              if (friendshipsSnapshot.hasError) {
+                debugPrint('Friendships stream error: ${friendshipsSnapshot.error}');
+              }
               if (requestsSnapshot.connectionState == ConnectionState.waiting || 
                   friendshipsSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final friendIds = friendshipsSnapshot.data?.docs.map((doc) {
+              final relevantUserIds = friendshipsSnapshot.data?.docs.map((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final users = data['users'] as List;
                 return users.firstWhere((id) => id != user.uid) as String;
               }).toList() ?? [];
+              
+              // Her zaman kullanıcının kendi ID'sini de ekle (Kendi paylaşımlarını görmesi için)
+              if (!relevantUserIds.contains(user.uid)) {
+                relevantUserIds.insert(0, user.uid);
+              }
 
               // If no friends and no requests, show empty
-              if (friendIds.isEmpty && (requestsSnapshot.data?.docs.isEmpty ?? true)) {
+              if (relevantUserIds.isEmpty && (requestsSnapshot.data?.docs.isEmpty ?? true)) {
                 return _buildEmptyState();
               }
 
-              // Now fetch activities from these friends (All Time)
+              // Now fetch activities (All Time)
               return StreamBuilder<QuerySnapshot>(
-                stream: friendIds.isNotEmpty 
+                stream: relevantUserIds.isNotEmpty 
                   ? FirebaseFirestore.instance
                     .collection('entries')
-                    .where('userId', whereIn: friendIds.take(10).toList())
+                    .where('userId', whereIn: relevantUserIds.take(10).toList())
                     .orderBy('timestamp', descending: true)
                     .limit(50) // Show last 50 entries
                     .snapshots()
                   : const Stream.empty(),
                 builder: (context, activitySnapshot) {
+                  if (activitySnapshot.hasError) {
+                    debugPrint('Activity stream error: ${activitySnapshot.error}');
+                  }
                   final List<Map<String, dynamic>> allItems = [];
 
                   // Add requests as special items
@@ -119,25 +136,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     return _buildEmptyState();
                   }
 
-                  return AnimationLimiter(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      itemCount: allItems.length,
-                      itemBuilder: (context, index) {
-                        final item = allItems[index];
-                        return AnimationConfiguration.staggeredList(
-                          position: index,
-                          duration: const Duration(milliseconds: 500),
-                          child: SlideAnimation(
-                            verticalOffset: 50.0,
-                            child: FadeInAnimation(
-                              child: item['_type'] == 'friend_request' 
-                                  ? _NotificationItem(request: item)
-                                  : _buildFeedItem(item, user.uid),
+                  return RefreshIndicator(
+                    onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+                    color: AppColors.primary,
+                    child: AnimationLimiter(
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        itemCount: allItems.length,
+                        itemBuilder: (context, index) {
+                          final item = allItems[index];
+                          return AnimationConfiguration.staggeredList(
+                            position: index,
+                            duration: const Duration(milliseconds: 500),
+                            child: SlideAnimation(
+                              verticalOffset: 50.0,
+                              child: FadeInAnimation(
+                                child: item['_type'] == 'friend_request' 
+                                    ? _NotificationItem(request: item)
+                                    : _buildFeedItem(item, user.uid),
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   );
                 },
@@ -266,7 +288,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           
           // Post Content: Image
-          if (item['hasImage'] == true && item['imagePath'] != null)
+          if (item['hasImage'] == true && (item['imageUrl'] != null || item['imagePath'] != null))
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -274,9 +296,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
@@ -284,14 +306,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   borderRadius: BorderRadius.circular(24),
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: Image.file(
-                      File(item['imagePath']), 
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.white.withOpacity(0.05),
-                        child: const Icon(Icons.broken_image_rounded, color: Colors.white24),
-                      ),
-                    ),
+                    child: item['imageUrl'] != null
+                      ? CachedNetworkImage(
+                          imageUrl: item['imageUrl'],
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.white.withOpacity(0.05),
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.white.withOpacity(0.05),
+                            child: const Icon(Icons.broken_image_rounded, color: Colors.white24),
+                          ),
+                        )
+                      : Image.file(
+                          File(item['imagePath']), 
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.white.withOpacity(0.05),
+                            child: const Icon(Icons.broken_image_rounded, color: Colors.white24),
+                          ),
+                        ),
                   ),
                 ),
               ),
@@ -352,37 +387,45 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
-                // Cheers Button
+                // Cheers Button (Modernized)
                 GestureDetector(
                   onTap: () {
-                    HapticFeedback.mediumImpact();
+                    HapticFeedback.lightImpact();
                     FeedService.toggleCheers(item['id'], currentUserId);
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: hasCheered ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                      gradient: hasCheered ? LinearGradient(
+                        colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                      ) : null,
+                      color: hasCheered ? null : Colors.white.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: hasCheered ? AppColors.primary.withOpacity(0.3) : Colors.white.withOpacity(0.05),
-                      ),
+                      boxShadow: hasCheered ? [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        )
+                      ] : [],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          hasCheered ? Icons.celebration : Icons.celebration_outlined,
-                          color: hasCheered ? AppColors.primary : AppColors.textPrimary.withOpacity(0.4),
+                          AppIcons.glassCheers,
+                          color: hasCheered ? Colors.white : AppColors.textPrimary.withOpacity(0.4),
                           size: 20,
                         ),
                         if (cheers.isNotEmpty) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Text(
                             '${cheers.length}',
                             style: TextStyle(
-                              color: hasCheered ? AppColors.primary : AppColors.textPrimary.withOpacity(0.4),
+                              color: hasCheered ? Colors.white : AppColors.textPrimary.withOpacity(0.4),
                               fontWeight: FontWeight.w900,
-                              fontSize: 13,
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -390,41 +433,122 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                   ),
                 ),
+                
                 const Spacer(),
-                // Cheered by Avatars Preview
+                
+                // Avatars List (Tap to see all)
                 if (cheers.isNotEmpty)
-                  SizedBox(
-                    height: 28,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: (cheers.length > 3 ? 3 : cheers.length) * 16.0 + 12.0,
-                          child: Stack(
-                            children: List.generate(
-                              cheers.length > 3 ? 3 : cheers.length,
-                              (idx) => Positioned(
-                                left: idx * 16.0,
-                                child: _buildUserAvatar(cheers[idx], size: 24),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Şerefe!',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary.withOpacity(0.3),
-                          ),
-                        ),
-                      ],
+                  GestureDetector(
+                    onTap: () => _showCheersList(context, cheers),
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.03),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      ),
+                      child: Row(
+                        children: [
+                          _buildAvatarStack(cheers),
+                          const SizedBox(width: 8),
+                          Icon(AppIcons.angleRight, size: 12, color: AppColors.textPrimary.withOpacity(0.2)),
+                        ],
+                      ),
                     ),
                   ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarStack(List<String> userIds) {
+    const double size = 24.0;
+    const double overlap = 14.0;
+    final displayIds = userIds.take(3).toList();
+    
+    return SizedBox(
+      height: size,
+      width: displayIds.length * overlap + (size - overlap),
+      child: Stack(
+        children: [
+          ...displayIds.asMap().entries.map((entry) {
+            return Positioned(
+              left: entry.key * overlap,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.background, width: 2),
+                ),
+                child: _buildUserAvatar(entry.value, size: size - 4),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _showCheersList(BuildContext context, List<String> userIds) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: AppDecorations.glassCard().copyWith(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 24),
+              Text(
+                'ŞEREFE DİYENLER', 
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w900, 
+                  color: Colors.white, 
+                  letterSpacing: 1.5,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: userIds.length,
+                  itemBuilder: (context, index) {
+                    final userId = userIds[index];
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+                      builder: (context, snapshot) {
+                        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          leading: _buildUserAvatar(userId, size: 40),
+                          title: Text(
+                            userData?['name'] ?? 'Yükleniyor...',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '@${userData?['username'] ?? ''}',
+                            style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
       ),
     );
   }

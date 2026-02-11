@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
@@ -92,11 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: AppColors.error.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.report_problem_rounded,
-                  color: AppColors.error,
-                  size: 32,
-                ),
+                child: const Icon(Icons.report_problem_rounded, color: AppColors.error, size: 32),
               ),
               const SizedBox(height: 24),
               Text(
@@ -110,8 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Hesabınız 7 gün sonra kalıcı olarak silinecek. '
-                'Tamamlamak için e-postanı yaz:',
+                'Hesabınız 7 gün sonra kalıcı olarak silinecek. Onaylamak için e-posta adresinizi girin:',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
@@ -120,28 +116,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               TextField(
                 controller: emailController,
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
                 decoration: InputDecoration(
                   hintText: user.email,
                   hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.3)),
                   fillColor: Colors.white.withOpacity(0.04),
                   filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.error, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Row(
                 children: [
                   Expanded(
@@ -149,18 +140,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: () => Navigator.pop(context, false),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       child: Text(
                         'VAZGEÇ',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
+                        style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1),
                       ),
                     ),
                   ),
@@ -171,11 +155,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (emailController.text.trim().toLowerCase() == user.email?.toLowerCase()) {
                           Navigator.pop(context, true);
                         } else {
+                          HapticFeedback.heavyImpact();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('E-posta adresi eşleşmiyor'),
-                              backgroundColor: Colors.red,
-                            ),
+                            const SnackBar(content: Text('E-posta adresi eşleşmiyor'), backgroundColor: Colors.red),
                           );
                         }
                       },
@@ -184,17 +166,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       child: Text(
-                        'HESABI SİL',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
+                        'ONAYLA',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1),
                       ),
                     ),
                   ),
@@ -246,24 +222,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _resetAllData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tüm Verileri Sıfırla?'),
-        content: const Text('Bütün içecek geçmişin, toplam puanın ve istatistiklerin kalıcı olarak silinecek. Bu işlem geri alınamaz!'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(iconColor: Colors.red),
-            child: const Text('Sıfırla', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
 
     setState(() => _isLoading = true);
     try {
@@ -413,10 +371,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Ayarlar', style: TextStyle(color: AppColors.textPrimary)),
+        title: Text(
+          'Ayarlar', 
+           style: GoogleFonts.plusJakartaSans(
+             fontWeight: FontWeight.w900, 
+             fontSize: 20, 
+             letterSpacing: -0.5,
+             color: AppColors.textPrimary,
+           ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
         foregroundColor: AppColors.textPrimary,
+        leading: IconButton(
+          icon: Icon(AppIcons.angleLeft, size: 20),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -615,14 +586,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // Reset All Data
                       _buildTapRow(
                         icon: AppIcons.refresh,
-                        title: 'İstatistikleri Sıfırla',
+                        title: 'Tüm Verileri Sıfırla',
                         titleColor: AppColors.error,
                         iconColor: AppColors.error,
                         onTap: () async {
+                          HapticFeedback.heavyImpact();
                           final confirm = await _showConfirmDialog(
                             context,
-                            title: 'İstatistikleri Sıfırla',
-                            content: 'Tüm içim geçmişin ve puanların kalıcı olarak sıfırlanacak. Bu işlem geri alınamaz.',
+                            title: 'Verileri Sıfırla?',
+                            content: 'Bütün içecek geçmişin, toplam puanın ve istatistiklerin kalıcı olarak silinecek. Bu işlem geri alınamaz!',
                             isDestructive: true,
                           );
                           if (confirm == true) _resetAllData();
@@ -643,13 +615,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: const EdgeInsets.only(left: 8, bottom: 12),
       child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+        title.toUpperCase(),
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: AppColors.textSecondary.withOpacity(0.5),
+          letterSpacing: 1.2,
         ),
       ),
     );

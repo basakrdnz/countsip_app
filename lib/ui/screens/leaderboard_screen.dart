@@ -90,28 +90,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
         final docs = snapshot.data!.docs;
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final user = docs[index].data() as Map<String, dynamic>;
-            final userId = docs[index].id;
-            final isCurrentUser = userId == currentUserId;
-            
-            // Anonymize for global
-            final anonymizedUser = Map<String, dynamic>.from(user);
-            if (!isCurrentUser) {
-              final name = user['name'] as String? ?? 'Kullanıcı';
-              anonymizedUser['name'] = '${name[0]}${'*' * (name.length - 1)}';
-              anonymizedUser['photoUrl'] = null;
-            }
+        return RefreshIndicator(
+          onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+          color: AppColors.primary,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final user = docs[index].data() as Map<String, dynamic>;
+              final userId = docs[index].id;
+              final isCurrentUser = userId == currentUserId;
+              
+              // Anonymize for global
+              final anonymizedUser = Map<String, dynamic>.from(user);
+              if (!isCurrentUser) {
+                final name = user['name'] as String? ?? 'Kullanıcı';
+                anonymizedUser['name'] = '${name[0]}${'*' * (name.length - 1)}';
+                anonymizedUser['photoUrl'] = null;
+              }
 
-            return _buildUserRankItem(
-              rank: index + 1,
-              user: anonymizedUser,
-              isCurrentUser: isCurrentUser,
-            );
-          },
+              return _buildUserRankItem(
+                rank: index + 1,
+                user: anonymizedUser,
+                isCurrentUser: isCurrentUser,
+              );
+            },
+          ),
         );
       },
     );
@@ -153,19 +158,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
             // Sort manually since whereIn order isn't guaranteed and we can't combine whereIn with orderBy easily without complex indexes
             users.sort((a, b) => (b[_rankingType] ?? 0).compareTo(a[_rankingType] ?? 0));
 
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                final user = users[index];
-                final isCurrentUser = user['uid'] == currentUserId;
+            return RefreshIndicator(
+              onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+              color: AppColors.primary,
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: users.length,
+                itemBuilder: (context, index) {
+                  final user = users[index];
+                  final isCurrentUser = user['uid'] == currentUserId;
 
-                return _buildUserRankItem(
-                  rank: index + 1,
-                  user: user,
-                  isCurrentUser: isCurrentUser,
-                );
-              },
+                  return _buildUserRankItem(
+                    rank: index + 1,
+                    user: user,
+                    isCurrentUser: isCurrentUser,
+                  );
+                },
+              ),
             );
           },
         );

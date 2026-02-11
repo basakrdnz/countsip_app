@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -249,39 +250,58 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }
 
     HapticFeedback.mediumImpact();
+    setState(() => _isLoading = true);
     
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      // Sorumlu İçme Kontrolü (PRD 5.7)
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
-      
-      final todayEntries = await FirebaseFirestore.instance
-          .collection('entries')
-          .where('userId', isEqualTo: user.uid)
-          .where('timestamp', isGreaterThan: Timestamp.fromDate(todayStart))
-          .get();
-
-      final entriesCountToday = todayEntries.docs.length;
-
-      // Su Hatırlatıcısı (PRD 477)
-      if (entriesCountToday >= 2) { 
-        // 3. içki kaydedilirken (yani 2 zaten var) banner gösterilecek
-        _showWaterReminder();
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return;
       }
 
-      setState(() => _isLoading = true);
-      
-      final batch = FirebaseFirestore.instance.batch();
-      final totalScore = _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']);
-      final totalCount = 1;
+      debugPrint('Step 1: Checking daily entries...');
+      int entriesCountToday = 0;
+      try {
+        final now = DateTime.now();
+        final todayStart = DateTime(now.year, now.month, now.day);
+        
+        final todayEntries = await FirebaseFirestore.instance
+            .collection('entries')
+            .where('userId', isEqualTo: user.uid)
+            .where('timestamp', isGreaterThan: Timestamp.fromDate(todayStart))
+            .get();
 
+        entriesCountToday = todayEntries.docs.length;
+      } catch (e) {
+        debugPrint('Daily entries check skipped: $e');
+      }
+
+      final totalScore = _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']);
       final category = _categories.firstWhere((c) => c['id'] == _focusedCategoryId);
       final portionName = _selectedPortion!['name'];
 
+      String? imageUrl;
+      if (_pickedImage != null) {
+        debugPrint('Step 2: Uploading image to Storage...');
+        try {
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('drink_images')
+              .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+          
+          final uploadTask = storageRef.putFile(File(_pickedImage!.path));
+          final snapshot = await uploadTask.timeout(const Duration(seconds: 15));
+          imageUrl = await snapshot.ref.getDownloadURL();
+          debugPrint('Image uploaded successfully: $imageUrl');
+        } catch (e) {
+          debugPrint('Error uploading image (skipping image): $e');
+        }
+      }
+
+      debugPrint('Step 3: Committing Firestore batch...');
+      final batch = FirebaseFirestore.instance.batch();
       final entryRef = FirebaseFirestore.instance.collection('entries').doc();
+      
       batch.set(entryRef, {
         'userId': user.uid,
         'drinkType': category['name'],
@@ -296,9 +316,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         'intoxicationLevel': _feelingScale,
         'timestamp': Timestamp.fromDate(_selectedTime),
         'createdAt': FieldValue.serverTimestamp(),
-        'hasImage': _pickedImage != null,
+        'hasImage': imageUrl != null,
+        'imageUrl': imageUrl,
         'imagePath': _pickedImage?.path,
-        // PRD 5.4: Drinking With
         'taggedFriendIds': _taggedFriendIds,
       });
 
@@ -306,44 +326,54 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         FirebaseFirestore.instance.collection('users').doc(user.uid),
         {
           'totalPoints': FieldValue.increment(totalScore),
-          'totalDrinks': FieldValue.increment(totalCount),
+          'totalDrinks': FieldValue.increment(1),
         },
         SetOptions(merge: true),
       );
 
       await batch.commit();
+      debugPrint('Batch committed successfully.');
 
       if (mounted) {
-        // Check for new badges
-        final unlockedBadges = await BadgeService.checkBadges(user.uid);
-        if (unlockedBadges.isNotEmpty) {
-          for (var badge in unlockedBadges) {
-            if (!mounted) break;
-            await _showBadgeNotification(badge);
-            await Future.delayed(const Duration(milliseconds: 300));
-          }
-        }
-
         HapticFeedback.heavyImpact();
-        
-        await Fluttertoast.showToast(
-          msg: "✓ Başarıyla kaydedildi! +${totalScore.toStringAsFixed(1)} APS 🎉",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+        _showSuccessToast(totalScore);
+        _runBackgroundTasks(user.uid, entriesCountToday);
         _resetForm();
       }
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Hata: $e',
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      debugPrint('Critical error saving entry: $e');
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'Kaydetme sırasında bir hata oluştu: $e',
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _runBackgroundTasks(String userId, int entriesCountToday) async {
+    try {
+      // 1. Badge Check
+      final unlockedBadges = await BadgeService.checkBadges(userId);
+      if (unlockedBadges.isNotEmpty && mounted) {
+        for (var badge in unlockedBadges) {
+          if (!mounted) break;
+          await _showBadgeNotification(badge);
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
+
+      // 2. Water Reminder
+      if (entriesCountToday >= 2) {
+        await FirebaseFirestore.instance.collection('users').doc(userId).update({
+          'showWaterReminder': true,
+        });
+      }
+    } catch (e) {
+      debugPrint('Background tasks error: $e');
     }
   }
 
@@ -437,17 +467,33 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   Widget _buildMainListView() {
     return FadeTransition(
       opacity: _entranceController,
-      child: CustomScrollView(
-        key: const PageStorageKey('main_list'),
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
-          SliverToBoxAdapter(child: _buildSearchBar()),
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-          SliverToBoxAdapter(child: _buildCategoryGrid()),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-        ],
+      child: RefreshIndicator(
+        onRefresh: () async {
+          HapticFeedback.mediumImpact();
+          // Reset form and clear search
+          _resetForm();
+          setState(() {
+            _searchQuery = '';
+          });
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        color: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        edgeOffset: 120, // Start below title bar
+        child: CustomScrollView(
+          key: const PageStorageKey('main_list'),
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            SliverToBoxAdapter(child: _buildSearchBar()),
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            SliverToBoxAdapter(child: _buildCategoryGrid()),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+          ],
+        ),
       ),
     );
   }
@@ -1262,15 +1308,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 border: Border.all(
                   color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFF8902).withOpacity(0.3),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
+                boxShadow: null,
               ),
               child: Text(
                 v!,
@@ -1325,15 +1363,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 border: Border.all(
                   color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFF8902).withOpacity(0.3),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
+                boxShadow: null,
               ),
               child: Text(
                 sizeLabel,
@@ -1504,12 +1534,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)]),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF8902).withOpacity(0.4),
-                  blurRadius: 12,
-                ),
-              ],
+              boxShadow: null,
             ),
             child: const Icon(Icons.add, color: Colors.white, size: 28),
           ),
@@ -1721,13 +1746,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF8902).withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: null,
         ),
         child: Center(
           child: _isLoading
@@ -2242,20 +2261,30 @@ class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'ROZET KAZANILDI! 🏆',
+                                    'ROZET KAZANILDI! ✨',
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: widget.color,
+                                      color: widget.color.withOpacity(0.8),
                                       fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.2,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 2,
                                     ),
                                   ),
+                                  const SizedBox(height: 2),
                                   Text(
                                     widget.badgeSource.name,
                                     style: GoogleFonts.plusJakartaSans(
                                       color: Colors.white,
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  Text(
+                                    widget.badgeSource.description,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.5),
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],

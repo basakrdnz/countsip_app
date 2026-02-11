@@ -146,13 +146,7 @@ class _BadgesScreenState extends State<BadgesScreen> {
             color: isUnlocked ? color.withOpacity(0.5) : Colors.white.withOpacity(0.05),
             width: 1.5,
           ),
-          boxShadow: isUnlocked ? [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 1,
-            )
-          ] : [],
+          boxShadow: null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

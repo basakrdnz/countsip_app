@@ -1,6 +1,6 @@
 # CountSip - TODO Listesi
 
-> Son güncelleme: 28 Ocak 2026
+> Son güncelleme: 11 Şubat 2026
 
 ---
 
@@ -80,11 +80,11 @@ En az 10 ekstra kokteyl eklenecek:
   - Kullanıcı mekan seçebilsin
   - Manuel mekan ismi girişi de olsun
   
-- [ ] **Konum verisi saklama**
+- [x] **Konum verisi saklama**
   - Firestore'da entry ile birlikte:
     - `locationName` (string)
-    - `locationLat` (double)
-    - `locationLng` (double)
+    - `locationLat` (double) (Gelecek)
+    - `locationLng` (double) (Gelecek)
     - `placeId` (opsiyonel, Google Places ID)
 
 ### 3.2 Konum Özellikleri (Advanced - Gelecek)
@@ -103,22 +103,22 @@ En az 10 ekstra kokteyl eklenecek:
 ## 📸 4. Anlık Fotoğraf Ekleme
 
 ### 4.1 Görsel Ekleme
-- [ ] **Fotoğraf çekme butonu**
+- [x] **Fotoğraf çekme butonu**
   - Hızlı ekleme modunda olmasın
   - Normal eklemede opsiyonel
   - Kamera açma (image_picker paketi)
   - Galeri seçimi de ekle
   
-- [ ] **Fotoğraf önizleme**
+- [x] **Fotoğraf önizleme**
   - Çekilen fotoyu göster
   - Yeniden çek / iptal seçenekleri
   
-- [ ] **Firebase Storage'a yükleme**
+- [x] **Firebase Storage'a yükleme**
   - Sıkıştırma (max 1MB, 1024x1024)
   - Unique dosya adı (userId_timestamp.jpg)
   - Download URL'yi Firestore'da sakla
   
-- [ ] **Gösterim**
+- [x] **Gösterim**
   - Home ekranında gün detaylarında foto thumb
   - Tıklayınca fullscreen görüntüleme
 
@@ -127,12 +127,12 @@ En az 10 ekstra kokteyl eklenecek:
 ## 📝 5. Not Ekleme
 
 ### 5.1 Not Alanı
-- [ ] **Not input alanı**
+- [x] **Not input alanı**
   - Opsiyonel, expandable TextField
   - Placeholder: "Nasıl hissettin? Neler oldu?"
   - Max karakter: 500
   
-- [ ] **Not gösterimi**
+- [x] **Not gösterimi**
   - Home ekranında gün detaylarında not varsa küçük ikon
   - Tıklayınca full notu göster
   - Emoji desteği

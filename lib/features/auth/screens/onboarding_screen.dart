@@ -131,13 +131,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                     colors: [AppColors.primary, AppColors.accentPrimary],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
                 ),
                 child: Material(
                   color: Colors.transparent,

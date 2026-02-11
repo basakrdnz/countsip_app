@@ -703,13 +703,6 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           end: Alignment.bottomRight,
           colors: [AppColors.primary, AppColors.accentPrimary],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,

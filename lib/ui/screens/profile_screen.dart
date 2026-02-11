@@ -169,7 +169,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       extendBody: true,
       body: SafeArea(
             bottom: false,
-            child: SingleChildScrollView(
+            child: RefreshIndicator(
+              onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   children: [
@@ -334,11 +338,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onTap: () => context.push('/badges'),
                               ),
                               _buildDivider(),
-                              // Theme Selector (PRD 5.3)
                               _buildMenuItem(
-                                icon: Icons.palette_outlined,
-                                title: 'Temalar',
-                                onTap: () => _showThemeSelectionSheet(context, userData),
+                                icon: Icons.military_tech_outlined,
+                                title: 'Rütbe & Çerçeve',
+                                onTap: () => _showFrameSelectionSheet(context, userData),
                               ),
                               _buildDivider(),
                               _buildMenuItem(
@@ -434,8 +437,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-      ),
-    );
+            ),
+          ),
+        );
         },
       );
     }
@@ -533,10 +537,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
-  void _showThemeSelectionSheet(BuildContext context, Map<String, dynamic>? userData) {
+  void _showFrameSelectionSheet(BuildContext context, Map<String, dynamic>? userData) {
     final totalPoints = (userData?['totalPoints'] as num?)?.toDouble() ?? 0.0;
     final userLevel = ThemeService.calculateLevel(totalPoints);
-    final userTheme = userData?['theme'] ?? 'defaultMode';
+    final userFrame = userData?['profileFrame'] ?? 'none';
 
     showModalBottomSheet(
       context: context,
@@ -551,38 +555,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
-            Text('TEMA SEÇİMİ', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2)),
+            Text('RÜTBE VE ÇERÇEVE', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2)),
             const SizedBox(height: 24),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
-                children: AppThemeMode.values.map((mode) {
-                  final requiredLevel = ThemeService.getRequiredLevel(mode);
+                children: ProfileFrameRank.values.map((rank) {
+                  final requiredLevel = ThemeService.getRequiredLevel(rank);
                   final isUnlocked = userLevel >= requiredLevel;
-                  final isSelected = userTheme == mode.name;
+                  final isSelected = userFrame == rank.name;
 
                   return ListTile(
-                    leading: Icon(
-                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                      color: isSelected ? AppColors.primary : Colors.white24,
+                    leading: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: rank.frameColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          if (rank != ProfileFrameRank.none)
+                            BoxShadow(color: rank.frameColor.withOpacity(0.5), blurRadius: 4, spreadRadius: 1),
+                        ],
+                      ),
                     ),
                     title: Text(
-                      mode.displayName,
+                      rank.displayName,
                       style: TextStyle(
                         color: isUnlocked ? Colors.white : Colors.white30,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: isUnlocked 
-                      ? null 
+                      ? Text(isSelected ? 'Seçili' : 'Açık', style: TextStyle(color: isSelected ? AppColors.primary : Colors.white24, fontSize: 12)) 
                       : Text('Seviye $requiredLevel gerekir', style: const TextStyle(color: Colors.white24, fontSize: 12)),
-                    trailing: isUnlocked ? null : const Icon(Icons.lock, size: 16, color: Colors.white10),
+                    trailing: isUnlocked 
+                      ? (isSelected ? const Icon(Icons.check_circle, color: AppColors.primary, size: 20) : null)
+                      : const Icon(Icons.lock, size: 16, color: Colors.white10),
                     onTap: () async {
                       if (isUnlocked) {
                         await FirebaseFirestore.instance
                             .collection('users')
                             .doc(FirebaseAuth.instance.currentUser?.uid)
-                            .update({'theme': mode.name});
+                            .update({'profileFrame': rank.name});
                         Navigator.pop(context);
                       }
                     },

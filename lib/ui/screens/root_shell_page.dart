@@ -24,8 +24,7 @@ class _RootShellPageState extends State<RootShellPage> {
   DateTime? _deletionScheduledAt;
   bool _hasCheckedStatus = false;
   int _previousIndex = 0;
-  AppThemeMode _currentTheme = AppThemeMode.defaultMode;
-  late Stream<DocumentSnapshot<Map<String, dynamic>>> _userThemeStream;
+  late Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
   bool _isAddButtonPressed = false;
 
   @override
@@ -43,9 +42,9 @@ class _RootShellPageState extends State<RootShellPage> {
     
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      _userThemeStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
+      _userStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
     } else {
-      _userThemeStream = const Stream.empty();
+      _userStream = const Stream.empty();
     }
   }
 
@@ -223,18 +222,10 @@ class _RootShellPageState extends State<RootShellPage> {
     final currentIndex = widget.navigationShell.currentIndex;
     
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _userThemeStream,
+      stream: _userStream,
       builder: (context, snapshot) {
-        final userData = snapshot.data?.data();
-        _currentTheme = AppThemeMode.fromName(userData?['theme'] ?? 'defaultMode');
-        final gradient = ThemeService.getBackgroundGradient(_currentTheme);
-        final accentColor = ThemeService.getAccentColor(_currentTheme);
-
         return Container(
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            gradient: gradient,
-          ),
+          color: AppColors.background,
           child: Scaffold(
             backgroundColor: Colors.transparent,
             body: Column(
@@ -301,7 +292,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 0,
                     onTap: () => _onDestinationSelected(0),
                     iconSize: 24,
-                    accentColor: accentColor,
+                    accentColor: AppColors.primary,
                   ),
                   _NavItem(
                     icon: AppIcons.plus,
@@ -309,7 +300,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 1,
                     onTap: () => _onDestinationSelected(1),
                     iconSize: 24,
-                    accentColor: accentColor,
+                    accentColor: AppColors.primary,
                   ),
                   GestureDetector(
                     onTapDown: (_) => setState(() => _isAddButtonPressed = true),
@@ -331,18 +322,12 @@ class _RootShellPageState extends State<RootShellPage> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              accentColor,
-                              accentColor.withOpacity(0.85),
+                              AppColors.primary,
+                              AppColors.primary.withOpacity(0.85),
                             ],
                           ),
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withOpacity(0.5),
-                              blurRadius: _isAddButtonPressed ? 20 : 30,
-                              spreadRadius: _isAddButtonPressed ? 2 : 4,
-                            ),
-                          ],
+                          boxShadow: null,
                           border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
                         ),
                         child: const Icon(
@@ -359,7 +344,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 2,
                     onTap: () => _onDestinationSelected(2),
                     iconSize: 29,
-                    accentColor: accentColor,
+                    accentColor: AppColors.primary,
                   ),
                   _NavItem(
                     icon: AppIcons.user,
@@ -367,7 +352,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     isSelected: currentIndex == 3,
                     onTap: () => _onDestinationSelected(3),
                     iconSize: 24,
-                    accentColor: accentColor,
+                    accentColor: AppColors.primary,
                   ),
                 ],
               ),

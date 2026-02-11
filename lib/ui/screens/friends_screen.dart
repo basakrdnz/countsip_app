@@ -228,124 +228,129 @@ class _FriendsListTab extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: friendships.length,
-          itemBuilder: (context, index) {
-            final friendship = friendships[index].data() as Map<String, dynamic>;
-            final friendUid = (friendship['users'] as List)
-                .firstWhere((uid) => uid != user.uid);
-            
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(friendUid)
-                  .get(),
-              builder: (context, userSnapshot) {
-                if (!userSnapshot.hasData) {
-                  return const SizedBox(height: 70);
-                }
+        return RefreshIndicator(
+          onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+          color: AppColors.primary,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            itemCount: friendships.length,
+            itemBuilder: (context, index) {
+              final friendship = friendships[index].data() as Map<String, dynamic>;
+              final friendUid = (friendship['users'] as List)
+                  .firstWhere((uid) => uid != user.uid);
+              
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(friendUid)
+                    .get(),
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return const SizedBox(height: 70);
+                  }
 
-                final friendData = userSnapshot.data?.data() as Map<String, dynamic>?;
-                if (friendData == null) return const SizedBox();
+                  final friendData = userSnapshot.data?.data() as Map<String, dynamic>?;
+                  if (friendData == null) return const SizedBox();
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: AppDecorations.glassCard(borderRadius: 24),
-                  child: Row(
-                    children: [
-                      // Avatar with matching style
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.06),
-                          shape: BoxShape.circle,
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: AppDecorations.glassCard(borderRadius: 24),
+                    child: Row(
+                      children: [
+                        // Avatar with matching style
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.06),
+                            shape: BoxShape.circle,
+                          ),
+                          child: friendData['photoUrl'] != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Image.network(friendData['photoUrl'], fit: BoxFit.cover),
+                                )
+                              : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
                         ),
-                        child: friendData['photoUrl'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: Image.network(friendData['photoUrl'], fit: BoxFit.cover),
-                              )
-                            : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                              Text(
-                                friendData['name'] ?? 'İsimsiz',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: AppColors.textTertiary,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text(
+                                  friendData['name'] ?? 'İsimsiz',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: AppColors.textTertiary,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '@${friendData['username'] ?? ''}',
-                                style: TextStyle(
-                                  color: AppColors.textTertiary.withOpacity(0.6),
-                                  fontSize: 12,
+                                Text(
+                                  '@${friendData['username'] ?? ''}',
+                                  style: TextStyle(
+                                    color: AppColors.textTertiary.withOpacity(0.6),
+                                    fontSize: 12,
+                                  ),
                                 ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: Icon(AppIcons.menuDotsVertical, color: AppColors.textTertiary.withOpacity(0.5), size: 18),
+                          color: AppColors.surface, // Dark background
+                          elevation: 8,
+                          offset: const Offset(0, 40),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Colors.white.withOpacity(0.05)),
+                          ),
+                          onSelected: (value) {
+                            if (value == 'block') {
+                              _showBlockDialog(context, friendUid, friendData['name'] ?? 'Bu kullanıcı', friendships[index].id);
+                            } else if (value == 'remove') {
+                              _showRemoveFriendDialog(context, friendData['name'] ?? 'Bu kullanıcı', friendships[index].id);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'remove',
+                              height: 44,
+                              child: Row(
+                                children: [
+                                  Icon(AppIcons.userRemoveIcon, color: Colors.orange.withOpacity(0.8), size: 18),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Arkadaşlıktan Çıkar',
+                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
                               ),
+                            ),
+                            PopupMenuItem(
+                              value: 'block',
+                              height: 44,
+                              child: Row(
+                                children: [
+                                  Icon(AppIcons.ban, color: AppColors.error.withOpacity(0.8), size: 18),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Engelle',
+                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: Icon(AppIcons.menuDotsVertical, color: AppColors.textTertiary.withOpacity(0.5), size: 18),
-                        color: AppColors.surface, // Dark background
-                        elevation: 8,
-                        offset: const Offset(0, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        onSelected: (value) {
-                          if (value == 'block') {
-                            _showBlockDialog(context, friendUid, friendData['name'] ?? 'Bu kullanıcı', friendships[index].id);
-                          } else if (value == 'remove') {
-                            _showRemoveFriendDialog(context, friendData['name'] ?? 'Bu kullanıcı', friendships[index].id);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'remove',
-                            height: 44,
-                            child: Row(
-                              children: [
-                                Icon(AppIcons.userRemoveIcon, color: Colors.orange.withOpacity(0.8), size: 18),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Arkadaşlıktan Çıkar',
-                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'block',
-                            height: 44,
-                            child: Row(
-                              children: [
-                                Icon(AppIcons.ban, color: AppColors.error.withOpacity(0.8), size: 18),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Engelle',
-                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -681,138 +686,143 @@ class _RequestsTab extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: requests.length,
-          itemBuilder: (context, index) {
-            final request = requests[index];
-            final fromUid = request['from'] as String;
+        return RefreshIndicator(
+          onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+          color: AppColors.primary,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            itemCount: requests.length,
+            itemBuilder: (context, index) {
+              final request = requests[index];
+              final fromUid = request['from'] as String;
 
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(fromUid)
-                  .get(),
-              builder: (context, userSnapshot) {
-                if (!userSnapshot.hasData) {
-                  return const SizedBox(height: 90);
-                }
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(fromUid)
+                    .get(),
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return const SizedBox(height: 90);
+                  }
 
-                final senderData = userSnapshot.data?.data() as Map<String, dynamic>?;
-                if (senderData == null) return const SizedBox();
+                  final senderData = userSnapshot.data?.data() as Map<String, dynamic>?;
+                  if (senderData == null) return const SizedBox();
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: AppDecorations.glassCard(borderRadius: 24),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          // Avatar with matching style
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.06),
-                              shape: BoxShape.circle,
-                            ),
-                            child: senderData['photoUrl'] != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: Image.network(senderData['photoUrl'], fit: BoxFit.cover),
-                                  )
-                                : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  senderData['name'] ?? 'İsimsiz',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                                Text(
-                                  '@${senderData['username'] ?? ''}',
-                                  style: TextStyle(
-                                    color: AppColors.textTertiary.withOpacity(0.6),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _rejectRequest(context, request.id),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: AppColors.error.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.error.withOpacity(0.2)),
-                                ),
-                                child: Text(
-                                  'Reddet',
-                                  style: TextStyle(
-                                    color: AppColors.error.withOpacity(0.8),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: AppDecorations.glassCard(borderRadius: 24),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            // Avatar with matching style
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.06),
+                                shape: BoxShape.circle,
                               ),
+                              child: senderData['photoUrl'] != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: Image.network(senderData['photoUrl'], fit: BoxFit.cover),
+                                    )
+                                  : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _acceptRequest(context, request.id, fromUid),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [AppColors.primary, Color(0xFFEE5A6F)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withOpacity(0.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    senderData['name'] ?? 'İsimsiz',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      color: AppColors.textTertiary,
                                     ),
-                                  ],
-                                ),
-                                child: const Text(
-                                  'Kabul Et',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                  ),
+                                  Text(
+                                    '@${senderData['username'] ?? ''}',
+                                    style: TextStyle(
+                                      color: AppColors.textTertiary.withOpacity(0.6),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _rejectRequest(context, request.id),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: AppColors.error.withOpacity(0.2)),
+                                  ),
+                                  child: Text(
+                                    'Reddet',
+                                    style: TextStyle(
+                                      color: AppColors.error.withOpacity(0.8),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _acceptRequest(context, request.id, fromUid),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [AppColors.primary, Color(0xFFEE5A6F)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Text(
+                                    'Kabul Et',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );

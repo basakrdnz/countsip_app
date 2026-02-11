@@ -109,7 +109,38 @@
 - UX iyileştirmesi: Bounce animasyonu ve glassmorphism ile premium görünüm
 
 ## Sıradaki önerilen adımlar
-- Home feed ekranını doldur
-- Add drink modal formunu tamamla
-- Leaderboard sorgularını yaz
-- Profile istatistiklerini göster
+- Leaderboard haftalık sıfırlama mekanizmasını kur (Cloud Functions)
+- İçecek çeşitlerini (10+ kokteyl) genişletmeye devam et
+- Profil ekranında yaş/doğum günü migration'ını tamamla (Timestamp bazlı)
+
+> Tarih: 2026-02-11
+
+## Ne yaptık? (Bugün - Sosyal Feed & Global Galeri & Optimizasyon)
+
+### Sosyal Bildirimler & Feed Revizyonu ✅
+- **Global Görsel Desteği**: Drink entry'lerine eklenen fotoğraflar artık sadece yerelde kalmıyor, **Firebase Storage**'a yükleniyor.
+- **Feed Üzerinde Görseller**: Tüm arkadaşlar artık paylaşılan içki fotoğraflarını feed üzerinden görebiliyor. `CachedNetworkImage` ile performanslı yükleme sağlandı.
+- **Kendi Paylaşımların**: Kullanıcı artık feed (bildirimler) ekranında kendi paylaşımlarını da arkadaşlarıyla birlikte görebiliyor.
+- **UI Cilalama**: Feed item tasarımları daha premium gölgeler ve yerleşimlerle güncellendi.
+
+### Bildirim ve UX Akışı ✅
+- **Bildirim Çakışmaları Fix**: Başarı mesajı, Rozet bildirimi ve Su hatırlatıcısı artık üst üste binmiyor. Mantıksal bir sıra ile (Başarı -> Rozet -> Su) gösteriliyor.
+- **Merkezi Başarı Animasyonu**: Eski "Toast" bildirimi yerine ekranın ortasında çıkan şık, APS puanını vurgulayan animasyon aktif edildi.
+- **Su Hatırlatıcı Banner (Home)**: İçecek ekleme anındaki rahatsız edici bildirim yerine, anasayfada Interaktif bir "Su içtin mi?" banner'ı eklendi.
+- **Pull to Refresh**: Ekle sayfasını aşağı çekerek formu sıfırlama özelliği eklendi.
+
+### Teknik Sağlamlaştırma (Robustness) ✅
+- **Resim Yükleme Timeout**: Fotoğraf yükleme işlemi 15 saniye ile sınırlandırıldı. İnternet yavaşsa fotoğrafı atlayıp kaydı tamamlayarak uygulamanın donması engellendi.
+- **Logging & Debug**: İçecek kaydetme süreci için adım adım (Step 1, 2, 3) loglama eklendi.
+- **Background Tasks**: Rozet kontrolleri ve su hatırlatıcı bayrağı setleme işlemleri "Background Task" olarak ayrıldı, UI tepkiselliği artırıldı.
+
+## Neden yaptık?
+- Fotoğrafların sadece yerelde kalması sosyal etkileşimi engelliyordu; global galeri desteği şarttı.
+- Üst üste binen bildirimler görsel kirlilik yaratıyordu, akış kullanıcıyı yormayacak şekilde sıralandı.
+- Fotoğraf yüklenirken uygulamanın takılması (donması) en büyük UX problemimizdi, timeout ve asenkron yapı ile çözüldü.
+- "Su iç" hatırlatması kullanıcıyı bölmek yerine anasayfada bir "soru" olarak premium bir deneyim sunuyor.
+
+## Çıkan sorunlar ve çözümler
+- **CachedNetworkImage Derleme Hatası**: `errorBuilder` beklerken `errorWidget` parametresi kullanılarak çözüldü.
+- **Nested Try-Catch Karmaşası**: İçecek kaydetme fonksiyonundaki parantez ve iç içe try-catch hataları temizlendi, tek bir asenkron akışa oturtuldu.
+- **Boş Fotoğraf**: Fotoğraf yüklenemese bile verinin Firestore'a kaydedilmesi garanti altına alındı.

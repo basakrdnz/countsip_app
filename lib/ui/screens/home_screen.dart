@@ -53,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .where('to', isEqualTo: user.uid)
           .where('status', isEqualTo: 'pending')
           .snapshots();
+      _loadData();
     } else {
       _userStream = const Stream.empty();
       _entriesStream = const Stream.empty();
@@ -756,6 +757,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: _userStream,
       builder: (context, userSnapshot) {
+        final showWaterReminder = userSnapshot.data?.data()?['showWaterReminder'] == true;
+        
         return Scaffold(
           backgroundColor: AppColors.background,
           body: SafeArea(
@@ -763,19 +766,28 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 _buildHeader(user.uid),
-                // Removed banner as per request, logic to be moved to notifications screen/bell
+                // Water Reminder Banner
+                if (showWaterReminder)
+                  _buildWaterReminderBanner(user.uid),
                 Expanded(
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      // Calendar Section (Takvimli Kısım)
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        sliver: SliverToBoxAdapter(
-                          child: _buildCalendarSection(),
-                        ),
+                  child: RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: AppColors.primary,
+                    backgroundColor: AppColors.surface,
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
                       ),
-                    ],
+                      slivers: [
+                        // Calendar Section (Takvimli Kısım)
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          sliver: SliverToBoxAdapter(
+                            child: _buildCalendarSection(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -783,6 +795,80 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWaterReminderBanner(String userId) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AppDecorations.glassCardWidget(
+        padding: const EdgeInsets.all(16),
+        borderRadius: 22,
+        color: const Color(0xFF0D47A1).withOpacity(0.15),
+        blurSigma: 12,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Text('💧', style: TextStyle(fontSize: 24)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bugün hiç su içtin mi?',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Dengeyi korumak için şimdi bir bardak su iç 💪',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userId)
+                    .update({'showWaterReminder': false});
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'İçtim ✓',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

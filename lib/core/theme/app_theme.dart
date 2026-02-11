@@ -26,6 +26,7 @@ class AppTheme {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
+        surfaceTintColor: Colors.transparent,
       ),
       textTheme: baseTextTheme.copyWith(
         displayLarge: baseTextTheme.displayLarge?.merge(AppTextStyles.largeTitle),
@@ -48,6 +49,14 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           elevation: 0,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.pressed)) return Colors.white.withOpacity(0.1);
+            if (states.contains(WidgetState.hovered)) return Colors.white.withOpacity(0.05);
+            return null;
+          }),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -62,6 +71,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           elevation: 0,
+          shadowColor: Colors.transparent,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -75,6 +85,8 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           side: const BorderSide(color: AppColors.buttonPrimary, width: 2),
+          elevation: 0,
+          shadowColor: Colors.transparent,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -87,7 +99,14 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
+          elevation: 0,
+          shadowColor: Colors.transparent,
         ),
+      ),
+      cardTheme: const CardThemeData(
+        elevation: 0,
+        color: Colors.transparent,
+        shadowColor: Colors.transparent,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

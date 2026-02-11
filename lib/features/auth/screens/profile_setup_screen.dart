@@ -647,7 +647,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       decoration: BoxDecoration(
         color: AppColors.buttonPrimary,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: AppColors.buttonPrimary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
       ),
       child: ElevatedButton(
         onPressed: _isLoading ? null : onPressed,

@@ -46,6 +46,7 @@ class AppIcons {
   static final IconData world = UIcons.regularStraight.world;
   static final IconData refresh = UIcons.regularStraight.refresh;
   static final IconData marker = UIcons.regularStraight.marker;
+  static final IconData glassCheers = UIcons.regularStraight.glass_cheers;
 
   // Bold Icons for Auth Screens
   static final IconData exitBold = UIcons.boldStraight.exit;
