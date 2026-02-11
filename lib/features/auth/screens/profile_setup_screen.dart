@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -31,7 +32,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   String? _name; // MANDATORY
   int? _weight; // kg - optional
   int? _height; // cm - optional
-  int? _age; // optional
+  DateTime? _dob; // Date of Birth - optional
   String? _gender; // 'male' or 'female' - optional
 
   bool _isLoading = false;
@@ -176,7 +177,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
         if (_weight != null) data['weight'] = _weight;
         if (_height != null) data['height'] = _height;
-        if (_age != null) data['age'] = _age;
+        if (_dob != null) {
+          final age = DateTime.now().year - _dob!.year;
+          data['age'] = age;
+          data['dob'] = Timestamp.fromDate(_dob!);
+        }
         if (_gender != null) data['gender'] = _gender;
         
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
@@ -255,7 +260,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         
         if (_weight != null) data['weight'] = _weight;
         if (_height != null) data['height'] = _height;
-        if (_age != null) data['age'] = _age;
+        if (_dob != null) {
+          final age = DateTime.now().year - _dob!.year;
+          data['age'] = age;
+          data['dob'] = Timestamp.fromDate(_dob!);
+        }
         if (_gender != null) data['gender'] = _gender;
 
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
@@ -275,41 +284,127 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Base Background Image
+          // 1. Base Background
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/mainbgwemp.png',
-              fit: BoxFit.cover,
+            child: Container(color: AppColors.background),
+          ),
+          
+          // 2. Glow Effects (Subtle & Immersive)
+          Positioned(
+            top: -150,
+            left: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withOpacity(0.12),
+                    AppColors.primary.withOpacity(0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -150,
+            right: -100,
+            child: Container(
+              width: 450,
+              height: 450,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.secondary.withOpacity(0.08),
+                    AppColors.secondary.withOpacity(0),
+                  ],
+                ),
+              ),
             ),
           ),
           
-          // 2. Main Content
+          // 3. Main Content
           
           // 4. Content
           SafeArea(
             child: Column(
               children: [
-                // Header (Progress Indicator)
+                const SizedBox(height: 12),
+                // Header (Progress)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 8), // Slight breathing room
+                      Expanded(child: _buildPremiumIndicator()),
+                      if (_currentPage > 0) ...[
+                        const SizedBox(width: 12),
+                        TextButton(
+                          onPressed: _skipAndFinish,
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white.withOpacity(0.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Şimdilik atla',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
+
+                const Spacer(flex: 1),
+
+                // Title Section
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      _buildPremiumIndicator(),
-                      const SizedBox(height: 12),
                       Text(
                         'Profilini Tamamla',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.textPrimary,
-                          fontSize: 24,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 32,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: -1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Seni daha iyi tanıyalım',
+                          style: GoogleFonts.inter(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
 
+                const SizedBox(height: 40),
+
                 // Pages
                 Expanded(
+                  flex: 10,
                   child: PageView(
                     controller: _pageController,
                     onPageChanged: (page) => setState(() => _currentPage = page),
@@ -317,48 +412,42 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       _buildNamePage(),
                       _buildWeightPage(),
                       _buildHeightPage(),
-                      _buildAgePage(),
+                      _buildDobPage(),
                       _buildGenderPage(),
                     ],
                   ),
                 ),
+                
+                const Spacer(flex: 1),
 
-                // Navigation buttons
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          if (_currentPage > 0)
-                            Expanded(
-                              child: _buildSecondaryButton('Geri', _previousPage),
-                            ),
-                          if (_currentPage > 0) const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _buildPrimaryButton(
-                              _currentPage == 4 ? 'Tamamla' : 'İleri',
-                              _currentPage == 4 ? _saveAndFinish : _nextPage,
-                            ),
+                  // Navigation buttons
+                  Padding(
+                    // Reduced vertical padding to prevent main buttons from shifting up
+                    padding: const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 8),
+                    child: Column(
+                      children: [
+                        if (_currentPage == 0)
+                          // Step 1: Only Next button (No Skip, No Back)
+                          _buildPrimaryButton('İleri', _nextPage)
+                        else
+                          // Step 2+: Back + Next (Side by Side)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildSecondaryButton('Geri', _previousPage),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildPrimaryButton(
+                                  _currentPage == 4 ? 'Tamamla' : 'İleri',
+                                  _currentPage == 4 ? _saveAndFinish : _nextPage,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Only show skip button if name is filled
-                      if (_nameController.text.trim().isNotEmpty)
-                        TextButton(
-                          onPressed: _isLoading ? null : _skipAndFinish,
-                          child: Text(
-                            'Şimdilik atla',
-                            style: TextStyle(
-                              color: AppColors.textSecondary.withOpacity(0.6),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -368,35 +457,59 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Widget _buildPremiumIndicator() {
-    return Row(
-      children: List.generate(5, (index) {
-        final isActive = _currentPage >= index;
-        return Expanded(
-          child: Container(
-            height: 4,
-            margin: EdgeInsets.symmetric(horizontal: (index != 0) ? 4 : 0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
-              color: isActive ? AppColors.buttonPrimary : AppColors.buttonPrimary.withOpacity(0.15),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: List.generate(5, (index) {
+          final isActive = _currentPage >= index;
+          return Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              height: isActive ? 5 : 4,
+              margin: EdgeInsets.symmetric(horizontal: (index != 0) ? 6 : 0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: isActive ? AppColors.primary : Colors.white.withOpacity(0.06),
+                boxShadow: isActive ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 0),
+                  ),
+                ] : null,
+              ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
+
 
   Widget _buildPremiumCard({required List<Widget> children}) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
             child: Container(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              decoration: AppDecorations.glassCard(borderRadius: 32).copyWith(
-                border: Border.all(color: AppColors.cardBorder, width: 1.5),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E2433).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.08),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -416,31 +529,51 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         Text(
           'Adınız nedir?',
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColors.textPrimary,
+          style: GoogleFonts.inter(
+            color: Colors.white,
             fontSize: 28,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Size nasıl hitap edelim?',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 14),
+          style: GoogleFonts.inter(
+            color: Colors.white.withOpacity(0.5),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 48),
         _buildTextField(
           controller: _nameController,
-          hintText: 'Adınızı girin',
+          hintText: 'Adını buraya yaz...',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: GoogleFonts.inter(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            letterSpacing: -0.5,
+          ),
           textCapitalization: TextCapitalization.words,
         ),
-        const SizedBox(height: 20),
-        Text(
-          '* Bu alan zorunludur',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: Colors.redAccent.withOpacity(0.8), fontWeight: FontWeight.w500),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 14, color: AppColors.primary.withOpacity(0.7)),
+            const SizedBox(width: 6),
+            Text(
+              'Bu alan zorunludur',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.4),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -470,15 +603,66 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     );
   }
 
-  Widget _buildAgePage() {
-    return _buildSliderStep(
-      title: 'Yaşınız kaç?',
-      subtitle: 'Uygulama deneyimini özelleştirelim',
-      value: _age,
-      unit: 'yaş',
-      min: 18,
-      max: 100,
-      onChanged: (value) => setState(() => _age = value),
+  Widget _buildDobPage() {
+    return _buildPremiumCard(
+      children: [
+        Text(
+          'Doğum tarihiniz?',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Yaşınızı hesaplamak için gerekli',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: Colors.white.withOpacity(0.5),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 32),
+        Container(
+          height: 200,
+          child: CupertinoTheme(
+            data: CupertinoThemeData(
+              brightness: Brightness.dark,
+              textTheme: CupertinoTextThemeData(
+                dateTimePickerTextStyle: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.date,
+              initialDateTime: _dob ?? DateTime(2000, 1, 1),
+              minimumDate: DateTime(1900),
+              maximumDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // 18+ limit
+              onDateTimeChanged: (DateTime newDate) {
+                setState(() => _dob = newDate);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_dob != null)
+          Text(
+            '${DateTime.now().year - _dob!.year} yaşındasınız',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: AppColors.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+      ],
     );
   }
 
@@ -497,37 +681,82 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 14),
+          style: GoogleFonts.inter(
+            color: Colors.white.withOpacity(0.5),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 48),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            _buildRoundIconButton(AppIcons.minus, currentValue > min ? () => onChanged(currentValue - 1) : null),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                value != null ? '$value $unit' : '-- $unit',
-                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            _buildRoundIconButton(Icons.remove, currentValue > min ? () => onChanged(currentValue - 1) : null),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Transform.translate(
+                      offset: Offset(0, value == null ? 8.0 : 0.0), // Push "--" down
+                      child: Text(
+                        value != null ? '$value' : '--',
+                        style: GoogleFonts.inter(
+                          fontSize: 64,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -2,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      unit,
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            _buildRoundIconButton(AppIcons.plus, currentValue < max ? () => onChanged(currentValue + 1) : null),
+            _buildRoundIconButton(Icons.add, currentValue < max ? () => onChanged(currentValue + 1) : null),
           ],
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppColors.buttonPrimary,
-            inactiveTrackColor: AppColors.buttonPrimary.withOpacity(0.1),
-            thumbColor: AppColors.buttonPrimary,
-            overlayColor: AppColors.buttonPrimary.withOpacity(0.1),
-            trackHeight: 6,
+            activeTrackColor: AppColors.primary,
+            inactiveTrackColor: Colors.white.withOpacity(0.05),
+            thumbColor: Colors.white,
+            overlayColor: AppColors.primary.withOpacity(0.1),
+            trackHeight: 8,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 12,
+              elevation: 6,
+              pressedElevation: 8,
+            ),
+            trackShape: const RoundedRectSliderTrackShape(),
           ),
           child: Slider(
             value: currentValue.toDouble(),
@@ -546,20 +775,43 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         Text(
           'Cinsiyetiniz?',
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Daha isabetli sonuçlar için gerekli',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 14),
+          style: GoogleFonts.inter(
+            color: Colors.white.withOpacity(0.5),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 48),
         Row(
           children: [
-            Expanded(child: _buildGenderOption('Erkek', AppIcons.mars, _gender == 'male', () => setState(() => _gender = 'male'))),
+            Expanded(
+              child: _buildGenderOption(
+                'Erkek',
+                Icons.male,
+                _gender == 'male',
+                () => setState(() => _gender = 'male'),
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildGenderOption('Kadın', AppIcons.venus, _gender == 'female', () => setState(() => _gender = 'female'))),
+            Expanded(
+              child: _buildGenderOption(
+                'Kadın',
+                Icons.female,
+                _gender == 'female',
+                () => setState(() => _gender = 'female'),
+              ),
+            ),
           ],
         ),
       ],
@@ -570,26 +822,37 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(vertical: 32),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.buttonPrimary.withOpacity(0.1) : AppColors.cardBackground.withOpacity(0.6),
+          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.white.withOpacity(0.03),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppColors.buttonPrimary : AppColors.cardBorder,
+            color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.08),
             width: 2,
           ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.1),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ] : null,
         ),
         child: Column(
           children: [
-            Icon(icon, size: 40, color: isSelected ? AppColors.buttonPrimary : AppColors.textTertiary),
-            const SizedBox(height: 12),
+            Icon(
+              icon,
+              size: 40,
+              color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.2),
+            ),
+            const SizedBox(height: 16),
             Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? AppColors.buttonPrimary : AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
               ),
             ),
           ],
@@ -599,17 +862,28 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Widget _buildRoundIconButton(IconData icon, VoidCallback? onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.cardBorder),
+    return AnimatedScale(
+      scale: onTap == null ? 1.0 : 1.0,
+      duration: const Duration(milliseconds: 200),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1.5,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 24,
+            color: onTap != null ? Colors.white : Colors.white.withOpacity(0.1),
+          ),
         ),
-        child: Icon(icon, size: 20, color: onTap != null ? AppColors.buttonPrimary : AppColors.textTertiary.withOpacity(0.5)),
       ),
     );
   }
@@ -623,9 +897,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
+        color: const Color(0xFF0F1218), // Slightly darker for input
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: TextField(
         controller: controller,
@@ -634,9 +918,18 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         style: style,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5), fontWeight: FontWeight.normal),
+          hintStyle: GoogleFonts.inter(
+            color: Colors.white.withOpacity(0.2),
+            fontWeight: FontWeight.w500,
+            fontSize: style?.fontSize ?? 18,
+          ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          suffixIcon: textAlign == TextAlign.center ? null : Icon(
+            Icons.edit,
+            color: Colors.white.withOpacity(0.1),
+            size: 20,
+          ),
         ),
       ),
     );
@@ -644,34 +937,68 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Widget _buildPrimaryButton(String text, VoidCallback? onPressed) {
     return Container(
+      width: double.infinity,
+      height: 60,
       decoration: BoxDecoration(
-        color: AppColors.buttonPrimary,
-        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: AppColors.primaryGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: ElevatedButton(
         onPressed: _isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         child: _isLoading
-            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonOnPrimary))
-            : Text(text, style: TextStyle(fontSize: 16, color: AppColors.buttonOnPrimary, fontWeight: FontWeight.bold)),
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Text(
+                text,
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
       ),
     );
   }
 
   Widget _buildSecondaryButton(String text, VoidCallback onPressed) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        side: BorderSide(color: AppColors.buttonPrimary.withOpacity(0.3)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+        color: Colors.white.withOpacity(0.03),
       ),
-      child: Text(text, style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Center(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
+// reload

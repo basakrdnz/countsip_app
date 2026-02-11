@@ -40,7 +40,13 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
     super.dispose();
   }
 
-  String get _fullPhoneNumber => '$_selectedCountryCode${_phoneController.text.trim()}';
+  String get _fullPhoneNumber {
+    String phone = _phoneController.text.trim();
+    if (phone.startsWith('0')) {
+      phone = phone.substring(1);
+    }
+    return '$_selectedCountryCode$phone';
+  }
 
   Future<void> _login() async {
     final phone = _phoneController.text.trim();
@@ -57,6 +63,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
     });
 
     try {
+      debugPrint('Login: Attempting sign in for $_fullPhoneNumber');
       final authController = ref.read(authControllerProvider.notifier);
       await authController.signInWithPhone(
         phoneNumber: _fullPhoneNumber,

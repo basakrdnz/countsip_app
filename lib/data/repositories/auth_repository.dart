@@ -86,6 +86,25 @@ class AuthRepository {
     return linkedCredential;
   }
 
+  /// [DEV ONLY] Creates a user without phone verification for testing
+  Future<UserCredential> createUserWithPhoneDevBypass({
+    required String phoneNumber,
+    required String password,
+  }) async {
+    final syntheticEmail = _generateSyntheticEmail(phoneNumber);
+    
+    // Create email account directly
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: syntheticEmail,
+      password: password,
+    );
+    
+    // Store phone number hash for uniqueness check
+    await _storePhoneNumber(phoneNumber, userCredential.user!.uid);
+    
+    return userCredential;
+  }
+
   /// Signs in with phone number and password
   Future<UserCredential> signInWithPhone({
     required String phoneNumber,

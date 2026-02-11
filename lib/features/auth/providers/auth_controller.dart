@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/auth_repository.dart';
@@ -63,6 +64,7 @@ class AuthController extends AsyncNotifier<User?> {
     await _repository.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       onCodeSent: (verificationId, resendToken) {
+        debugPrint('FirebaseAuth verifyPhoneNumber success: code sent. ID: $verificationId');
         completer.complete(PhoneVerificationState(
           verificationId: verificationId,
           resendToken: resendToken,
@@ -70,16 +72,19 @@ class AuthController extends AsyncNotifier<User?> {
         ));
       },
       onVerificationCompleted: (credential) {
+        debugPrint('FirebaseAuth verifyPhoneNumber onVerificationCompleted (auto-retrieval or instant): $credential');
         // Auto-verification on some Android devices
         // We'll handle this in the UI
       },
       onVerificationFailed: (error) {
+        debugPrint('FirebaseAuth verifyPhoneNumber failed: [${error.code}] ${error.message}');
         completer.complete(PhoneVerificationState(
           isVerifying: false,
           error: _getErrorMessage(error),
         ));
       },
       onCodeAutoRetrievalTimeout: (verificationId) {
+        debugPrint('FirebaseAuth verifyPhoneNumber onCodeAutoRetrievalTimeout: $verificationId');
         // Timeout - user needs to enter code manually
       },
     );
@@ -134,7 +139,6 @@ class AuthController extends AsyncNotifier<User?> {
     return await _repository.isPhoneNumberRegistered(phoneNumber);
   }
 
-  /// Sign up with phone and password
   Future<void> signUpWithPhone({
     required String phoneNumber,
     required String password,
@@ -149,9 +153,12 @@ class AuthController extends AsyncNotifier<User?> {
       );
       return _repository.currentUser;
     });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
   }
 
-  /// Sign in with phone and password
   Future<void> signInWithPhone({
     required String phoneNumber,
     required String password,
@@ -164,9 +171,31 @@ class AuthController extends AsyncNotifier<User?> {
       );
       return _repository.currentUser;
     });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
   }
 
-  /// Reset password with phone verification
+  /// [DEV ONLY] Sign up bypass code
+  Future<void> signUpWithPhoneDevBypass({
+    required String phoneNumber,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _repository.createUserWithPhoneDevBypass(
+        phoneNumber: phoneNumber,
+        password: password,
+      );
+      return _repository.currentUser;
+    });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
+  }
+
   Future<void> resetPasswordWithPhone({
     required String phoneNumber,
     required String newPassword,
@@ -181,6 +210,10 @@ class AuthController extends AsyncNotifier<User?> {
       );
       return _repository.currentUser;
     });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
   }
 
   /// Sign out

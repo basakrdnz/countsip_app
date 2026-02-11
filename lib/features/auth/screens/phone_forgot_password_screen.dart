@@ -152,6 +152,14 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
     try {
       final authController = ref.read(authControllerProvider.notifier);
       
+      if (_verificationId == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Doğrulama oturumu bulunamadı. Lütfen kodu tekrar iste.';
+        });
+        return;
+      }
+      
       final credential = authController.verifyCode(
         _verificationId!,
         _codeController.text.trim(),

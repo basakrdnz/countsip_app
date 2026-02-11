@@ -54,7 +54,13 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
     super.dispose();
   }
 
-  String get _fullPhoneNumber => '$_selectedCountryCode${_phoneController.text.trim()}';
+  String get _fullPhoneNumber {
+    String phone = _phoneController.text.trim();
+    if (phone.startsWith('0')) {
+      phone = phone.substring(1);
+    }
+    return '$_selectedCountryCode$phone';
+  }
 
   void _startResendCountdown() {
     _resendCountdown = 60;
@@ -81,8 +87,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
     });
 
     try {
+      debugPrint('Signup: Sending code to $_fullPhoneNumber');
       final authController = ref.read(authControllerProvider.notifier);
       final isRegistered = await authController.isPhoneRegistered(_fullPhoneNumber);
+      debugPrint('Signup: isPhoneRegistered result: $isRegistered');
       
       if (isRegistered) {
         setState(() {
@@ -92,27 +100,45 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         return;
       }
 
+      /* TEMP: SKIP SMS FOR DEV
       final result = await authController.sendVerificationCode(_fullPhoneNumber);
       
       if (result.error != null) {
-        setState(() {
-          _isLoading = false;
-          _error = result.error;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _error = result.error;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _verificationId = result.verificationId;
+            _resendToken = result.resendToken;
+            _currentStep = 1;
+            _startResendCountdown();
+          });
+        }
+      }
+      */
+      
+      // DIRECT TO PASSWORD STEP
+      if (mounted) {
         setState(() {
           _isLoading = false;
-          _verificationId = result.verificationId;
-          _resendToken = result.resendToken;
-          _currentStep = 1;
-          _startResendCountdown();
+          _currentStep = 2; // Move straight to password
         });
       }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Bir hata oluştu: $e';
-      });
+    } catch (e, stackTrace) {
+      debugPrint('Signup _sendCode catch: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Bir hata oluştu: $e';
+        });
+      }
     }
   }
 
@@ -132,17 +158,21 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       );
       
       if (result.error != null) {
-        setState(() {
-          _isLoading = false;
-          _error = result.error;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _error = result.error;
+          });
+        }
       } else {
-        setState(() {
-          _isLoading = false;
-          _verificationId = result.verificationId;
-          _resendToken = result.resendToken;
-          _startResendCountdown();
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _verificationId = result.verificationId;
+            _resendToken = result.resendToken;
+            _startResendCountdown();
+          });
+        }
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -151,10 +181,13 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Bir hata oluştu: $e';
-      });
+      debugPrint('Signup _resendCode error: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Bir hata oluştu: $e';
+        });
+      }
     }
   }
 
@@ -176,10 +209,13 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         _currentStep = 2;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Geçersiz kod. Tekrar dene.';
-      });
+      debugPrint('Signup _verifyCode error: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Geçersiz kod. Tekrar dene.';
+        });
+      }
     }
   }
 
@@ -206,6 +242,20 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       final authController = ref.read(authControllerProvider.notifier);
       final code = _codeController.text.trim();
       
+      /* TEMP: DISABLE CHECK FOR BYPASS
+      // Safety check for verificationId to prevent native crash
+      if (_verificationId == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _error = 'Doğrulama oturumu bulunamadı. Lütfen kodu tekrar iste.';
+          });
+        }
+        return;
+      }
+      */
+      
+      /* TEMP: BYPASS SMS FOR DEV
       // First verify the code to get credential
       final credential = authController.verifyCode(_verificationId!, code);
       
@@ -215,15 +265,24 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         password: password,
         phoneCredential: credential,
       );
+      */
+      
+      await authController.signUpWithPhoneDevBypass(
+        phoneNumber: _fullPhoneNumber,
+        password: password,
+      );
       
       if (mounted) {
         context.go('/profilesetup');
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Hesap oluşturulamadı: $e';
-      });
+      debugPrint('Signup _createAccount error: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Hesap oluşturulamadı: $e';
+        });
+      }
     }
   }
 
