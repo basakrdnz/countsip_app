@@ -30,6 +30,7 @@ import 'ui/screens/friends_screen.dart';
 import 'ui/screens/add_friend_screen.dart';
 import 'ui/screens/blocked_users_screen.dart';
 import 'ui/screens/notifications_screen.dart';
+import 'ui/screens/feed_screen.dart';
 import 'ui/screens/badges_screen.dart';
 import 'ui/screens/location_picker_screen.dart';
 
@@ -438,6 +439,15 @@ GoRouter _createRouter() {
                 path: '/add',
                 name: 'add',
                 builder: (context, state) => const AddEntryScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/feed',
+                name: 'feed',
+                builder: (context, state) => const FeedScreen(),
               ),
             ],
           ),

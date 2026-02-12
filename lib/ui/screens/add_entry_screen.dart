@@ -551,7 +551,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         decoration: BoxDecoration(
           color: AppColors.background.withOpacity(0.95),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border(top: BorderSide(color: AppColors.primary.withOpacity(0.1), width: 1.5)),
+          border: Border(top: BorderSide(color: AppColors.primary.withOpacity(0.2), width: 1.5)),
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5)),
           ],
@@ -609,20 +609,27 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               child: Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary.withOpacity(0.5),
-                        padding: const EdgeInsets.symmetric(vertical: 16), // Reduced height
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                        color: Colors.white.withOpacity(0.05),
                       ),
-                      child: Text(
-                        'VAZGEÇ', 
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800, 
-                          fontSize: 12, 
-                          letterSpacing: 1.2
-                        )
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary.withOpacity(0.7),
+                          padding: const EdgeInsets.symmetric(vertical: 16), // Reduced height
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        child: Text(
+                          'VAZGEÇ', 
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800, 
+                            fontSize: 12, 
+                            letterSpacing: 1.2
+                          )
+                        ),
                       ),
                     ),
                   ),
@@ -1657,22 +1664,111 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             final controller = TextEditingController(text: _tempNote);
             final String? note = await showDialog<String>(
               context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: const Color(0xFF1A1F2E),
-                title: const Text('Not Ekle', style: TextStyle(color: Colors.white)),
-                content: TextField(
-                  controller: controller,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    hintText: 'İçecek hakkında notun...',
-                    hintStyle: TextStyle(color: Colors.white24),
+              builder: (context) => BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: AlertDialog(
+                  backgroundColor: AppColors.background.withOpacity(0.9),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    side: BorderSide(
+                      color: AppColors.primary.withOpacity(0.2), 
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE66D).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit_note_rounded,
+                          color: Color(0xFFFFE66D),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Not Ekle',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: controller,
+                        autofocus: true,
+                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          hintText: 'İçecek hakkında notun...',
+                          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.3)),
+                          fillColor: Colors.white.withOpacity(0.04),
+                          filled: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFFFE66D), width: 1.5)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        ),
+                        maxLines: 3,
+                        minLines: 1,
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                                color: Colors.white.withOpacity(0.05),
+                              ),
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                ),
+                                child: Text(
+                                  'VAZGEÇ',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: AppColors.textSecondary.withOpacity(0.7),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.pop(context, controller.text),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFE66D),
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                              child: Text(
+                                'KAYDET',
+                                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
-                  TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Kaydet')),
-                ],
               ),
             );
             if (note != null) setState(() => _tempNote = note);

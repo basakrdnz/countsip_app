@@ -10,6 +10,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/animated_notification_bell.dart';
+import '../widgets/promil_meter_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -17,6 +18,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/services/badge_service.dart';
+import '../../core/services/bac_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,11 +30,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _userData;
   Map<DateTime, List<Map<String, dynamic>>> _events = {};
+  List<Map<String, dynamic>> _recentDrinks = [];
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   bool _isLoading = true;
   double _totalPoints = 0;
+  // Promil State
+  double _currentBac = 0.0;
+  int _activeSessionDrinkCount = 0;
+  
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
   late Stream<QuerySnapshot<Map<String, dynamic>>> _entriesStream;
   late Stream<QuerySnapshot<Map<String, dynamic>>> _friendRequestsStream;
@@ -81,6 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Group entries by date
       final Map<DateTime, List<Map<String, dynamic>>> events = {};
+      final List<Map<String, dynamic>> flatEntries = [];
+      
       for (final doc in entriesQuery.docs) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -91,14 +100,36 @@ class _HomeScreenState extends State<HomeScreen> {
           final normalizedDate = DateTime.utc(date.year, date.month, date.day);
           events.putIfAbsent(normalizedDate, () => []);
           events[normalizedDate]!.add(data);
+          flatEntries.add(data);
         }
       }
 
+      final userDataMap = userDoc.data() ?? {};
+      
+      // Calculate BAC
+      final weight = (userDataMap['weight'] ?? 70).toDouble();
+      final gender = userDataMap['gender'] ?? 'Male';
+      final bac = BacService.calculateBac(
+        weightKg: weight, 
+        gender: gender, 
+        drinks: flatEntries,
+      );
+      
+      // Calculate Active Session Drink Count (Drinks in last 12h?)
+      final now = DateTime.now();
+      final activeDrinks = flatEntries.where((d) {
+        final ts = (d['timestamp'] as Timestamp).toDate();
+        return now.difference(ts).inHours < 12;
+      }).length;
+
       if (mounted) {
         setState(() {
-          _userData = userDoc.data();
+          _userData = userDataMap;
           _events = events;
-          _totalPoints = (_userData?['totalPoints'] ?? 0).toDouble();
+          _recentDrinks = flatEntries;
+          _totalPoints = (userDataMap['totalPoints'] ?? 0).toDouble();
+          _currentBac = bac;
+          _activeSessionDrinkCount = activeDrinks;
           _isLoading = false;
         });
       }
@@ -591,42 +622,90 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                    decoration: AppDecorations.glassCard(),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildDashboardItem(
-                            label: 'PUAN',
-                            value: selectedPoints.toStringAsFixed(1),
-                            icon: UIcons.regularStraight.magic_wand,
-                            isLight: true,
+              child: selectedPoints == 0
+                  ? GestureDetector(
+                      onTap: () {
+                        context.push('/add');
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                        decoration: AppDecorations.glassCard().copyWith(
+                           color: AppColors.primary.withOpacity(0.15),
+                           border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                             Container(
+                               padding: const EdgeInsets.all(12),
+                               decoration: BoxDecoration(
+                                 color: AppColors.primary.withOpacity(0.2),
+                                 shape: BoxShape.circle,
+                               ),
+                               child: const Icon(Icons.add_rounded, color: AppColors.primary, size: 24),
+                             ),
+                             const SizedBox(width: 16),
+                             Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               children: [
+                                 Text(
+                                   'İlk İçeceğini Ekle',
+                                   style: GoogleFonts.plusJakartaSans(
+                                     fontSize: 16,
+                                     fontWeight: FontWeight.bold,
+                                     color: AppColors.textPrimary,
+                                   ),
+                                 ),
+                                 Text(
+                                   'Puanlamaya başlamak için dokun',
+                                   style: GoogleFonts.plusJakartaSans(
+                                     fontSize: 12,
+                                     color: AppColors.textTertiary,
+                                   ),
+                                 ),
+                               ],
+                             ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                          decoration: AppDecorations.glassCard(),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _buildDashboardItem(
+                                  label: 'PUAN',
+                                  value: selectedPoints.toStringAsFixed(1),
+                                  icon: UIcons.regularStraight.magic_wand,
+                                  isLight: true,
+                                ),
+                              ),
+                              Container(
+                                height: 30,
+                                width: 1,
+                                color: AppColors.primary.withOpacity(0.1),
+                                margin: const EdgeInsets.symmetric(horizontal: 24),
+                              ),
+                              Expanded(
+                                child: _buildDashboardItem(
+                                  label: 'İÇECEK',
+                                  value: '$selectedDrinks',
+                                  icon: UIcons.regularStraight.drink_alt,
+                                  isLight: true,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Container(
-                          height: 30,
-                          width: 1,
-                          color: AppColors.primary.withOpacity(0.1),
-                          margin: const EdgeInsets.symmetric(horizontal: 24),
-                        ),
-                        Expanded(
-                          child: _buildDashboardItem(
-                            label: 'İÇECEK',
-                            value: '$selectedDrinks',
-                            icon: UIcons.regularStraight.drink_alt,
-                            isLight: true,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             AnimatedSize(
@@ -779,6 +858,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         parent: BouncingScrollPhysics(),
                       ),
                       slivers: [
+                        // Promil Meter Section
+                        SliverToBoxAdapter(
+                          child: PromilMeterWidget(
+                            bac: _currentBac,
+                            drinkCount: _activeSessionDrinkCount,
+                            isPremium: _userData?['isPremium'] == true,
+                          ),
+                        ),
                         // Calendar Section (Takvimli Kısım)
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1173,18 +1260,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                          color: Colors.white.withOpacity(0.05),
                         ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: TextStyle(
-                            color: AppColors.textSecondary.withOpacity(0.6),
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: Text(
+                            'VAZGEÇ',
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withOpacity(0.7),
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                         ),
                       ),

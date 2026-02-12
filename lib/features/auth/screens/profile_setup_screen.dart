@@ -38,7 +38,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Start listening to controller
+    _nameController.addListener(_onNameChanged);
+  }
+
+  void _onNameChanged() {
+    setState(() {}); // Rebuild to update UI and physics
+  }
+
+  @override
   void dispose() {
+    _nameController.removeListener(_onNameChanged);
     _pageController.dispose();
     _nameController.dispose();
     super.dispose();
@@ -136,11 +148,18 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Future<void> _saveAndFinish() async {
+    // Ensure name is up to date from controller
+    _name = _nameController.text.trim();
+
     // Name is mandatory, others are optional
     if (_name == null || _name!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen adınızı girin')),
       );
+      // Go back to start if name is missing
+      if (_currentPage != 0) {
+        _pageController.animateToPage(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      }
       return;
     }
 
@@ -407,7 +426,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   flex: 10,
                   child: PageView(
                     controller: _pageController,
-                    onPageChanged: (page) => setState(() => _currentPage = page),
+                    // If on page 0 and name is empty, disable swipe
+                    physics: (_currentPage == 0 && _nameController.text.trim().isEmpty)
+                        ? const NeverScrollableScrollPhysics()
+                        : const BouncingScrollPhysics(),
+                    onPageChanged: (page) {
+                      setState(() {
+                        // If leaving page 0, save name
+                        if (_currentPage == 0 && page > 0) {
+                          _name = _nameController.text.trim();
+                        }
+                        _currentPage = page;
+                      });
+                    },
                     children: [
                       _buildNamePage(),
                       _buildWeightPage(),

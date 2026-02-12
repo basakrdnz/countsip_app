@@ -38,7 +38,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppColors.background.withOpacity(0.9),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
-            side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+            side: BorderSide(
+              color: AppColors.primary.withOpacity(0.2), 
+              width: 1.5,
+            ),
           ),
           contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
           content: Column(
@@ -81,21 +84,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                        color: Colors.white.withOpacity(0.05),
                       ),
-                      child: Text(
-                        'VAZGEÇ',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          letterSpacing: 1,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'VAZGEÇ',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -286,7 +296,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           // Total Drinks
                           _buildStatItem(
-                            label: 'İÇECEK',
+                            label: 'TOPLAM İÇECEK',
                             value: '${(userData?['totalDrinks'] as num?)?.toInt() ?? 0}',
                           ),
                           // Divider
@@ -297,7 +307,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           // Total Points
                           _buildStatItem(
-                            label: 'PUAN',
+                            label: 'TOPLAM PUAN',
                             value: '${(userData?['totalPoints'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
                           ),
                           // Divider

@@ -13,6 +13,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import 'package:flutter/cupertino.dart';
 
 class ProfileDetailsScreen extends StatefulWidget {
   const ProfileDetailsScreen({super.key});
@@ -94,7 +95,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           backgroundColor: AppColors.background.withOpacity(0.9),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
-            side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+            side: BorderSide(
+              color: AppColors.primary.withOpacity(0.2), 
+              width: 1.5,
+            ),
           ),
           contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
           content: Column(
@@ -137,21 +141,28 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                        color: Colors.white.withOpacity(0.05),
                       ),
-                      child: Text(
-                        'VAZGEÇ',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'VAZGEÇ',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -339,7 +350,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           backgroundColor: AppColors.background.withOpacity(0.9),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
-            side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+            side: BorderSide(
+              color: AppColors.primary.withOpacity(0.2), 
+              width: 1.5,
+            ),
           ),
           contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
           content: Column(
@@ -382,21 +396,28 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                        color: Colors.white.withOpacity(0.05),
                       ),
-                      child: Text(
-                        'VAZGEÇ',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'VAZGEÇ',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -607,21 +628,40 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   }
 
   Future<void> _updateField(String field, dynamic value) async {
+    await _updateMultipleFields({field: value});
+  }
+
+  Future<void> _updateMultipleFields(Map<String, dynamic> updates) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // Change Detection: Only update if there are actual changes
+    final Map<String, dynamic> actualChanges = {};
+    final Map<String, dynamic> oldValues = {};
+
+    updates.forEach((field, value) {
+      final oldValue = _userData?[field];
+      if (oldValue != value) {
+        actualChanges[field] = value;
+        oldValues[field] = oldValue;
+      }
+    });
+
+    if (actualChanges.isEmpty) return;
+
     // Optimistic update
-    final oldValue = _userData?[field];
     setState(() {
       _userData = _userData ?? {};
-      _userData![field] = value;
+      actualChanges.forEach((field, value) {
+        _userData![field] = value;
+      });
     });
 
     try {
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .update({field: value});
+          .update(actualChanges);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -635,7 +675,11 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     } catch (e) {
       // Rollback on error
       setState(() {
-        _userData![field] = oldValue;
+        if (_userData != null) {
+          oldValues.forEach((field, value) {
+            _userData![field] = value;
+          });
+        }
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -759,6 +803,106 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+
+
+  void _showDobDialog() {
+    DateTime initialDate = DateTime.now().subtract(const Duration(days: 365 * 18));
+    if (_userData?['dob'] != null) {
+      initialDate = (_userData!['dob'] as Timestamp).toDate();
+    }
+    
+    DateTime newDate = initialDate;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      transitionAnimationController: AnimationController(
+        vsync: Navigator.of(context),
+        duration: const Duration(milliseconds: 350),
+      ),
+      builder: (context) => Container(
+        height: 400,
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            Text(
+              'Doğum Tarihi',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Expanded(
+              child: CupertinoTheme(
+                data: CupertinoThemeData(
+                  brightness: Brightness.dark,
+                  textTheme: CupertinoTextThemeData(
+                    dateTimePickerTextStyle: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: initialDate,
+                  minimumDate: DateTime(1900),
+                  maximumDate: DateTime.now(),
+                  onDateTimeChanged: (val) => newDate = val,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Save button
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () {
+                  final age = DateTime.now().year - newDate.year;
+                  // Update both dob and age in one call to avoid double notifications
+                  _updateMultipleFields({
+                    'dob': Timestamp.fromDate(newDate),
+                    'age': age,
+                  });
+                  Navigator.pop(context);
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.buttonPrimary,
+                  foregroundColor: AppColors.buttonOnPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Tamam', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1184,7 +1328,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           icon: Icons.calendar_today_outlined,
                           label: 'YAŞ',
                           value: _userData?['age'] != null ? '${_userData!['age']}' : '-',
-                          onTap: () => _showEditNumberDialog('age', 'Yaşınız', 'yaş', 18, 100),
+                          onTap: _showDobDialog,
                         ),
                       ),
                     ],

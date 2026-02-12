@@ -132,27 +132,34 @@ class _RootShellPageState extends State<RootShellPage> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () async {
-                        await FirebaseAuth.instance.signOut();
-                        if (mounted) {
-                          Navigator.pop(context, false);
-                          context.go('/onboarding');
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
+                        color: Colors.white.withOpacity(0.05),
                       ),
-                      child: Text(
-                        'ÇIKIŞ YAP',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
+                      child: TextButton(
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          if (mounted) {
+                            Navigator.pop(context, false);
+                            context.go('/onboarding');
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'ÇIKIŞ YAP',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -302,13 +309,19 @@ class _RootShellPageState extends State<RootShellPage> {
                     iconSize: 24,
                     accentColor: AppColors.primary,
                   ),
+                  // Center Button: Social Feed (Replaces 'Add' button in Nav, 'Add' is now Floating or elsewhere)
+                  // Wait, design says Center Button = Feed.
+                  // 'Add' button is usually floating. 
+                  // But previously 'Add' was index 2? Let's check the routes in main.dart first.
+                  // Assuming index 2 in navigationShell is now FeedScreen.
                   GestureDetector(
                     onTapDown: (_) => setState(() => _isAddButtonPressed = true),
                     onTapUp: (_) => setState(() => _isAddButtonPressed = false),
                     onTapCancel: () => setState(() => _isAddButtonPressed = false),
                     onTap: () {
-                      HapticFeedback.heavyImpact();
-                      context.push('/add');
+                      HapticFeedback.mediumImpact();
+                      // Navigate to Feed (Index 2)
+                      _onDestinationSelected(2);
                     },
                     child: AnimatedScale(
                       scale: _isAddButtonPressed ? 0.94 : 1.0,
@@ -321,19 +334,32 @@ class _RootShellPageState extends State<RootShellPage> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.85),
-                            ],
+                            colors: currentIndex == 2 
+                                ? [AppColors.primary, AppColors.primary.withOpacity(0.8)] // Active: Pure Orange
+                                : [AppColors.primary.withOpacity(0.9), AppColors.primary.withOpacity(0.7)], // Inactive: Solid Orange
                           ),
                           shape: BoxShape.circle,
-                          boxShadow: null,
-                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: currentIndex == 2 
+                                  ? AppColors.primary.withOpacity(0.6) 
+                                  : AppColors.primary.withOpacity(0.2),
+                              blurRadius: currentIndex == 2 ? 16 : 8,
+                              offset: const Offset(0, 4),
+                              spreadRadius: currentIndex == 2 ? 2 : 0,
+                            ),
+                          ],
+                          border: Border.all(
+                            color: currentIndex == 2 
+                                ? Colors.white.withOpacity(0.5) 
+                                : Colors.white.withOpacity(0.1), 
+                            width: 1.5
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.wine_bar_rounded,
-                          color: Colors.white,
-                          size: 34,
+                        child: Icon(
+                          AppIcons.glassWhiskey, 
+                          color: Colors.white, // Always white
+                          size: 28,
                         ),
                       ),
                     ),
@@ -341,16 +367,16 @@ class _RootShellPageState extends State<RootShellPage> {
                   _NavItem(
                     icon: AppIcons.trophyIcon,
                     selectedIcon: AppIcons.trophyIcon,
-                    isSelected: currentIndex == 2,
-                    onTap: () => _onDestinationSelected(2),
+                    isSelected: currentIndex == 3,
+                    onTap: () => _onDestinationSelected(3),
                     iconSize: 29,
                     accentColor: AppColors.primary,
                   ),
                   _NavItem(
                     icon: AppIcons.user,
                     selectedIcon: AppIcons.user,
-                    isSelected: currentIndex == 3,
-                    onTap: () => _onDestinationSelected(3),
+                    isSelected: currentIndex == 4,
+                    onTap: () => _onDestinationSelected(4),
                     iconSize: 24,
                     accentColor: AppColors.primary,
                   ),
