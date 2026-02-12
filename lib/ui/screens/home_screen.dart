@@ -56,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
           .orderBy('timestamp', descending: true)
           .snapshots();
       _friendRequestsStream = FirebaseFirestore.instance
-          .collection('friend_requests')
+          .collection('notifications')
           .where('to', isEqualTo: user.uid)
-          .where('status', isEqualTo: 'pending')
+          .where('isRead', isEqualTo: false)
           .snapshots();
       _loadData();
     } else {
@@ -625,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: selectedPoints == 0
                   ? GestureDetector(
                       onTap: () {
-                        context.push('/add');
+                        StatefulNavigationShell.of(context).goBranch(1);
                       },
                       child: Container(
                         width: double.infinity,

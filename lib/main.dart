@@ -344,7 +344,7 @@ GoRouter _createRouter() {
         name: 'add-friend',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
-          child: const AddFriendScreen(),
+          child: AddFriendScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
               position: animation.drive(

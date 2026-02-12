@@ -18,24 +18,23 @@ class AnimatedNotificationBell extends StatefulWidget {
 
 class _AnimatedNotificationBellState extends State<AnimatedNotificationBell> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
+  late Animation<double> _shakeAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
-    _animation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.2), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.2, end: -0.2), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -0.2, end: 0.2), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.2, end: -0.2), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -0.2, end: 0.1), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.1, end: -0.1), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -0.1, end: 0.0), weight: 1),
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 6.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 6.0, end: -6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 6.0, end: -6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -6.0, end: 3.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 3.0, end: 0.0), weight: 1),
     ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // Trigger animation once on load if there are notifications
@@ -67,8 +66,14 @@ class _AnimatedNotificationBellState extends State<AnimatedNotificationBell> wit
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          RotationTransition(
-            turns: _animation,
+          AnimatedBuilder(
+            animation: _shakeAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(_shakeAnimation.value, 0),
+                child: child,
+              );
+            },
             child: Icon(
               Icons.notifications_none_rounded,
               color: AppColors.textPrimary,
@@ -77,27 +82,36 @@ class _AnimatedNotificationBellState extends State<AnimatedNotificationBell> wit
           ),
           if (widget.count > 0)
             Positioned(
-              right: 2,
-              top: 2,
+              right: -2,
+              top: -2,
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.background, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
                 constraints: const BoxConstraints(
-                  minWidth: 16,
-                  minHeight: 16,
+                  minWidth: 18,
+                  minHeight: 18,
                 ),
-                child: Text(
-                  '${widget.count}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                child: Center(
+                  child: Text(
+                    '${widget.count}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),

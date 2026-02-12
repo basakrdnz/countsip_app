@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart'; // Reload trigger
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -30,23 +30,23 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
-  String? _myUsername;
+  Map<String, dynamic>? _myProfile;
   Map<String, FriendStatus> _userStatuses = {}; // Track status for each user
 
   @override
   void initState() {
     super.initState();
-    _loadMyUsername();
+    _loadMyProfile();
   }
 
-  Future<void> _loadMyUsername() async {
+  Future<void> _loadMyProfile() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
-      setState(() => _myUsername = doc.data()?['username']);
+      setState(() => _myProfile = doc.data());
     }
   }
 
@@ -177,13 +177,31 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         return;
       }
 
-      // Send new request
-      await FirebaseFirestore.instance.collection('friend_requests').add({
+      final batch = FirebaseFirestore.instance.batch();
+      
+      // 1. Friend Request Document
+      final requestRef = FirebaseFirestore.instance.collection('friend_requests').doc();
+      batch.set(requestRef, {
         'from': user.uid,
         'to': targetUid,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // 2. Notification Document
+      final notificationRef = FirebaseFirestore.instance.collection('notifications').doc();
+      batch.set(notificationRef, {
+        'to': targetUid,
+        'from': user.uid,
+        'type': 'friend_request_received',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'senderName': _myProfile?['name'] ?? 'İsimsiz',
+        'senderUsername': _myProfile?['username'] ?? '',
+        'senderPhotoUrl': _myProfile?['photoUrl'],
+      });
+
+      await batch.commit();
 
       setState(() => _userStatuses[targetUid] = FriendStatus.pending);
       
@@ -256,12 +274,15 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       // Delete the request
       batch.delete(FirebaseFirestore.instance.collection('friend_requests').doc(requestId));
       
-      // Create friendship
-      final friendshipRef = FirebaseFirestore.instance.collection('friendships').doc();
+      // Create friendship with deterministic ID to prevent duplicates
+      final ids = [user.uid, fromUid]..sort();
+      final friendshipId = ids.join('_');
+      final friendshipRef = FirebaseFirestore.instance.collection('friendships').doc(friendshipId);
+      
       batch.set(friendshipRef, {
-        'users': [user.uid, fromUid],
+        'users': FieldValue.arrayUnion([user.uid, fromUid]),
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
       
       await batch.commit();
       
@@ -278,8 +299,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   }
 
   void _shareUsername() {
+    final username = _myProfile?['username'] ?? '';
     Share.share(
-      'CountSip\'te beni ekle: @$_myUsername',
+      'CountSip\'te beni ekle: @$username',
       subject: 'CountSip Arkadaşlık Daveti',
     );
   }
@@ -442,6 +464,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final myUsername = _myProfile?['username'];
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -460,7 +483,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       body: Column(
         children: [
           // My Username Card
-          if (_myUsername != null)
+          if (myUsername != null)
             Container(
               margin: const EdgeInsets.all(AppSpacing.lg),
               padding: const EdgeInsets.all(20),
@@ -495,7 +518,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                               ),
                             ),
                             Text(
-                              '@$_myUsername',
+                              '@$myUsername',
                               style: const TextStyle(
                                 color: AppColors.textPrimary,
                                 fontSize: 18,
@@ -514,7 +537,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            Clipboard.setData(ClipboardData(text: '@$_myUsername'));
+                            Clipboard.setData(ClipboardData(text: '@$myUsername'));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Kopyalandı!')),
                             );
@@ -630,13 +653,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(AppIcons.search, size: 64, color: AppColors.textTertiary),
+                        Icon(AppIcons.search, size: 80, color: Colors.white10),
                         const SizedBox(height: 16),
                         Text(
                           _searchController.text.length < 3
                               ? 'Kullanıcı adını tam olarak yaz'
                               : 'Kullanıcı bulunamadı',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: const TextStyle(fontSize: 18, color: Colors.white24),
                         ),
                       ],
                     ),

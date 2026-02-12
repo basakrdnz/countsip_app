@@ -320,7 +320,7 @@ class _RootShellPageState extends State<RootShellPage> {
                     onTapCancel: () => setState(() => _isAddButtonPressed = false),
                     onTap: () {
                       HapticFeedback.mediumImpact();
-                      // Navigate to Feed (Index 2)
+                      // Navigate to Feed (Index 2 after revert)
                       _onDestinationSelected(2);
                     },
                     child: AnimatedScale(
