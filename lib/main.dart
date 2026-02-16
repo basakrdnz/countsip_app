@@ -167,26 +167,33 @@ GoRouter _createRouter() {
                 .collection('users')
                 .doc(user.uid)
                 .get();
-            
+
             // Check if essential fields are missing
             final data = doc.data();
-            final hasName = data != null && 
-                data['name'] != null && 
+            final hasName = data != null &&
+                data['name'] != null &&
                 (data['name'] as String).trim().isNotEmpty;
-            final hasUsername = data != null && 
-                data['username'] != null && 
+            final hasUsername = data != null &&
+                data['username'] != null &&
                 (data['username'] as String).trim().isNotEmpty;
-            
+
             if (!doc.exists || !hasName || !hasUsername) {
               // Missing essential info - go to profile setup
               return '/profile-setup';
             }
           } catch (e) {
-            // If check fails, go to profile setup to be safe
             debugPrint('Profile check error: $e');
-            return '/profile-setup';
+            // Only redirect to profile-setup from auth screens.
+            // If already on /home, allow through to avoid redirect loop
+            // caused by Firestore permission errors.
+            if (isLoggingIn || isSigningUp) {
+              return '/profile-setup';
+            }
+            // For /home navigation with errors, allow through -
+            // the screen itself will handle showing error states
+            return null;
           }
-          
+
           // Profile complete - allow to home
           if (isLoggingIn || isSigningUp) {
             return '/home';

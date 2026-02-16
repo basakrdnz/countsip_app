@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:166195293260:android:8485793cd651eba467d8e9",
         "android_client_info": {
-          "package_name": "com.example.countsip"
+          "package_name": "com.countsip.app"
         }
       },
       "oauth_client": [],

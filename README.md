@@ -9,8 +9,8 @@ Kısa kurulum notları (Flutter + Firebase)
 
 ## Firebase kurulum özeti
 - Proje: `countsip-prod`
-- Android paket: `com.example.countsip`
-- iOS bundle: `com.example.countsip`
+- Android paket: `com.countsip.app`
+- iOS bundle: `com.countsip.app`
 - Dosyalar:
   - `android/app/google-services.json`
   - `ios/Runner/GoogleService-Info.plist`

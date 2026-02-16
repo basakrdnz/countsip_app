@@ -5,7 +5,7 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -16,6 +16,13 @@ service cloud.firestore {
       allow read: if isSignedIn();
       // Only the user can update their own profile
       allow write: if isOwner(userId);
+
+      // Badges subcollection - stored under each user
+      match /badges/{badgeId} {
+        allow read: if isSignedIn();
+        // Owner can write their own badges (client-side badge check)
+        allow write: if isOwner(userId);
+      }
     }
 
     // Usernames mapping for uniqueness check
@@ -25,27 +32,49 @@ service cloud.firestore {
       allow write: if isSignedIn() && (request.resource.data.uid == request.auth.uid || resource.data.uid == request.auth.uid);
     }
 
+    // Phone number hashes for uniqueness check
+    match /phoneNumbers/{hash} {
+      // Signed-in users can check if a phone is registered
+      allow read: if isSignedIn();
+      // Allow creation during signup (uid must match auth user)
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      // No updates or deletes
+      allow update, delete: if false;
+    }
+
     // Drink/Alcohol entries
     match /entries/{entryId} {
       // Owners can read their own. Public social feed access (needs optimization for privacy)
       // For now, allow signed in users to read if they are the owner or for the feed.
-      allow read: if isSignedIn(); 
-      
+      allow read: if isSignedIn();
+
       // Only the owner can create/edit/delete their logs
       allow create: if isOwner(request.resource.data.userId);
       allow delete: if isOwner(resource.data.userId);
-      
+
       // Update: allow owner to change anything, OR allow others to ONLY toggle 'cheers'
-      allow update: if isOwner(resource.data.userId) 
+      allow update: if isOwner(resource.data.userId)
                     || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cheers']));
     }
 
-    // Notifications and Friend Requests
+    // Notifications
     match /notifications/{notifId} {
       // Allow read/update if the user is the recipient
       allow read, update, delete: if isOwner(resource.data.to);
       // Allow creation by anyone signed in (to send requests)
       allow create: if isSignedIn();
+    }
+
+    // Friend Requests
+    match /friend_requests/{requestId} {
+      // Sender or receiver can read
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
+      // Signed-in users can send friend requests
+      allow create: if isSignedIn() && request.resource.data.from == request.auth.uid;
+      // Sender or receiver can update status (accept/decline)
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
+      // Sender or receiver can delete
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
     }
 
     // Friendships
@@ -56,13 +85,24 @@ service cloud.firestore {
        allow create: if isSignedIn() && (request.auth.uid in request.resource.data.users);
        allow update, delete: if isSignedIn() && (request.auth.uid in resource.data.users);
     }
-    
-    // Badges
+
+    // Blocked Users
+    match /blocked_users/{blockId} {
+      // Only the blocker can read their blocked list
+      allow read: if isSignedIn() && request.auth.uid == resource.data.blockedBy;
+      // Signed-in users can block others
+      allow create: if isSignedIn() && request.resource.data.blockedBy == request.auth.uid;
+      // Only the blocker can unblock
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.blockedBy;
+      allow update: if false;
+    }
+
+    // Badges (top-level - legacy, kept for compatibility)
     match /badges/{badgeId} {
       allow read: if isSignedIn();
-      allow write: if false; // System generated or cloud functions only (simulated here)
+      allow write: if false;
     }
-    
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
