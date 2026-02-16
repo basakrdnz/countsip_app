@@ -235,6 +235,7 @@ class _RootShellPageState extends State<RootShellPage> {
           color: AppColors.background,
           child: Scaffold(
             backgroundColor: Colors.transparent,
+            extendBody: true, // Allow body to flow behind floating navbar
             body: Column(
               children: [
           // Ghost Mode Banner
@@ -280,6 +281,7 @@ class _RootShellPageState extends State<RootShellPage> {
         ],
       ),
       bottomNavigationBar: Container(
+        color: Colors.transparent, // Ensure no background is rendered here
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(35),

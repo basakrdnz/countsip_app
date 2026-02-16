@@ -270,6 +270,7 @@ class _FeedItemWidget extends StatefulWidget {
 
 class _FeedItemWidgetState extends State<_FeedItemWidget> {
   bool _isExpanded = true;
+  late List<String> _localCheers;
 
   @override
   void initState() {
@@ -278,6 +279,21 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
     if (widget.item['userId'] == widget.currentUserId) {
       _isExpanded = false;
     }
+    _localCheers = List<String>.from(widget.item['cheers'] ?? []);
+  }
+
+  void _toggleLocalCheers() {
+    setState(() {
+      if (_localCheers.contains(widget.currentUserId)) {
+        _localCheers.remove(widget.currentUserId);
+      } else {
+        _localCheers.add(widget.currentUserId);
+      }
+    });
+
+    HapticFeedback.lightImpact();
+    // Optimistically update
+    FeedService.toggleCheers(widget.item['id'], widget.currentUserId);
   }
 
   @override
@@ -286,10 +302,10 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
     final currentUserId = widget.currentUserId;
     final timestamp = item['timestamp'] as Timestamp?;
     final timeStr = timestamp != null ? timeago.format(timestamp.toDate(), locale: 'tr') : '';
-    final cheers = List<String>.from(item['cheers'] ?? []);
-    final hasCheered = cheers.contains(currentUserId);
-    final drinkEmoji = item['drinkEmoji'] ?? '🍹';
+    final hasCheered = _localCheers.contains(currentUserId);
     final drinkType = item['drinkType'] ?? 'İçecek';
+    String drinkEmoji = item['drinkEmoji'] ?? '🍹';
+    if (drinkType == 'Rakı') drinkEmoji = '🥛'; // Fix incorrect historical data
     final portion = item['portion'] ?? '';
     final isOwnPost = item['userId'] == currentUserId;
 
@@ -378,10 +394,10 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(AppIcons.glassCheers, color: AppColors.primary, size: 12),
-                          if (cheers.isNotEmpty) ...[
+                          if (_localCheers.isNotEmpty) ...[
                             const SizedBox(width: 6),
                             Text(
-                              '${cheers.length}',
+                              '${_localCheers.length}',
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 11,
@@ -483,10 +499,7 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            FeedService.toggleCheers(item['id'], currentUserId);
-                          },
+                          onTap: _toggleLocalCheers,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
@@ -497,25 +510,25 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(AppIcons.glassCheers, color: hasCheered ? Colors.white : AppColors.textPrimary.withOpacity(0.4), size: 16),
-                                if (cheers.isNotEmpty) ...[
+                                if (_localCheers.isNotEmpty) ...[
                                   const SizedBox(width: 8),
-                                  Text('${cheers.length}', style: TextStyle(color: hasCheered ? Colors.white : AppColors.textPrimary.withOpacity(0.4), fontWeight: FontWeight.w900, fontSize: 12)),
+                                  Text('${_localCheers.length}', style: TextStyle(color: hasCheered ? Colors.white : AppColors.textPrimary.withOpacity(0.4), fontWeight: FontWeight.w900, fontSize: 12)),
                                 ],
                               ],
                             ),
                           ),
                         ),
                         const Spacer(),
-                        if (cheers.isNotEmpty)
+                        if (_localCheers.isNotEmpty)
                           GestureDetector(
-                            onTap: () => _showCheersList(context, cheers),
+                            onTap: () => _showCheersList(context, _localCheers),
                             child: Container(
                               height: 32,
                               padding: const EdgeInsets.symmetric(horizontal: 10),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.03), borderRadius: BorderRadius.circular(16)),
                               child: Row(
                                 children: [
-                                  _buildAvatarStack(cheers),
+                                  _buildAvatarStack(_localCheers),
                                   const SizedBox(width: 6),
                                   Icon(AppIcons.angleRight, size: 10, color: AppColors.textPrimary.withOpacity(0.2)),
                                 ],

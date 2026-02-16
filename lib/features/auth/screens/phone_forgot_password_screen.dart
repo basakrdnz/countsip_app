@@ -479,14 +479,6 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
             height: 24,
             color: Colors.white.withOpacity(0.08),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 12, right: 8),
-            child: Icon(
-              AppIcons.phoneCall,
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
           Expanded(
             child: TextField(
               controller: _phoneController,
@@ -498,6 +490,11 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
+                prefixIcon: Icon(
+                  AppIcons.phoneCall,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
                 hintText: AppLocalizations.of(context)?.phoneHint ?? '5XX XXX XX XX',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 15,
@@ -505,6 +502,8 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                filled: true,
+                fillColor: AppColors.background,
               ),
             ),
           ),
@@ -568,6 +567,8 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
           counterText: '',
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          filled: true,
+          fillColor: AppColors.background,
         ),
       ),
     );
@@ -603,6 +604,8 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          filled: true,
+          fillColor: AppColors.background,
         ),
       ),
     );

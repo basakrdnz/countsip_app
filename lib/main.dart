@@ -33,6 +33,7 @@ import 'ui/screens/notifications_screen.dart';
 import 'ui/screens/feed_screen.dart';
 import 'ui/screens/badges_screen.dart';
 import 'ui/screens/location_picker_screen.dart';
+import 'core/services/preferences_service.dart';
 
 /// Toggle emulator with a compile-time define:
 /// flutter run --dart-define=USE_FIREBASE_EMULATOR=true
@@ -51,6 +52,7 @@ Future<void> main() async {
   // Initialize date formatting for supported locales
   await initializeDateFormatting('tr', null);
   await initializeDateFormatting('en', null);
+  await PreferencesService.init();
   
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {

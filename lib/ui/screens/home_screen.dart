@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +11,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/animated_notification_bell.dart';
-import '../widgets/promil_meter_widget.dart';
+import '../widgets/durum_meter_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -19,6 +20,7 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/services/badge_service.dart';
 import '../../core/services/bac_service.dart';
+import '../../core/services/navigation_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,10 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
+  
+  // Quick Add Auto-Scroll State
+  late ScrollController _quickAddScrollController;
+  Timer? _scrollTimer;
+  bool _isAutoScrolling = true;
+  
   bool _isLoading = true;
   double _totalPoints = 0;
-  // Promil State
-  double _currentBac = 0.0;
+  // Durum State
+  BacResult _currentBacResult = BacResult(min: 0, max: 0, trend: BacTrend.stable);
   int _activeSessionDrinkCount = 0;
   
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
@@ -47,6 +55,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize Quick Add Scroll
+    _quickAddScrollController = ScrollController();
+    // Start scrolling after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          // Start from a middle position
+          if (_quickAddScrollController.hasClients) {
+             _quickAddScrollController.jumpTo(1000 * 102.0); // 1000 * (90 width + 12 padding)
+             _startAutoScroll();
+          }
+        } catch (e) {
+          debugPrint('Scroll init error: $e');
+        }
+      }
+    });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _userStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
@@ -66,6 +92,46 @@ class _HomeScreenState extends State<HomeScreen> {
       _entriesStream = const Stream.empty();
       _friendRequestsStream = const Stream.empty();
     }
+  }
+
+  @override
+  void dispose() {
+    _scrollTimer?.cancel();
+    _quickAddScrollController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoScroll() {
+    if (!_isAutoScrolling) return;
+    
+    // Slow, smooth scroll
+    const double scrollSpeed = 0.5; 
+    const Duration tick = Duration(milliseconds: 16); 
+
+    _scrollTimer?.cancel();
+    _scrollTimer = Timer.periodic(tick, (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      if (_quickAddScrollController.hasClients) {
+        final maxScroll = _quickAddScrollController.position.maxScrollExtent;
+        final currentScroll = _quickAddScrollController.offset;
+        
+        // Loop logic: if far right, jump back to middle
+        // 102.0 = 90 (card width) + 12 (padding)
+        double nextScroll = currentScroll + scrollSpeed;
+        
+        // Reset if we go too far (arbitrary large number)
+        if (nextScroll >= maxScroll) {
+          nextScroll = 1000 * 102.0; 
+          _quickAddScrollController.jumpTo(nextScroll);
+        } else {
+          _quickAddScrollController.jumpTo(nextScroll);
+        }
+      }
+    });
   }
 
   Future<void> _loadData() async {
@@ -105,12 +171,14 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final userDataMap = userDoc.data() ?? {};
-      
-      // Calculate BAC
       final weight = (userDataMap['weight'] ?? 70).toDouble();
       final gender = userDataMap['gender'] ?? 'Male';
-      final bac = BacService.calculateBac(
+      
+      // Calculate Dynamic BAC with complete profile
+      final bacResult = BacService.calculateDynamicBac(
         weightKg: weight, 
+        heightCm: (userDataMap['height'] ?? 175).toDouble(),
+        age: userDataMap['age'] ?? 25,
         gender: gender, 
         drinks: flatEntries,
       );
@@ -128,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _events = events;
           _recentDrinks = flatEntries;
           _totalPoints = (userDataMap['totalPoints'] ?? 0).toDouble();
-          _currentBac = bac;
+          _currentBacResult = bacResult;
           _activeSessionDrinkCount = activeDrinks;
           _isLoading = false;
         });
@@ -627,90 +695,96 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () {
                         StatefulNavigationShell.of(context).goBranch(1);
                       },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-                        decoration: AppDecorations.glassCard().copyWith(
-                           color: AppColors.primary.withOpacity(0.15),
-                           border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
-                        ),
+child: AppDecorations.glassCardWidget(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        color: AppColors.surface, // Navy background
+                        borderWidth: 1.0,
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                             Container(
-                               padding: const EdgeInsets.all(12),
-                               decoration: BoxDecoration(
-                                 color: AppColors.primary.withOpacity(0.2),
-                                 shape: BoxShape.circle,
-                               ),
-                               child: const Icon(Icons.add_rounded, color: AppColors.primary, size: 24),
-                             ),
-                             const SizedBox(width: 16),
-                             Column(
-                               crossAxisAlignment: CrossAxisAlignment.start,
-                               children: [
-                                 Text(
-                                   'İlk İçeceğini Ekle',
-                                   style: GoogleFonts.plusJakartaSans(
-                                     fontSize: 16,
-                                     fontWeight: FontWeight.bold,
-                                     color: AppColors.textPrimary,
-                                   ),
-                                 ),
-                                 Text(
-                                   'Puanlamaya başlamak için dokun',
-                                   style: GoogleFonts.plusJakartaSans(
-                                     fontSize: 12,
-                                     color: AppColors.textTertiary,
-                                   ),
-                                 ),
-                               ],
-                             ),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceElevated,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.add_rounded, color: AppColors.primary, size: 24),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min, // Keep it compact
+                                children: [
+                                  Text(
+                                    'İLK İÇECEĞİNİ EKLE',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.textPrimary,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Puanlamaya başlamak için dokun',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withOpacity(0.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: AppColors.primary.withOpacity(0.5)),
                           ],
                         ),
                       ),
                     )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                          decoration: AppDecorations.glassCard(),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _buildDashboardItem(
-                                  label: 'PUAN',
-                                  value: selectedPoints.toStringAsFixed(1),
-                                  icon: UIcons.regularStraight.magic_wand,
-                                  isLight: true,
-                                ),
-                              ),
-                              Container(
-                                height: 30,
-                                width: 1,
-                                color: AppColors.primary.withOpacity(0.1),
-                                margin: const EdgeInsets.symmetric(horizontal: 24),
-                              ),
-                              Expanded(
-                                child: _buildDashboardItem(
-                                  label: 'İÇECEK',
-                                  value: '$selectedDrinks',
-                                  icon: UIcons.regularStraight.drink_alt,
-                                  isLight: true,
-                                ),
-                              ),
-                            ],
+                  : AppDecorations.glassCardWidget(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      color: AppColors.surface,
+                      borderWidth: 1.0,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildDashboardItem(
+                              label: 'PUAN',
+                              value: selectedPoints.toStringAsFixed(1),
+                              icon: UIcons.regularStraight.magic_wand,
+                              isLight: true,
+                            ),
                           ),
-                        ),
+                          Container(
+                            height: 30,
+                            width: 1,
+                            color: AppColors.primary.withOpacity(0.1),
+                            margin: const EdgeInsets.symmetric(horizontal: 20), // Matched padding
+                          ),
+                          Expanded(
+                            child: _buildDashboardItem(
+                              label: 'İÇECEK',
+                              value: '$selectedDrinks',
+                              icon: UIcons.regularStraight.drink_alt,
+                              isLight: true,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
             ),
             const SizedBox(height: AppSpacing.lg),
             AnimatedSize(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOutCirc,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.fastLinearToSlowEaseIn,
               child: Column(
                 children: [
                   ClipRRect(
@@ -729,7 +803,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                           eventLoader: (day) => activeEvents[DateTime.utc(day.year, day.month, day.day)] ?? [],
                           startingDayOfWeek: StartingDayOfWeek.monday,
-                          availableGestures: AvailableGestures.none,
+                          rowHeight: 62.0,
                           calendarStyle: CalendarStyle(
                             outsideDaysVisible: false,
                             weekendTextStyle: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
@@ -739,12 +813,24 @@ class _HomeScreenState extends State<HomeScreen> {
                               shape: BoxShape.circle,
                             ),
                             todayTextStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900),
-                            selectedDecoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                            selectedDecoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
                             selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
                             markerDecoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
                             markerSize: 4,
+                            cellMargin: const EdgeInsets.all(12.0),
+                            markersAlignment: Alignment.bottomCenter,
+                            markerMargin: const EdgeInsets.symmetric(horizontal: 1.0),
                           ),
-                          headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true, leftChevronVisible: false, rightChevronVisible: false),
+                          headerStyle: const HeaderStyle(
+                            formatButtonVisible: false, 
+                            titleCentered: true, 
+                            leftChevronVisible: false, 
+                            rightChevronVisible: false,
+                            headerPadding: EdgeInsets.symmetric(vertical: 8.0),
+                          ),
                           calendarBuilders: CalendarBuilders(
                             headerTitleBuilder: (context, day) {
                               return Padding(
@@ -764,6 +850,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                           icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
                                         ),
                                         const Spacer(),
+                                        if (!isSameDay(_focusedDay, DateTime.now()))
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                final now = DateTime.now();
+                                                _focusedDay = now;
+                                                _selectedDay = now;
+                                              });
+                                            },
+                                            style: TextButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                            child: Text(
+                                              'BUGÜN',
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 10, 
+                                                fontWeight: FontWeight.bold, 
+                                                color: AppColors.primary,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ),
                                         IconButton(
                                           onPressed: () {
                                             setState(() {
@@ -795,6 +905,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                             },
+                            markerBuilder: (context, day, events) {
+                              if (events.isEmpty) return null;
+                              return Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: events.take(3).map((event) {
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 0.8),
+                                        width: 4,
+                                        height: 4,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.primary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           onDaySelected: (selectedDay, focusedDay) {
                             setState(() {
@@ -806,21 +939,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               _focusedDay = focusedDay;
                             });
                           },
-                          onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+                          onPageChanged: (focusedDay) {
+                            setState(() {
+                              _focusedDay = focusedDay;
+                            });
+                          },
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  if (_selectedDay != null) ...[
-                    const SizedBox(height: 16),
-                    _buildInlineDayDetails(
-                      _selectedDay!, 
-                      activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
-                    ),
                   ],
-                ],
+                ),
               ),
-            ),
+            if (_selectedDay != null) ...[
+              const SizedBox(height: 16),
+              _buildInlineDayDetails(
+                _selectedDay!, 
+                activeEvents[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? []
+              ),
+            ],
           ],
         );
       },
@@ -858,14 +995,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         parent: BouncingScrollPhysics(),
                       ),
                       slivers: [
-                        // Promil Meter Section
+                        // Durum Meter Section
                         SliverToBoxAdapter(
-                          child: PromilMeterWidget(
-                            bac: _currentBac,
+                          child: DurumMeterWidget(
+                            bacResult: _currentBacResult,
                             drinkCount: _activeSessionDrinkCount,
                             isPremium: _userData?['isPremium'] == true,
                           ),
                         ),
+                        // Quick Add Section
+                        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                        SliverToBoxAdapter(child: _buildQuickAddSection()),
+                        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                        
                         // Calendar Section (Takvimli Kısım)
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -873,6 +1015,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: _buildCalendarSection(),
                           ),
                         ),
+                        // Add extra padding at the bottom for scrolling past FAB/BottomBar
+                        const SliverToBoxAdapter(child: SizedBox(height: 120)),
                       ],
                     ),
                   ),
@@ -993,57 +1137,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Widget _buildInlineDayDetails(DateTime day, List<Map<String, dynamic>> entries) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          padding: const EdgeInsets.all(24),
-          decoration: AppDecorations.glassCard(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        DateFormat('d MMMM EEEE', 'tr_TR').format(day),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                          color: AppColors.textPrimary,
-                        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: AppDecorations.glassCardWidget(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        color: AppColors.surface,
+        borderWidth: 1.0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('d MMMM EEEE', 'tr_TR').format(day),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                        color: AppColors.textPrimary,
                       ),
-                      const SizedBox(height: 4),
-                    ],
-                  ),
-                  if (entries.isNotEmpty)
-                    InkWell(
-                      onTap: () {
-                        setState(() => _selectedDay = null);
-                      },
-                      child: Icon(Icons.keyboard_arrow_up_rounded, color: AppColors.textSecondary.withOpacity(0.5), size: 24),
                     ),
-                ],
-              ),
-              if (entries.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Divider(height: 1, color: AppColors.primary.withOpacity(0.08)),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: entries.length,
-                  separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.primary.withOpacity(0.08)),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+                if (entries.isNotEmpty)
+                  InkWell(
+                    onTap: () {
+                      setState(() => _selectedDay = null);
+                    },
+                    child: Icon(Icons.keyboard_arrow_up_rounded, color: AppColors.textSecondary.withOpacity(0.5), size: 24),
+                  ),
+              ],
+            ),
+            if (entries.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: entries.length,
+                separatorBuilder: (context, index) => Divider(height: 1, color: Colors.white.withOpacity(0.05)),
                   itemBuilder: (context, index) {
                     final entry = entries[index];
                     final entryId = entry['id'] as String;
                     final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-                    final drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+                    String drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+                    if (drinkType == 'Rakı') drinkEmoji = '🥛'; // Fix incorrect historical data
                     final portion = entry['portion'] as String? ?? '';
                     final quantity = entry['quantity'] as int? ?? 1;
                     final points = (entry['points'] ?? 0).toDouble();
@@ -1179,31 +1322,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 24),
                 Center(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.white.withOpacity(0.05),
+                          shape: BoxShape.circle,
                         ),
-                        child: Icon(UIcons.regularStraight.moon, size: 36, color: AppColors.primary),
+                        child: Icon(UIcons.regularStraight.moon, size: 24, color: AppColors.textTertiary.withOpacity(0.4)),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
                         'Bu gün için henüz kayıt yok',
-                         style: TextStyle(
-                           color: AppColors.textTertiary.withOpacity(0.6), 
-                           fontSize: 14, 
-                           fontWeight: FontWeight.w700,
-                           letterSpacing: -0.2,
-                         ),
+                        style: TextStyle(
+                          color: AppColors.textTertiary.withOpacity(0.4),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -1491,6 +1633,226 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: isLight ? 28 : 28,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildQuickAddSection() {
+    // Hardcoded subset for Quick Add on Home
+    final quickOptions = [
+      {'id': 'beer', 'name': 'Bira', 'emoji': '🍺', 'imagePath': 'assets/images/drinks/beer.png'},
+      {'id': 'wine', 'name': 'Şarap', 'emoji': '🍷', 'imagePath': 'assets/images/drinks/wine.png'},
+      {'id': 'whiskey', 'name': 'Viski', 'emoji': '🥃', 'imagePath': 'assets/images/drinks/whiskey.png'},
+      {'id': 'cocktail', 'name': 'Kokteyl', 'emoji': '🍹', 'imagePath': 'assets/images/drinks/kokteyl.png'},
+      {'id': 'raki', 'name': 'Rakı', 'emoji': '🥛', 'imagePath': 'assets/images/drinks/raki.png'},
+      {'id': 'vodka', 'name': 'Votka', 'emoji': '🍸', 'imagePath': 'assets/images/drinks/vodka_enerji.png'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'HIZLI EKLE',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 110, // Slightly smaller than Add Screen
+          child: Listener(
+            onPointerDown: (_) {
+               _isAutoScrolling = false;
+               _scrollTimer?.cancel();
+            },
+            onPointerUp: (_) {
+               _isAutoScrolling = true;
+               // Delay resume slightly
+               Future.delayed(const Duration(milliseconds: 1000), () {
+                 if (mounted && _isAutoScrolling) _startAutoScroll();
+               });
+            },
+            child: ListView.builder(
+              controller: _quickAddScrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              // Infinite loop simulation
+              itemCount: 100000, 
+              itemBuilder: (context, index) {
+                // Modulo to repeat items
+                final option = quickOptions[index % quickOptions.length];
+                final hasImage = option.containsKey('imagePath');
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      // Set selected category for Add Screen
+                      NavigationService.instance.selectCategory(option['id']! as String);
+                      // Navigate to Add Tab
+                      StatefulNavigationShell.of(context).goBranch(1);
+                    },
+                    child: Container(
+                      width: 155, // Synced width
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        children: [
+                          // 1. Background Nebula (Subtle)
+                          Positioned(
+                            top: -30,
+                            right: -30,
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    const Color(0xFFFF8902).withOpacity(0.08),
+                                    const Color(0xFFFF8902).withOpacity(0.0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 2. True Glassmorphism Blur
+                          Positioned.fill(
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withOpacity(0.03),
+                                      Colors.black.withOpacity(0.12),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 3. Glass Shine Sweep
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: const Alignment(-1.5, -1.2),
+                                  end: const Alignment(1.5, 1.2),
+                                  colors: [
+                                    Colors.white.withOpacity(0.0),
+                                    Colors.white.withOpacity(0.05),
+                                    Colors.white.withOpacity(0.0),
+                                  ],
+                                  stops: const [0.3, 0.45, 0.6],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 4. Content - Artistic Half-Visible Image
+                          Positioned(
+                            left: -35, 
+                            top: -15,
+                            bottom: -15,
+                            child: hasImage
+                                ? Image.asset(
+                                    option['imagePath']! as String,
+                                    width: 120, 
+                                    fit: BoxFit.contain,
+                                    opacity: const AlwaysStoppedAnimation(0.8),
+                                  )
+                                : Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(left: 40),
+                                      child: Text(
+                                        option['emoji']! as String,
+                                        style: const TextStyle(fontSize: 60),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+
+                          // 5. Title & Action
+                          Positioned(
+                            right: 12,
+                            top: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    (option['name']! as String).toUpperCase(),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'EKLE',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFFFF8902).withOpacity(0.7),
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ],

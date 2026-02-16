@@ -50,11 +50,9 @@ class FeedService {
 
     final cheers = List<String>.from(doc.data()?['cheers'] ?? []);
     if (cheers.contains(userId)) {
-      cheers.remove(userId);
+      await ref.update({'cheers': FieldValue.arrayRemove([userId])});
     } else {
-      cheers.add(userId);
+      await ref.update({'cheers': FieldValue.arrayUnion([userId])});
     }
-
-    await ref.update({'cheers': cheers});
   }
 }

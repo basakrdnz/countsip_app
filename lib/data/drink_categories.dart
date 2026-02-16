@@ -23,18 +23,15 @@ const List<Map<String, dynamic>> drinkCategories = [
     'emoji': '🍷',
     'image': 'assets/images/drinks/wine.png',
     'portions': [
-      {'name': 'Kırmızı (150ml)', 'variety': 'Kırmızı', 'volume': 150, 'abv': 13.0},
-      {'name': 'Kırmızı (200ml)', 'variety': 'Kırmızı', 'volume': 200, 'abv': 13.0},
-      {'name': 'Beyaz (150ml)', 'variety': 'Beyaz', 'volume': 150, 'abv': 11.0},
-      {'name': 'Beyaz (200ml)', 'variety': 'Beyaz', 'volume': 200, 'abv': 11.0},
-      {'name': 'Rosé (150ml)', 'variety': 'Rosé', 'volume': 150, 'abv': 12.0},
-      {'name': 'Rosé (200ml)', 'variety': 'Rosé', 'volume': 200, 'abv': 12.0},
+      {'name': 'Standart Kadeh (150ml)', 'variety': 'Kırmızı', 'volume': 150, 'abv': 13.0},
+      {'name': 'Standart Kadeh (150ml)', 'variety': 'Beyaz', 'volume': 150, 'abv': 11.0},
+      {'name': 'Standart Kadeh (150ml)', 'variety': 'Rosé', 'volume': 150, 'abv': 12.0},
     ],
   },
   {
     'id': 'raki',
     'name': 'Rakı',
-    'emoji': '🥃',
+    'emoji': '🥛',
     'image': 'assets/images/drinks/raki.png',
     'portions': [
       {'name': 'Tek (50ml)', 'volume': 50, 'abv': 45.0},
@@ -77,7 +74,7 @@ const List<Map<String, dynamic>> drinkCategories = [
     'id': 'tequila',
     'name': 'Tekila',
     'emoji': '🌵',
-    'image': 'assets/images/drinks/tequila.png',
+    'image': 'assets/images/drinks/tekila.png',
     'portions': [
       {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
       {'name': 'Duble (80ml)', 'volume': 80, 'abv': 40.0},
@@ -87,7 +84,7 @@ const List<Map<String, dynamic>> drinkCategories = [
     'id': 'rum',
     'name': 'Rom',
     'emoji': '🥃',
-    'image': 'assets/images/drinks/rum.png',
+    'image': 'assets/images/drinks/rom.png',
     'portions': [
       {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
       {'name': 'Rom Kola (250ml)', 'volume': 250, 'abv': 10.0},
@@ -136,7 +133,7 @@ const List<Map<String, dynamic>> drinkCategories = [
     'id': 'liqueur',
     'name': 'Likör',
     'emoji': '🍹',
-    'image': 'assets/images/drinks/liqueur.png',
+    'image': 'assets/images/drinks/kokteyl.png', // Fallback to cocktail image
     'portions': [
       {'name': 'Kremsi (Baileys)', 'volume': 50, 'abv': 17.0},
       {'name': 'Bitki (Jäger)', 'volume': 40, 'abv': 35.0},
@@ -148,7 +145,7 @@ const List<Map<String, dynamic>> drinkCategories = [
     'id': 'custom',
     'name': 'Kendin Yarat',
     'emoji': '✨',
-    'image': 'assets/images/drinks/custom.png',
+    'image': null, // Use star emoji icon as per user request
     'portions': [
       {'name': 'Talep Et', 'abv': 0.0, 'volume': 0},
     ],

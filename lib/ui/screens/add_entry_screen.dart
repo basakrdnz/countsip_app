@@ -14,6 +14,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:math';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../core/services/navigation_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
@@ -22,6 +23,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/dual_camera_widget.dart';
 import '../../core/services/badge_service.dart';
 import '../../data/models/badge_model.dart' as model;
+import '../../core/services/preferences_service.dart';
 import '../../data/drink_categories.dart';
 
 class AddEntryScreen extends StatefulWidget {
@@ -48,7 +50,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   // Interaction State
   double _cardDragX = 0; // Keeping for now to avoid broken refs, will replace
   double _cardDragY = 0;
+  double _screenDragY = 0; // State for whole screen dismissal
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  List<String> _recentSearches = [];
+  bool _isSearchFocused = false;
   
   // Custom Drink Request Controllers
   final _customNameController = TextEditingController();
@@ -111,6 +118,76 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }
   }
 
+  // --- Smart Search Helper ---
+  int _levenshtein(String s, String t) {
+    if (s == t) return 0;
+    if (s.isEmpty) return t.length;
+    if (t.isEmpty) return s.length;
+
+    List<int> v0 = List<int>.generate(t.length + 1, (i) => i);
+    List<int> v1 = List<int>.filled(t.length + 1, 0);
+
+    for (int i = 0; i < s.length; i++) {
+      v1[0] = i + 1;
+      for (int j = 0; j < t.length; j++) {
+        int cost = (s[i] == t[j]) ? 0 : 1;
+        v1[j + 1] = [v1[j] + 1, v0[j + 1] + 1, v0[j] + cost]
+            .reduce((curr, next) => curr < next ? curr : next);
+      }
+      for (int j = 0; j < t.length + 1; j++) {
+        v0[j] = v1[j];
+      }
+    }
+    return v0[t.length];
+  }
+
+  List<Map<String, dynamic>> _getSmartSuggestions(String query) {
+    if (query.length < 2) return [];
+    
+    final List<(Map<String, dynamic> cat, int score)> scored = [];
+    final lowerQuery = query.toLowerCase();
+
+    for (var cat in _categories) {
+      final catName = cat['name'].toString().toLowerCase();
+      final distance = _levenshtein(lowerQuery, catName);
+      
+      // Calculate similarity score (0.0 to 1.0)
+      final maxLength = max(lowerQuery.length, catName.length);
+      final similarity = 1.0 - (distance / maxLength);
+
+      if (similarity > 0.4) { // Threshold for "close enough"
+        scored.add((cat, (similarity * 100).toInt()));
+      }
+      
+      // Also check portions
+      if (cat['portions'] != null) {
+        for (var p in cat['portions'] as List<dynamic>) {
+          final pName = (p['name'] ?? '').toString().toLowerCase();
+          final pVariety = (p['variety'] ?? '').toString().toLowerCase();
+          
+          final dName = _levenshtein(lowerQuery, pName);
+          final dVariety = _levenshtein(lowerQuery, pVariety);
+          
+          final sName = 1.0 - (dName / max(lowerQuery.length, pName.length));
+          final sVariety = 1.0 - (dVariety / max(lowerQuery.length, pVariety.length));
+          
+          final bestSim = max(sName, sVariety);
+          if (bestSim > 0.4) {
+             scored.add(({
+               ...cat, 
+               'displayName': "${cat['name']} - ${p['name']}",
+               'isPortionMatch': true,
+               'selectedPortion': p,
+             }, (bestSim * 100).toInt()));
+          }
+        }
+      }
+    }
+
+    scored.sort((a, b) => b.$2.compareTo(a.$2));
+    return scored.map((s) => s.$1).take(3).toList();
+  }
+
 
   final ScrollController _scrollController = ScrollController();
   final ScrollController _sheetScrollController = ScrollController();
@@ -139,6 +216,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
+    _searchFocusNode.addListener(_onSearchFocusChange);
+    _loadSearchHistory();
     _scrollController.addListener(() {
       if (!mounted) return;
       setState(() {
@@ -159,6 +238,40 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
+    
+    // Listen for navigation events from Home Screen
+    NavigationService.instance.selectedCategoryNotifier.addListener(_handleNavigationEvent);
+    // Check if there's already a value (in case it was set before this screen built)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleNavigationEvent();
+    });
+  }
+
+  void _handleNavigationEvent() {
+    final categoryId = NavigationService.instance.selectedCategoryNotifier.value;
+    if (categoryId != null && mounted) {
+      debugPrint('AddEntryScreen: Received navigation event for $categoryId');
+      // Clear the value so it doesn't re-trigger
+      NavigationService.instance.selectedCategoryNotifier.value = null;
+      
+      final category = _categories.firstWhere(
+        (c) => c['id'] == categoryId, 
+        orElse: () => {}, 
+      );
+      
+      if (category.isNotEmpty) {
+        // Reset state and select category
+        setState(() {
+          _focusedCategoryId = categoryId;
+          _quantity = 1;
+          _selectedVarietyName = null;
+          _selectedPortion = null;
+          _sheetDragY = 0;
+          _selectedTime = DateTime.now(); // Reset to now
+        });
+        _animationController.forward(from: 0);
+      }
+    }
     
     _guidanceArrowAnimation = Tween<double>(begin: 0, end: 10).animate(
       CurvedAnimation(parent: _guidanceController, curve: Curves.easeInOut),
@@ -189,6 +302,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   @override
   void dispose() {
+    _searchController.dispose();
     _noteController.dispose();
     _locationController.dispose();
     _customNameController.dispose();
@@ -202,7 +316,38 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     _scoreAnimationController.dispose();
     _bounceController.dispose();
     _pulseController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onSearchFocusChange() {
+    setState(() {
+      _isSearchFocused = _searchFocusNode.hasFocus;
+    });
+  }
+
+  Future<void> _loadSearchHistory() async {
+    final history = PreferencesService.instance.getSearchHistory();
+    setState(() {
+      _recentSearches = history;
+    });
+  }
+
+  Future<void> _addToHistory(String query) async {
+    await PreferencesService.instance.addToSearchHistory(query);
+    _loadSearchHistory();
+  }
+
+  Future<void> _removeFromHistory(String query) async {
+    await PreferencesService.instance.removeFromSearchHistory(query);
+    _loadSearchHistory();
+  }
+
+  Future<void> _clearHistory() async {
+    await PreferencesService.instance.clearSearchHistory();
+    setState(() {
+      _recentSearches = [];
+    });
   }
 
   // --- Logic ---
@@ -418,48 +563,80 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   Widget build(BuildContext context) {
     final bool isFocused = _focusedCategoryId != null;
     
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Index 0: Main List View (Always present, dimmed when focused)
-          Opacity(
-            opacity: isFocused ? 0.4 : 1.0,
-            child: _buildMainListView(),
-          ),
-          
-          // Title Bar (Overlay on list view)
-          if (!isFocused)
-            _buildFloatingTitleBar(),
-
-          // Dark overlay when sheet is open to prevent clicks on list
-          if (isFocused)
-            GestureDetector(
-              onTap: () => _closeSheet(),
-              child: Container(
-                color: Colors.black.withOpacity(0.4),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: GestureDetector(
+        onVerticalDragUpdate: (details) {
+          // Only trigger if we are at the top of the scroll or pulling down
+          if (!isFocused && (_scrollController.offset <= 0 || _screenDragY > 0)) {
+            setState(() {
+              _screenDragY = (_screenDragY + details.delta.dy).clamp(0.0, MediaQuery.of(context).size.height);
+            });
+          }
+        },
+        onVerticalDragEnd: (details) {
+          if (_screenDragY > 150 || details.velocity.pixelsPerSecond.dy > 800) {
+            Navigator.pop(context);
+          } else {
+            setState(() {
+              _screenDragY = 0;
+            });
+          }
+        },
+        child: Transform.translate(
+          offset: Offset(0, _screenDragY),
+          child: Container(
+            color: AppColors.background,
+            child: Scaffold(
+              backgroundColor: Colors.transparent, // Let Container handle it
+              body: Stack(
+                children: [
+                  // Index 0: Main List View (Always present, dimmed when focused)
+                  Opacity(
+                    opacity: isFocused ? 0.4 : 1.0,
+                    child: _buildMainListView(),
+                  ),
+                  
+                  // Title Bar (Overlay on list view)
+                  if (!isFocused)
+                    _buildFloatingTitleBar(),
+        
+                  // Dark overlay when sheet is open to prevent clicks on list
+                  if (isFocused)
+                    GestureDetector(
+                      onTap: () => _closeSheet(),
+                      child: Container(
+                        color: Colors.black.withOpacity(0.4),
+                      ),
+                    ),
+        
+                  // Detail View Overlay (Draggable Sheet)
+                  if (isFocused)
+                    _buildFocusedSheet(),
+        
+                  // Search Suggestions & History Overlay
+                  if (_isSearchFocused && !isFocused)
+                    _buildSearchOverlay(),
+        
+                  // Local Success Toast
+                  if (_showLocalToast)
+                    _SuccessToastWidget(
+                      aps: _toastAPS,
+                      onDismiss: () => setState(() => _showLocalToast = false),
+                    ),
+                    
+                  // Local Badge Notification
+                  if (_showLocalBadge && _activeBadge != null)
+                    _BadgeNotificationWidget(
+                      badgeSource: _activeBadge!,
+                      color: _activeBadgeColor ?? Colors.orange,
+                      onDismiss: () => setState(() => _showLocalBadge = false),
+                    ),
+                ],
               ),
             ),
-
-          // Detail View Overlay (Draggable Sheet)
-          if (isFocused)
-            _buildFocusedSheet(),
-
-          // Local Success Toast
-          if (_showLocalToast)
-            _SuccessToastWidget(
-              aps: _toastAPS,
-              onDismiss: () => setState(() => _showLocalToast = false),
-            ),
-            
-          // Local Badge Notification
-          if (_showLocalBadge && _activeBadge != null)
-            _BadgeNotificationWidget(
-              badgeSource: _activeBadge!,
-              color: _activeBadgeColor ?? Colors.orange,
-              onDismiss: () => setState(() => _showLocalBadge = false),
-            ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -487,11 +664,491 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             parent: BouncingScrollPhysics(),
           ),
           slivers: [
-            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            const SliverToBoxAdapter(child: SizedBox(height: 150)),
             SliverToBoxAdapter(child: _buildSearchBar()),
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
-            SliverToBoxAdapter(child: _buildCategoryGrid()),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            if (_searchQuery.isEmpty) ...[
+               SliverToBoxAdapter(child: _buildSuggestionsSection()),
+               const SliverToBoxAdapter(child: SizedBox(height: 24)),
+               SliverToBoxAdapter(
+                 child: Padding(
+                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                   child: Row(
+                     children: [
+                       Container(
+                         width: 3,
+                         height: 16,
+                         decoration: BoxDecoration(
+                           color: const Color(0xFFFF8902),
+                           borderRadius: BorderRadius.circular(2),
+                         ),
+                       ),
+                       const SizedBox(width: 8),
+                       Text(
+                         'TÜM İÇECEKLER',
+                         style: GoogleFonts.plusJakartaSans(
+                           fontSize: 12,
+                           fontWeight: FontWeight.w600,
+                           color: AppColors.textTertiary, // Lighter, matches profile
+                           letterSpacing: 1.2,
+                         ),
+                       ),
+                     ],
+                   ),
+                 ),
+               ),
+            ],
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: _buildCategoryGrid(),
+            ),
             const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsSection() {
+    final suggestedIds = ['beer', 'wine', 'whiskey', 'cocktail'];
+    final suggestions = _categories.where((c) => suggestedIds.contains(c['id'])).toList();
+    final glowColor = const Color(0xFFFF8902);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: glowColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'HIZLI EKLE',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 110, // Shorter height for a chic look
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: suggestions.length,
+            itemBuilder: (context, index) {
+              final category = suggestions[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () => _onCategorySelected(category),
+                  child: Container(
+                    width: 155, // Wider for half-image layout
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.12),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: [
+                        // 1. Background Nebula (Subtle)
+                        Positioned(
+                          top: -30,
+                          right: -30,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  glowColor.withOpacity(0.08),
+                                  glowColor.withOpacity(0.0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 2. True Glassmorphism Blur
+                        Positioned.fill(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white.withOpacity(0.03),
+                                    Colors.black.withOpacity(0.12),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 3. Glass Shine Sweep
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: const Alignment(-1.5, -1.2),
+                                end: const Alignment(1.5, 1.2),
+                                colors: [
+                                  Colors.white.withOpacity(0.0),
+                                  Colors.white.withOpacity(0.05),
+                                  Colors.white.withOpacity(0.0),
+                                ],
+                                stops: const [0.3, 0.45, 0.6],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 4. Content - Artistic Half-Visible Image
+                        Positioned(
+                          left: -35, // Offset to make it half-visible
+                          top: -15,
+                          bottom: -15,
+                          child: category['image'] != null
+                              ? Image.asset(
+                                  category['image'],
+                                  width: 120, // Oversized for artistic look
+                                  fit: BoxFit.contain,
+                                  opacity: const AlwaysStoppedAnimation(0.8),
+                                )
+                              : Center(
+                                  child: Text(
+                                    category['emoji'],
+                                    style: const TextStyle(fontSize: 60),
+                                  ),
+                                ),
+                        ),
+
+                        // 5. Title & Action
+                        Positioned(
+                          right: 12,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  category['name'].toUpperCase(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'EKLE',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: glowColor.withOpacity(0.7),
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryGrid() {
+    final filteredCategories = _categories.where((c) {
+      return c['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
+
+    if (filteredCategories.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 60),
+            child: Column(
+              children: [
+                Icon(UIcons.regularStraight.search, size: 48, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  'İçecek bulunamadı',
+                  style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SliverGrid(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.80, // Slightly taller to prevent overflow
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          return AnimationConfiguration.staggeredGrid(
+            position: index,
+            duration: const Duration(milliseconds: 500),
+            columnCount: 2,
+            child: ScaleAnimation(
+              child: FadeInAnimation(
+                child: _buildCategoryCard(filteredCategories[index]),
+              ),
+            ),
+          );
+        },
+        childCount: filteredCategories.length,
+      ),
+    );
+  }
+
+  void _onCategorySelected(Map<String, dynamic> category, {Map<String, dynamic>? preSelectedPortion}) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _focusedCategoryId = category['id'];
+      _quantity = 1;
+      _selectedVarietyName = preSelectedPortion?['variety'];
+      _selectedPortion = preSelectedPortion;
+      _sheetDragY = 0;
+      _selectedTime = DateTime.now();
+      _searchQuery = '';
+      _searchController.clear();
+      _isSearchFocused = false;
+    });
+    _searchFocusNode.unfocus();
+    _animationController.forward(from: 0);
+    _bounceController.forward(from: 0);
+  }
+
+  Widget _buildCategoryCard(Map<String, dynamic> category) {
+    final portions = category['portions'] as List;
+    final varieties = portions.map((p) => p['variety']).where((v) => v != null).toSet();
+    final int displayCount = varieties.isNotEmpty ? varieties.length : portions.length;
+    // Force Orange/Gold glow for all categories as per 'turuncu ağırlıklı' request
+    final glowColor = const Color(0xFFFF8902); 
+
+    return GestureDetector(
+      onTap: () => _onCategorySelected(category),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.15),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 32,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        clipBehavior: (category['id'] == 'tequila' || category['id'] == 'rum') ? Clip.none : Clip.antiAlias,
+        child: Stack(
+          children: [
+            // 1. Nebula Ambient Aura (Orange) - Broad and very subtle
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 320,
+                height: 320,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      glowColor.withOpacity(0.08), // Even more subtle
+                      glowColor.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // 2. Secondary Nebula (Indigo) - Very broad and subtle
+            Positioned(
+              bottom: -80,
+              left: -80,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF3F51B5).withOpacity(0.06), // Barely there
+                      const Color(0xFF3F51B5).withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. True Glassmorphism Blur Layer
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.03), 
+                        Colors.black.withOpacity(0.1),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // 4. Glass Shine (Reflective Sweep) - Overlaying the blur
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: const Alignment(-1.5, -1.2),
+                    end: const Alignment(1.5, 1.2),
+                    colors: [
+                      Colors.white.withOpacity(0.0),
+                      Colors.white.withOpacity(0.06), // Shine
+                      Colors.white.withOpacity(0.0),
+                    ],
+                    stops: const [0.35, 0.45, 0.55],
+                  ),
+                ),
+              ),
+            ),
+
+            // 5. Top-Left Highlight
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 1.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.25),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+
+
+            // 3. Content
+            Align(
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Floating Image with centered glow
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Focused Soft Glow exactly behind the image
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: glowColor.withOpacity(0.12),
+                              blurRadius: 35,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                      ),
+                      category['image'] != null
+                          ? Image.asset(
+                              category['image'],
+                              width: (category['id'] == 'tequila' || category['id'] == 'rum') ? 180 : 135,
+                              height: (category['id'] == 'tequila' || category['id'] == 'rum') ? 180 : 135,
+                              fit: BoxFit.contain,
+                            )
+                          : Text(
+                              category['emoji'],
+                              style: const TextStyle(fontSize: 100),
+                            ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+
+                  // Title
+                  Text(
+                    category['name'],
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                      shadows: [
+                         Shadow(
+                          color: Colors.black.withOpacity(0.5),
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -539,7 +1196,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       }
     });
   }
-
 
   void _showModernDateTimePicker() {
     HapticFeedback.selectionClick();
@@ -666,165 +1322,65 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-
-  Widget _buildCategoryGrid() {
-    final filteredCategories = _categories.where((c) {
-      return c['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
-
-    return AnimationLimiter(
-      child: filteredCategories.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 60),
-                child: Column(
-                  children: [
-                    Icon(UIcons.regularStraight.search, size: 48, color: Colors.grey.shade300),
-                    const SizedBox(height: 16),
-                    Text(
-                      'İçecek bulunamadı',
-                      style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : Column(
-              children: List.generate(filteredCategories.length, (index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: AnimationConfiguration.staggeredList(
-                    position: index,
-                    duration: const Duration(milliseconds: 600),
-                    child: FadeInAnimation(
-                      child: _buildCategoryCard(filteredCategories[index]),
-                    ),
-                  ),
-                );
-              }),
-            ),
-    );
-  }
-
-  Widget _buildCategoryCard(Map<String, dynamic> category) {
-    final bool isCustom = category['id'] == 'custom';
-    final int portionsCount = (category['portions'] as List).length;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Material(
-        color: const Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            setState(() {
-              _focusedCategoryId = category['id'];
-              _quantity = 1;
-              _selectedVarietyName = null;
-              _selectedPortion = null;
-              _sheetDragY = 0;
-              _selectedTime = DateTime.now(); // Reset to now on new selection
-            });
-            _animationController.forward(from: 0);
-            _bounceController.forward(from: 0);
-          },
-          borderRadius: BorderRadius.circular(16),
-          splashColor: const Color(0xFFFF8902).withOpacity(0.1),
-          highlightColor: const Color(0xFFFF8902).withOpacity(0.05),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.08),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                // Emoji container
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF242938),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      category['emoji'],
-                      style: const TextStyle(fontSize: 32),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Text content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category['name'],
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$portionsCount seçenek',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFFCBD5E1),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Chevron
-                const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFFFF8902),
-                  size: 24,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSearchBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1F2E),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          color: _isSearchFocused ? const Color(0xFF1E2433) : const Color(0xFF1A1F2E),
+          borderRadius: BorderRadius.circular(_isSearchFocused ? 20 : 16),
+          border: Border.all(
+            color: _isSearchFocused 
+                ? const Color(0xFFFF8902).withOpacity(0.5) 
+                : Colors.white.withOpacity(0.12),
+            width: _isSearchFocused ? 1.8 : 1.4, // Thicker chic border
+          ),
+          boxShadow: _isSearchFocused ? [
+            BoxShadow(
+              color: const Color(0xFFFF8902).withOpacity(0.12),
+              blurRadius: 25,
+              spreadRadius: -2,
+            )
+          ] : [],
         ),
         child: TextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
           onChanged: (val) => setState(() => _searchQuery = val),
-          style: GoogleFonts.inter(
+          onSubmitted: (val) {
+            _addToHistory(val);
+          },
+          style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w500,
-            fontSize: 15,
+            fontSize: 16,
             color: Colors.white,
           ),
           decoration: InputDecoration(
             hintText: 'İçecek ara...',
-            hintStyle: GoogleFonts.inter(
-              color: const Color(0xFF94A3B8),
+            hintStyle: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFF94A3B8).withOpacity(0.6),
               fontWeight: FontWeight.w400,
+              fontSize: 15,
             ),
             prefixIcon: const Icon(
-              Icons.search,
-              size: 20,
+              Icons.search_rounded,
+              size: 22,
               color: Color(0xFFFF8902),
             ),
+            suffixIcon: _searchQuery.isNotEmpty 
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white54),
+                  onPressed: () {
+                    setState(() {
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                    _searchFocusNode.unfocus();
+                  },
+                )
+              : null,
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           ),
@@ -851,40 +1407,359 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  // Obsolete: _buildGuidance removed.
-  /*
-  Widget _buildGuidance() {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        const Text(
-          'İçeceğini seç',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.5,
+  Widget _buildSearchOverlay() {
+    if (_searchQuery.isEmpty && _recentSearches.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final List<Map<String, dynamic>> suggestions = _searchQuery.isEmpty 
+        ? [] 
+        : _categories.where((c) => c['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+
+    return Positioned.fill(
+      top: MediaQuery.of(context).padding.top + 180, // Position below the search bar
+      child: GestureDetector(
+        onTap: () {
+          _searchFocusNode.unfocus();
+          setState(() {
+            _searchQuery = '';
+            _searchController.clear();
+          });
+        },
+        child: Container(
+          color: Colors.black.withOpacity(0.6),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      width: double.infinity,
+                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E2433).withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_searchQuery.isEmpty && _recentSearches.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'SON ARAMALAR',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white.withOpacity(0.4),
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _clearHistory,
+                                    child: Text(
+                                      'TEMİZLE',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFFFF8902),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Flexible(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
+                                itemCount: _recentSearches.length,
+                                itemBuilder: (context, index) {
+                                  final query = _recentSearches[index];
+                                  return ListTile(
+                                    leading: const Icon(Icons.history_rounded, size: 20, color: Colors.white30),
+                                    title: Text(
+                                      query,
+                                      style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 14),
+                                    ),
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white24),
+                                      onPressed: () => _removeFromHistory(query),
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        _searchQuery = query;
+                                        _searchController.text = query;
+                                        _searchController.selection = TextSelection.fromPosition(
+                                          TextPosition(offset: query.length),
+                                        );
+                                      });
+                                      _addToHistory(query);
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                          if (_searchQuery.isNotEmpty) ...[
+                            // Deep Search Logic: Filter categories AND their portions
+                            Builder(
+                              builder: (context) {
+                                final List<Map<String, dynamic>> deepSuggestions = [];
+                                final query = _searchQuery.toLowerCase();
+
+                                for (var cat in _categories) {
+                                  final catName = cat['name'].toString().toLowerCase();
+                                  
+                                  // 1. Direct Category Match
+                                  if (catName.contains(query)) {
+                                    deepSuggestions.add(cat);
+                                  } 
+                                  // 2. Deep Portion Match (if not already matched by category name)
+                                  else if (cat['portions'] != null) {
+                                    final portions = cat['portions'] as List;
+                                    for (var p in portions) {
+                                      final pName = p['name'].toString().toLowerCase();
+                                      final pVariety = (p['variety'] ?? '').toString().toLowerCase();
+                                      
+                                      if (pName.contains(query) || pVariety.contains(query)) {
+                                        // Create a combined entry for the portion match
+                                        deepSuggestions.add({
+                                          ...cat,
+                                          'displayName': "${cat['name']} - ${p['name']}",
+                                          'isPortionMatch': true,
+                                          'selectedPortion': p,
+                                        });
+                                      }
+                                    }
+                                  }
+                                }
+
+                                final fuzzySuggestions = _getSmartSuggestions(_searchQuery);
+
+                                if (deepSuggestions.isEmpty) {
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                      const SizedBox(height: 40),
+                                      // Subtle Gray Icon & Text (Matching Notification Screen)
+                                      Icon(
+                                        Icons.search_off_rounded,
+                                        size: 64,
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'İçecek bulunamadı',
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white.withOpacity(0.24),
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      if (fuzzySuggestions.isNotEmpty) ...[
+                                        const SizedBox(height: 24),
+                                        Text(
+                                          'BUNU MU DEMEK İSTEDİN?',
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: const Color(0xFFFF8902).withOpacity(0.6),
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          alignment: WrapAlignment.center,
+                                          children: fuzzySuggestions.map((cat) {
+                                            return GestureDetector(
+                                              onTap: () {
+                                                if (cat['isPortionMatch'] == true) {
+                                                  _onCategorySelected(cat, preSelectedPortion: cat['selectedPortion']);
+                                                } else {
+                                                  _onCategorySelected(cat);
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFFF8902).withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: const Color(0xFFFF8902).withOpacity(0.2)),
+                                                ),
+                                                child: Text(
+                                                  cat['displayName'] ?? cat['name'],
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    color: const Color(0xFFFF8902),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 32),
+                                      // Proactive Suggestions
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'ŞUNLARI MI DEMEK İSTEDİN?',
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white.withOpacity(0.2),
+                                                letterSpacing: 1.5,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              alignment: WrapAlignment.center,
+                                              children: ['Bira', 'Rakı', 'Votka', 'Viski'].map((pop) {
+                                                return GestureDetector(
+                                                  onTap: () => setState(() => _searchQuery = pop),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withOpacity(0.05),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                                    ),
+                                                    child: Text(
+                                                      pop,
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        color: Colors.white.withOpacity(0.35),
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 40),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                                return Flexible(
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    padding: EdgeInsets.zero,
+                                    itemCount: deepSuggestions.length,
+                                    itemBuilder: (context, index) {
+                                      final cat = deepSuggestions[index];
+                                      final isPortion = cat['isPortionMatch'] == true;
+                                      
+                                      return InkWell(
+                                        onTap: () {
+                                          _addToHistory(cat['name']);
+                                          if (isPortion) {
+                                            _onCategorySelected(cat, preSelectedPortion: cat['selectedPortion']);
+                                          } else {
+                                            _onCategorySelected(cat);
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                width: 50,
+                                                height: 50,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withOpacity(0.05),
+                                                  borderRadius: BorderRadius.circular(14),
+                                                ),
+                                                alignment: Alignment.center,
+                                                child: cat['image'] != null 
+                                                  ? Image.asset(cat['image'], width: 30)
+                                                  : Text(cat['emoji'], style: const TextStyle(fontSize: 24)),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                cat['displayName'] ?? cat['name'],
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  color: Colors.white, 
+                                                  fontSize: 16,
+                                                  fontWeight: isPortion ? FontWeight.w500 : FontWeight.w700,
+                                                ),
+                                              ),
+                                              if (isPortion) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Kategori: ${cat['name']}',
+                                                  textAlign: TextAlign.center,
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    color: Colors.white.withOpacity(0.3),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                              const SizedBox(height: 8),
+                                              Icon(
+                                                isPortion ? Icons.add_circle_outline_rounded : Icons.chevron_right_rounded, 
+                                                size: 20, 
+                                                color: Colors.white.withOpacity(0.15),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        AnimatedBuilder(
-          animation: _guidanceArrowAnimation,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, _guidanceArrowAnimation.value),
-              child: child,
-            );
-          },
-          child: Icon(
-            UIcons.regularStraight.arrow_small_down,
-            color: AppColors.primary.withOpacity(0.5),
-            size: 32,
-          ),
-        ),
-      ],
+      ),
     );
   }
-  */
 
   Widget _buildImageSelector() {
     return Column(
@@ -1032,7 +1907,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   void _closeSheet() {
     _animationController.reverse().then((_) {
-      if (mounted) {
+      if (mounted && _animationController.status == AnimationStatus.dismissed) {
         setState(() {
           _focusedCategoryId = null;
           _sheetDragY = 0;
@@ -1142,13 +2017,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                           ),
                         ),
                       ),
-                      // Pulsing Emoji
+                      // Pulsing Emoji or Image
                       ScaleTransition(
                         scale: _pulseAnimation,
-                        child: Text(
-                          category['emoji'],
-                          style: const TextStyle(fontSize: 140),
-                        ),
+                        child: category['image'] != null
+                            ? Image.asset(
+                                category['image'],
+                                width: 180, // Larger for detail view
+                                height: 180,
+                                fit: BoxFit.contain,
+                              )
+                            : Text(
+                                category['emoji'],
+                                style: const TextStyle(fontSize: 140),
+                              ),
                       ),
                     ],
                   ),
@@ -1286,43 +2168,67 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         .toSet()
         .toList();
 
-    if (varieties.isEmpty) return const SizedBox.shrink();
+  if (varieties.isEmpty) return const SizedBox.shrink();
 
-    return Center(
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        alignment: WrapAlignment.center,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
         children: varieties.map<Widget>((v) {
           final isSelected = _selectedVarietyName == v;
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() {
-                _selectedVarietyName = v;
-                _selectedPortion = null; // Reset portion when variety changes
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)])
-                    : null,
-                color: isSelected ? null : const Color(0xFF242938),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  _selectedVarietyName = v;
+                  // Auto-select portion if only 1 option exists
+                  final allPortions = category['portions'] as List;
+                  final filtered = allPortions.where((p) => p['variety'] == v).toList();
+                  if (filtered.length == 1) {
+                    _selectedPortion = filtered.first;
+                  } else {
+                    _selectedPortion = null;
+                  }
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)])
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
+                        ),
+                  color: isSelected ? null : const Color(0xFF1A1F2E),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFF8902).withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
+                      : null,
                 ),
-                boxShadow: null,
-              ),
-              child: Text(
-                v!,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : const Color(0xFFCBD5E1),
+                child: Text(
+                  v!,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
@@ -1340,11 +2246,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       portions = portions.where((p) => p['variety'] == _selectedVarietyName).toList();
     }
 
-    return Center(
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        alignment: WrapAlignment.center,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
         children: portions.map<Widget>((p) {
           final isSelected = _selectedPortion?['name'] == p['name'];
           // Size label (remove variety name if present)
@@ -1353,31 +2259,48 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
              sizeLabel = sizeLabel.replaceAll(_selectedVarietyName!, '').replaceAll('(', '').replaceAll(')', '').trim();
           }
 
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _selectedPortion = p);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)])
-                    : null,
-                color: isSelected ? null : const Color(0xFF242938),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _selectedPortion = p);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)])
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
+                        ),
+                  color: isSelected ? null : const Color(0xFF1A1F2E),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFF8902).withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
+                      : null,
                 ),
-                boxShadow: null,
-              ),
-              child: Text(
-                sizeLabel,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : const Color(0xFFCBD5E1),
+                child: Text(
+                  sizeLabel,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
