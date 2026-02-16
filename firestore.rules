@@ -10,9 +10,15 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Check if two users are friends
+    function areFriends(userId1, userId2) {
+      return exists(/databases/$(database)/documents/friendships/$(userId1 + '_' + userId2))
+          || exists(/databases/$(database)/documents/friendships/$(userId2 + '_' + userId1));
+    }
+
     // Users Collection
     match /users/{userId} {
-      // Users can see each other's profiles for friend search and leaderboard
+      // Owner can read full profile; others can only read public fields
       allow read: if isSignedIn();
       // Only the user can update their own profile
       allow write: if isOwner(userId);
@@ -27,7 +33,8 @@ service cloud.firestore {
 
     // Usernames mapping for uniqueness check
     match /usernames/{username} {
-      allow read: if true;
+      // Only signed-in users can look up usernames (not public)
+      allow read: if isSignedIn();
       // Allow reservation if signing up or updating own username
       allow write: if isSignedIn() && (request.resource.data.uid == request.auth.uid || resource.data.uid == request.auth.uid);
     }
@@ -44,32 +51,37 @@ service cloud.firestore {
 
     // Drink/Alcohol entries
     match /entries/{entryId} {
-      // Owners can read their own. Public social feed access (needs optimization for privacy)
-      // For now, allow signed in users to read if they are the owner or for the feed.
-      allow read: if isSignedIn();
+      // Owner can always read their own entries
+      // Friends can read entries (for social feed)
+      allow read: if isSignedIn() && (
+        isOwner(resource.data.userId) ||
+        areFriends(request.auth.uid, resource.data.userId)
+      );
 
-      // Only the owner can create/edit/delete their logs
+      // Only the owner can create/delete their logs
       allow create: if isOwner(request.resource.data.userId);
       allow delete: if isOwner(resource.data.userId);
 
-      // Update: allow owner to change anything, OR allow others to ONLY toggle 'cheers'
+      // Update: allow owner to change anything, OR allow friends to ONLY toggle 'cheers'
       allow update: if isOwner(resource.data.userId)
-                    || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cheers']));
+                    || (isSignedIn()
+                        && areFriends(request.auth.uid, resource.data.userId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cheers']));
     }
 
     // Notifications
     match /notifications/{notifId} {
-      // Allow read/update if the user is the recipient
+      // Allow read/update/delete if the user is the recipient
       allow read, update, delete: if isOwner(resource.data.to);
-      // Allow creation by anyone signed in (to send requests)
-      allow create: if isSignedIn();
+      // Only signed-in users can create, and must set 'from' to their own uid
+      allow create: if isSignedIn() && request.resource.data.from == request.auth.uid;
     }
 
     // Friend Requests
     match /friend_requests/{requestId} {
       // Sender or receiver can read
       allow read: if isSignedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
-      // Signed-in users can send friend requests
+      // Signed-in users can send friend requests (from must be self)
       allow create: if isSignedIn() && request.resource.data.from == request.auth.uid;
       // Sender or receiver can update status (accept/decline)
       allow update: if isSignedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);

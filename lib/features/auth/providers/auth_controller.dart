@@ -64,7 +64,7 @@ class AuthController extends AsyncNotifier<User?> {
     await _repository.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       onCodeSent: (verificationId, resendToken) {
-        debugPrint('FirebaseAuth verifyPhoneNumber success: code sent. ID: $verificationId');
+        debugPrint('FirebaseAuth verifyPhoneNumber: code sent');
         completer.complete(PhoneVerificationState(
           verificationId: verificationId,
           resendToken: resendToken,
@@ -72,19 +72,19 @@ class AuthController extends AsyncNotifier<User?> {
         ));
       },
       onVerificationCompleted: (credential) {
-        debugPrint('FirebaseAuth verifyPhoneNumber onVerificationCompleted (auto-retrieval or instant): $credential');
+        debugPrint('FirebaseAuth verifyPhoneNumber: auto-verification completed');
         // Auto-verification on some Android devices
         // We'll handle this in the UI
       },
       onVerificationFailed: (error) {
-        debugPrint('FirebaseAuth verifyPhoneNumber failed: [${error.code}] ${error.message}');
+        debugPrint('FirebaseAuth verifyPhoneNumber failed: [${error.code}]');
         completer.complete(PhoneVerificationState(
           isVerifying: false,
           error: _getErrorMessage(error),
         ));
       },
       onCodeAutoRetrievalTimeout: (verificationId) {
-        debugPrint('FirebaseAuth verifyPhoneNumber onCodeAutoRetrievalTimeout: $verificationId');
+        debugPrint('FirebaseAuth verifyPhoneNumber: auto-retrieval timeout');
         // Timeout - user needs to enter code manually
       },
     );

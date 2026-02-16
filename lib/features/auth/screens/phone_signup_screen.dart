@@ -87,10 +87,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
     });
 
     try {
-      debugPrint('Signup: Sending code to $_fullPhoneNumber');
+      debugPrint('Signup: Sending verification code');
       final authController = ref.read(authControllerProvider.notifier);
       final isRegistered = await authController.isPhoneRegistered(_fullPhoneNumber);
-      debugPrint('Signup: isPhoneRegistered result: $isRegistered');
+      debugPrint('Signup: phone check done');
       
       if (isRegistered) {
         setState(() {
@@ -130,13 +130,12 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           _currentStep = 2; // Move straight to password
         });
       }
-    } catch (e, stackTrace) {
-      debugPrint('Signup _sendCode catch: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
+      debugPrint('Signup _sendCode error');
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Bir hata oluştu: $e';
+          _error = 'Bir hata oluştu. Lütfen tekrar deneyin.';
         });
       }
     }
@@ -181,11 +180,11 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Signup _resendCode error: $e');
+      debugPrint('Signup _resendCode error');
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Bir hata oluştu: $e';
+          _error = 'Bir hata oluştu. Lütfen tekrar deneyin.';
         });
       }
     }
@@ -209,7 +208,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         _currentStep = 2;
       });
     } catch (e) {
-      debugPrint('Signup _verifyCode error: $e');
+      debugPrint('Signup _verifyCode error');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -276,11 +275,11 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         context.go('/profilesetup');
       }
     } catch (e) {
-      debugPrint('Signup _createAccount error: $e');
+      debugPrint('Signup _createAccount error');
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Hesap oluşturulamadı: $e';
+          _error = 'Hesap oluşturulamadı. Lütfen tekrar deneyin.';
         });
       }
     }

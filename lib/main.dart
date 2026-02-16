@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
@@ -57,14 +58,18 @@ Future<void> main() async {
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint('Flutter Error: ${details.exception}');
-    debugPrint('Stack trace: ${details.stack}');
+    if (kDebugMode) {
+      debugPrint('Flutter Error: ${details.exception}');
+      debugPrint('Stack trace: ${details.stack}');
+    }
   };
-  
+
   // Handle async errors
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Platform Error: $error');
-    debugPrint('Stack trace: $stack');
+    if (kDebugMode) {
+      debugPrint('Platform Error: $error');
+      debugPrint('Stack trace: $stack');
+    }
     return true;
   };
   
@@ -75,9 +80,17 @@ Future<void> main() async {
     if (_useEmulator) {
       await _configureFirebaseEmulator();
     }
+
+    // Enable App Check to protect backend resources from abuse
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
+    );
   } catch (e, stackTrace) {
-    debugPrint('Firebase initialization error: $e');
-    debugPrint('Stack trace: $stackTrace');
+    if (kDebugMode) {
+      debugPrint('Firebase initialization error: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
   }
   
   runApp(ProviderScope(child: CountSipApp()));
