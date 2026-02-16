@@ -60,7 +60,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '166195293260',
     projectId: 'countsip-prod',
     storageBucket: 'countsip-prod.firebasestorage.app',
-    iosBundleId: 'com.example.countsip',
+    iosBundleId: 'com.countsip.app',
   );
 
   static const FirebaseOptions web = FirebaseOptions(

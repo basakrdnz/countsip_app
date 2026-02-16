@@ -99,7 +99,7 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Bir hata oluştu: $e';
+        _error = 'Bir hata oluştu. Lütfen tekrar deneyin.';
       });
     }
   }
@@ -183,12 +183,14 @@ class _PhoneForgotPasswordScreenState extends ConsumerState<PhoneForgotPasswordS
     } on FirebaseAuthException catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.message ?? 'Şifre sıfırlanamadı';
+        _error = e.code == 'invalid-verification-code'
+            ? 'Geçersiz doğrulama kodu'
+            : 'Şifre sıfırlanamadı. Lütfen tekrar deneyin.';
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Bir hata oluştu: $e';
+        _error = 'Bir hata oluştu. Lütfen tekrar deneyin.';
       });
     }
   }

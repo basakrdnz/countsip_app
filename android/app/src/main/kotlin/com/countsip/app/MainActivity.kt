@@ -1,4 +1,4 @@
-package com.example.countsip
+package com.countsip.app
 
 import io.flutter.embedding.android.FlutterActivity
 

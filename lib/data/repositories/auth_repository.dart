@@ -148,12 +148,13 @@ class AuthRepository {
       'uid': uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
-    
+
     // Also store in user document (encrypted/hashed for privacy)
-    await _firestore.collection('users').doc(uid).update({
+    // Use set with merge to avoid errors when user document doesn't exist yet
+    await _firestore.collection('users').doc(uid).set({
       'phoneHash': hash,
       'phoneLastDigits': phoneNumber.substring(phoneNumber.length - 4),
-    });
+    }, SetOptions(merge: true));
   }
 
   // ============================================

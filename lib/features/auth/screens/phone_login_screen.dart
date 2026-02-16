@@ -63,7 +63,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
     });
 
     try {
-      debugPrint('Login: Attempting sign in for $_fullPhoneNumber');
+      debugPrint('Login: Attempting sign in');
       final authController = ref.read(authControllerProvider.notifier);
       await authController.signInWithPhone(
         phoneNumber: _fullPhoneNumber,
@@ -88,9 +88,10 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   }
 
   String _getErrorMessage(String error) {
-    if (error.contains('user-not-found')) return 'Bu numaraya kayıtlı hesap bulunamadı';
-    if (error.contains('wrong-password')) return 'Hatalı şifre';
-    if (error.contains('invalid-email')) return 'Geçersiz telefon numarası';
+    // Combine user-not-found and wrong-password to prevent user enumeration
+    if (error.contains('user-not-found') || error.contains('wrong-password') || error.contains('invalid-email') || error.contains('invalid-credential')) {
+      return 'Telefon numarası veya şifre hatalı';
+    }
     if (error.contains('too-many-requests')) return 'Çok fazla deneme. Lütfen bekle.';
     return 'Giriş yapılamadı. Tekrar dene.';
   }
