@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// SharedPreferences wrapper for app settings and user preferences
@@ -82,6 +83,33 @@ class PreferencesService {
 
   Future<void> clearSearchHistory() async {
     await _prefs.remove(_keySearchHistory);
+  }
+  
+  // Quick Add Customization
+  static const String _keyQuickAddIds = 'quick_add_ids';
+  static const String _keyQuickAddConfigs = 'quick_add_configs';
+  
+  Future<void> setQuickAddIds(List<String> ids) async {
+    await _prefs.setStringList(_keyQuickAddIds, ids);
+  }
+  
+  List<String> getQuickAddIds() {
+    return _prefs.getStringList(_keyQuickAddIds) ?? ['beer', 'wine', 'whiskey', 'cocktail'];
+  }
+
+  Future<void> setQuickAddConfigs(List<Map<String, dynamic>> configs) async {
+    final encoded = configs.map((c) => json.encode(c)).toList();
+    await _prefs.setStringList(_keyQuickAddConfigs, encoded);
+  }
+
+  List<Map<String, dynamic>> getQuickAddConfigs() {
+    final encoded = _prefs.getStringList(_keyQuickAddConfigs);
+    if (encoded == null || encoded.isEmpty) return [];
+    try {
+      return encoded.map((s) => json.decode(s) as Map<String, dynamic>).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   // Clear all preferences (for logout)

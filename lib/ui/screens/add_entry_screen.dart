@@ -82,6 +82,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   model.Badge? _activeBadge;
   Color? _activeBadgeColor;
 
+  // Custom Quick Add State
+  List<String> _quickAddIds = [];
+  List<Map<String, dynamic>> _quickAddConfigs = [];
+  bool _isEditingQuickAdd = false;
+  List<Map<String, dynamic>> _tempQuickAddConfigs = [];
+ // For cancel logic
+
   // --- Premium Accents ---
   Color get _accentColor {
     if (_feelingScale < 5) {
@@ -218,6 +225,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     super.initState();
     _searchFocusNode.addListener(_onSearchFocusChange);
     _loadSearchHistory();
+    _loadQuickAddPreferences();
     _scrollController.addListener(() {
       if (!mounted) return;
       setState(() {
@@ -226,7 +234,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     });
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 350),
     );
     _entranceController = AnimationController(
       vsync: this,
@@ -328,9 +336,260 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Future<void> _loadSearchHistory() async {
     final history = PreferencesService.instance.getSearchHistory();
+    setState(() => _recentSearches = history);
+  }
+
+  void _loadQuickAddPreferences() {
+    final configs = PreferencesService.instance.getQuickAddConfigs();
     setState(() {
-      _recentSearches = history;
+      _quickAddConfigs = List<Map<String, dynamic>>.from(configs);
+      _quickAddIds = configs.map((c) => c['categoryId'] as String).toList();
+      
+      // Migration from old IDs if configs are empty
+      if (_quickAddConfigs.isEmpty) {
+        final ids = PreferencesService.instance.getQuickAddIds();
+        _quickAddConfigs = ids.map((id) => <String, dynamic>{'categoryId': id}).toList();
+        _quickAddIds = List<String>.from(ids);
+      }
     });
+  }
+
+  void _toggleQuickAddEdit() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isEditingQuickAdd = !_isEditingQuickAdd;
+      if (_isEditingQuickAdd) {
+        _tempQuickAddConfigs = List<Map<String, dynamic>>.from(_quickAddConfigs.map((e) => Map<String, dynamic>.from(e)));
+      }
+    });
+  }
+
+  void _saveQuickAddCustomization() {
+    if (_quickAddConfigs.isEmpty) {
+      HapticFeedback.vibrate();
+      Fluttertoast.showToast(
+        msg: 'En az 1 favori seçmelisiniz',
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+      );
+      return;
+    }
+    HapticFeedback.heavyImpact();
+    PreferencesService.instance.setQuickAddConfigs(_quickAddConfigs);
+    setState(() {
+      _isEditingQuickAdd = false;
+    });
+  }
+
+  void _cancelQuickAddCustomization() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _quickAddConfigs = List<Map<String, dynamic>>.from(_tempQuickAddConfigs.map((e) => Map<String, dynamic>.from(e)));
+      _quickAddIds = _quickAddConfigs.map((c) => c['categoryId'] as String).toList();
+      _isEditingQuickAdd = false;
+    });
+  }
+
+  void _showProminentLimitWarning() {
+    HapticFeedback.vibrate();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'EN FAZLA 5 FAVORİ SEÇEBİLİRSİN',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xFFFF8902),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height * 0.4,
+          left: 20,
+          right: 20,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showFavoriteConfigDialog(Map<String, dynamic> category) {
+    final portions = category['portions'] as List;
+    final varieties = portions.map((p) => p['variety']).where((v) => v != null).toSet().toList();
+    
+    String? tempVariety = varieties.isNotEmpty ? varieties.first.toString() : null;
+    Map<String, dynamic> tempPortion = varieties.isNotEmpty 
+        ? portions.firstWhere((p) => p['variety'] == tempVariety) 
+        : portions.first;
+
+    if (category['id'] == 'beer') {
+      final p500 = portions.cast<Map<String, dynamic>>().firstWhere(
+        (p) => (tempVariety == null || p['variety'] == tempVariety) && p['volume'] == 500,
+        orElse: () => tempPortion
+      );
+      tempPortion = p500;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final filteredPortions = varieties.isNotEmpty
+              ? portions.where((p) => p['variety'] == tempVariety).toList()
+              : portions;
+
+          return SafeArea(
+            bottom: false,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(24, 32, 24, 40 + MediaQuery.of(context).padding.bottom + 80),
+              decoration: const BoxDecoration(
+                color: Color(0xFF0A0E14),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                Text(
+                  '${category['name'].toUpperCase()} KISAYOLU',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Favoriye eklerken hazır seçimlerinizi belirleyin',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.5),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                if (varieties.isNotEmpty) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('ÇEŞİT', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 1.5)),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 44,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: varieties.length,
+                      itemBuilder: (context, i) {
+                        final v = varieties[i].toString();
+                        final isSel = tempVariety == v;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(v),
+                            selected: tempVariety == v,
+                            onSelected: (val) {
+                              if (!val) return;
+                              setDialogState(() {
+                                tempVariety = v;
+                                tempPortion = portions.firstWhere((p) => p['variety'] == v);
+                                if (category['id'] == 'beer') {
+                                   tempPortion = portions.cast<Map<String, dynamic>>().firstWhere((p) => p['variety'] == v && p['volume'] == 500, orElse: () => tempPortion);
+                                }
+                              });
+                            },
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            selectedColor: const Color(0xFFFF8902),
+                            labelStyle: GoogleFonts.plusJakartaSans(color: isSel ? Colors.white : Colors.white60, fontWeight: FontWeight.w700),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12), 
+                              side: BorderSide(color: isSel ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.1))
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('MİKTAR', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 1.5)),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: filteredPortions.map((p) {
+                    final isSel = (tempPortion['uid'] != null && tempPortion['uid'] == p['uid']) || 
+                                 (tempPortion['uid'] == null && tempPortion['name'] == p['name'] && tempPortion['volume'] == p['volume']);
+                    return ChoiceChip(
+                      label: Text(p['name'].toString()),
+                      selected: isSel,
+                      onSelected: (val) {
+                        if (!val) return;
+                        setDialogState(() => tempPortion = Map<String, dynamic>.from(p));
+                      },
+                      backgroundColor: Colors.white.withOpacity(0.05),
+                      selectedColor: const Color(0xFFFF8902),
+                      labelStyle: GoogleFonts.plusJakartaSans(color: isSel ? Colors.white : Colors.white60, fontWeight: FontWeight.w700),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), 
+                        side: BorderSide(color: isSel ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.1))
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 40),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.heavyImpact();
+                    setState(() {
+                      final config = {
+                        'categoryId': category['id'],
+                        'variety': tempVariety,
+                        'portion': tempPortion,
+                      };
+                      _quickAddConfigs.add(config);
+                      _quickAddIds.add(category['id']);
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)]),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text('FAVORİ EKLE', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      );
+        },
+      ),
+    );
   }
 
   Future<void> _addToHistory(String query) async {
@@ -380,6 +639,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       _customNameController.clear();
       _customAbvController.clear();
       _customDescController.clear();
+      _taggedFriendIds.clear();
+      _taggedFriendData.clear();
+      _tempPickedImage = null;
+      _tempLocationName = null;
+      _tempNote = null;
     });
   }
 
@@ -547,6 +811,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   final List<String> _taggedFriendIds = [];
+  final Map<String, Map<String, dynamic>> _taggedFriendData = {}; // Store friend profiles for display
 
   Future<void> _showBadgeNotification(model.Badge badge) async {
     if (!mounted) return;
@@ -710,38 +975,100 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Widget _buildSuggestionsSection() {
-    final suggestedIds = ['beer', 'wine', 'whiskey', 'cocktail'];
-    final suggestions = _categories.where((c) => suggestedIds.contains(c['id'])).toList();
+    final suggestions = _quickAddConfigs.map((config) {
+      final category = _categories.firstWhere((c) => c['id'] == config['categoryId'], orElse: () => _categories.first);
+      return {...category, 'favConfig': config};
+    }).toList();
     final glowColor = const Color(0xFFFF8902);
+
+    if (suggestions.isEmpty && !_isEditingQuickAdd) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 3,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: glowColor,
-                  borderRadius: BorderRadius.circular(2),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 3,
+              height: 16,
+              decoration: BoxDecoration(
+                color: glowColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'HIZLI EKLE',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textTertiary.withOpacity(0.5),
+                letterSpacing: 1.5,
+              ),
+            ),
+            const Spacer(),
+            if (_isEditingQuickAdd) ...[
+              TextButton(
+                onPressed: _cancelQuickAddCustomization,
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'VAZGEÇ',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withOpacity(0.4),
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'HIZLI EKLE',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textTertiary.withOpacity(0.5),
-                  letterSpacing: 1.5,
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: _saveQuickAddCustomization,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: glowColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: glowColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    'BITTI',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: glowColor,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ] else
+              TextButton(
+                onPressed: _toggleQuickAddEdit,
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'DÜZENLE',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: glowColor.withOpacity(0.6),
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+          ],
         ),
+      ),
         const SizedBox(height: 8),
         SizedBox(
           height: 110, // Shorter height for a chic look
@@ -751,11 +1078,28 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: suggestions.length,
             itemBuilder: (context, index) {
-              final category = suggestions[index];
+              final item = suggestions[index];
+              final category = item;
+              final config = item['favConfig'] as Map<String, dynamic>?;
+              
+              String categoryTitle = category['name'].toUpperCase();
+              String? subtitle;
+              if (config != null) {
+                 // For Wine, users prefer seeing the Variety (Red/White) instead of generic "Standard Glass"
+                 if (category['id'] == 'wine' && config['variety'] != null) {
+                    subtitle = config['variety'].toString().toUpperCase();
+                 } else if (config['portion'] != null) {
+                    subtitle = config['portion']['name'].toString().toUpperCase();
+                 }
+              }
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(
-                  onTap: () => _onCategorySelected(category),
+                  onTap: () {
+                    if (_isEditingQuickAdd) return;
+                    final config = item['favConfig'] as Map<String, dynamic>?;
+                    _onCategorySelected(category, preSelectedPortion: config?['portion']);
+                  },
                   child: Container(
                     width: 155, // Wider for half-image layout
                     decoration: BoxDecoration(
@@ -851,39 +1195,82 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                 ),
                         ),
 
-                        // 5. Title & Action
                         Positioned(
                           right: 12,
                           top: 0,
                           bottom: 0,
                           child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  category['name'].toUpperCase(),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 0.2,
+                            child: Container(
+                              width: 85, // Constrain width for long names
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    categoryTitle,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: categoryTitle.length > 10 ? 11 : 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'EKLE',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: glowColor.withOpacity(0.7),
-                                    letterSpacing: 1.5,
+                                  if (subtitle != null) ...[
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      subtitle,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: subtitle.length > 12 ? 8 : 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white.withOpacity(0.6),
+                                        letterSpacing: 0.1,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'EKLE',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: glowColor.withOpacity(0.7),
+                                      letterSpacing: 1.5,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
+                        // 6. Delete Button (Overlay in edit mode)
+                        if (_isEditingQuickAdd)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                setState(() {
+                                  _quickAddConfigs.removeWhere((c) => c['categoryId'] == category['id']);
+                                  _quickAddIds.remove(category['id']);
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.remove, size: 14, color: Colors.white),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -948,11 +1335,48 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   void _onCategorySelected(Map<String, dynamic> category, {Map<String, dynamic>? preSelectedPortion}) {
     HapticFeedback.mediumImpact();
+    
+    String? initialVariety;
+    Map<String, dynamic>? initialPortion = preSelectedPortion;
+
+    if (initialPortion == null) {
+      final portions = category['portions'] as List;
+      final varieties = portions.map((p) => p['variety']).where((v) => v != null).toSet().toList();
+      
+      if (varieties.isNotEmpty) {
+        initialVariety = varieties.first.toString();
+        // Use cast to ensure type safety during variety matching
+        final typedPortions = portions.cast<Map<String, dynamic>>();
+        final candidates = typedPortions.where((p) => p['variety'] == initialVariety).toList();
+        
+        if (category['id'] == 'beer') {
+          initialPortion = candidates.firstWhere(
+            (p) => p['volume'] == 500, 
+            orElse: () => (candidates.isNotEmpty ? candidates.first : portions.cast<Map<String, dynamic>>().first) as Map<String, dynamic>
+          );
+        } else {
+          initialPortion = candidates.isNotEmpty ? candidates.first : portions.cast<Map<String, dynamic>>().first;
+        }
+      } else if (portions.isNotEmpty) {
+        final typedPortions = portions.cast<Map<String, dynamic>>();
+        if (category['id'] == 'beer') {
+          initialPortion = typedPortions.firstWhere(
+            (p) => p['volume'] == 500, 
+            orElse: () => typedPortions.first as Map<String, dynamic>
+          );
+        } else {
+          initialPortion = typedPortions.first;
+        }
+      }
+    } else {
+      initialVariety = initialPortion['variety'];
+    }
+
     setState(() {
       _focusedCategoryId = category['id'];
       _quantity = 1;
-      _selectedVarietyName = preSelectedPortion?['variety'];
-      _selectedPortion = preSelectedPortion;
+      _selectedVarietyName = initialVariety;
+      _selectedPortion = initialPortion;
       _sheetDragY = 0;
       _selectedTime = DateTime.now();
       _searchQuery = '';
@@ -971,16 +1395,53 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     // Force Orange/Gold glow for all categories as per 'turuncu ağırlıklı' request
     final glowColor = const Color(0xFFFF8902); 
 
+    final bool isFavorite = _quickAddIds.contains(category['id']);
+    
     return GestureDetector(
-      onTap: () => _onCategorySelected(category),
-      child: Container(
+      onTap: () {
+        if (_isEditingQuickAdd) {
+           HapticFeedback.mediumImpact();
+           if (isFavorite) {
+              setState(() {
+                _quickAddConfigs.removeWhere((c) => c['categoryId'] == category['id']);
+                _quickAddIds.remove(category['id']);
+              });
+           } else {
+              if (_quickAddConfigs.length < 5) {
+                _showFavoriteConfigDialog(category);
+              } else {
+                _showProminentLimitWarning();
+              }
+           }
+           return;
+        }
+        _onCategorySelected(category);
+      },
+      child: ColorFiltered(
+        colorFilter: _isEditingQuickAdd && !isFavorite
+            ? const ColorFilter.matrix([
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0,      0,      0,      1, 0,
+              ])
+            : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+        child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: Colors.white.withOpacity(0.15),
-            width: 1.2,
+            color: _isEditingQuickAdd && isFavorite 
+                ? glowColor 
+                : Colors.white.withOpacity(0.15),
+            width: _isEditingQuickAdd && isFavorite ? 2.5 : 1.2,
           ),
           boxShadow: [
+            if (_isEditingQuickAdd && isFavorite)
+              BoxShadow(
+                color: glowColor.withOpacity(0.3),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
             BoxShadow(
               color: Colors.black.withOpacity(0.5),
               blurRadius: 32,
@@ -1069,23 +1530,48 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             // 5. Top-Left Highlight
             Positioned(
               top: 0,
-              left: 0,
-              right: 0,
+              left: 40,
               child: Container(
-                height: 1.5,
+                width: 80,
+                height: 2,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.white.withOpacity(0.25),
-                      Colors.transparent,
+                      Colors.white.withOpacity(0.0),
+                      Colors.white.withOpacity(0.12),
+                      Colors.white.withOpacity(0.0),
                     ],
                   ),
                 ),
               ),
             ),
 
-
-
+            // 6. Interaction Indicator (Check or Plus)
+            if (_isEditingQuickAdd)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isFavorite ? glowColor : Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      if (isFavorite)
+                        BoxShadow(
+                          color: glowColor.withOpacity(0.4),
+                          blurRadius: 12,
+                        ),
+                    ],
+                  ),
+                  child: Icon(
+                    isFavorite ? Icons.check : Icons.add,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          
             // 3. Content
             Align(
               alignment: Alignment.center,
@@ -1143,17 +1629,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         ),
                       ],
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildFloatingTitleBar() {
     return Positioned(
@@ -1868,7 +2354,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               }
             },
             onVerticalDragEnd: (details) {
-              if (_sheetDragY > 100 || details.velocity.pixelsPerSecond.dy > 500) {
+            if (_sheetDragY > 80 || details.velocity.pixelsPerSecond.dy > 500) {
                 _closeSheet();
               } else {
                 setState(() => _sheetDragY = 0);
@@ -1961,23 +2447,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         NotificationListener<ScrollNotification>(
           onNotification: (notification) {
             if (notification is ScrollUpdateNotification) {
-              // If at top and dragging down, transfer scroll to sheet drag
-              if (notification.metrics.pixels <= 0 && notification.scrollDelta! < 0) {
+              final isAtTop = _sheetScrollController.offset <= 0;
+              final draggingDown = notification.scrollDelta! < 0;
+              
+              if ((isAtTop && draggingDown) || _sheetDragY > 0) {
                 setState(() {
-                  _sheetDragY = (_sheetDragY - notification.scrollDelta!).clamp(0, MediaQuery.of(context).size.height);
+                  _sheetDragY = (_sheetDragY - notification.scrollDelta!).clamp(0.0, 500.0);
                 });
-              } 
-              // If we have some sheet drag and user is dragging up, reduce sheet drag first
-              else if (_sheetDragY > 0 && notification.scrollDelta! > 0) {
-                setState(() {
-                  _sheetDragY = (_sheetDragY - notification.scrollDelta!).clamp(0, MediaQuery.of(context).size.height);
-                });
+                return true;
               }
             } else if (notification is ScrollEndNotification) {
-              if (_sheetDragY > 100) {
+              if (_sheetDragY > 80) {
                 _closeSheet();
               } else if (_sheetDragY > 0) {
-                setState(() => _sheetDragY = 0);
+                Future.microtask(() => setState(() => _sheetDragY = 0));
               }
             }
             return false;
@@ -2005,14 +2488,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           
           // --- Header Emoji + Glow ---
                 SizedBox(
-                  height: 250,
+                  height: 200,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       // Glow effect
                       Container(
-                        width: 200,
-                        height: 200,
+                        width: 160,
+                        height: 160,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
@@ -2031,8 +2514,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         child: category['image'] != null
                             ? Image.asset(
                                 category['image'],
-                                width: 180, // Larger for detail view
-                                height: 180,
+                                width: 140, // Smaller for minimalist look
+                                height: 140,
                                 fit: BoxFit.contain,
                               )
                             : Text(
@@ -2044,68 +2527,54 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   ),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 4),
                 Text(
                   category['name'],
                   style: GoogleFonts.inter(
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                     letterSpacing: -1,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 12),
+
+                // --- Summary Info (Prominent & Early) ---
+                if (currentPortion != null)
+                  _buildMinimalSummary(currentPortion, calculatedAPS),
+
+                const SizedBox(height: 24),
 
                 if (hasVarieties) ...[
+                  _buildSectionHeader('ÇEŞİT SEÇİN'),
                   _buildVarietyToggle(category),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                 ],
 
-                // --- STEP 2: Size Selection ---
-                // Show if: No varieties OR variety is selected
+                // --- Size Selection ---
                 if (!hasVarieties || _selectedVarietyName != null) ...[
-                  _buildPortionToggle(category),
-                  const SizedBox(height: 32),
+                  // Only show if there's actually a choice
+                  if ((category['portions'] as List).where((p) => p['variety'] == _selectedVarietyName).length > 1 || 
+                      (!hasVarieties && (category['portions'] as List).length > 1)) ...[
+                    _buildSectionHeader('MİKTAR SEÇİN'),
+                    _buildPortionToggle(category),
+                    const SizedBox(height: 20),
+                  ],
                 ],
 
-                  // --- STEP 3: Quantity & Final Controls ---
-                  if (currentPortion != null) ...[
-                    // --- İçilme Zamanı ---
-                    _buildTimeSelector(),
-                    const SizedBox(height: 32),
+                // --- Final Steps ---
+                if (currentPortion != null) ...[
+                  _buildSectionHeader('İÇİLME ZAMANI'),
+                  _buildTimeSelector(),
+                  const SizedBox(height: 24),
 
-                    const SizedBox(height: 24),
-                    _buildDrinkingWithSelector(),
-                    const SizedBox(height: 32),
+                  _buildSectionHeader('KİMİNLE?'),
+                  _buildDrinkingWithSelector(),
+                  const SizedBox(height: 24),
 
-                  // --- Info Cards ---
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoCard(
-                          '%${currentPortion['abv'].toStringAsFixed(1)}',
-                          'ALKOL',
-                          const Color(0xFFFF8902),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoCard(
-                          '${currentPortion['volume']}ml',
-                          'HACIM',
-                          const Color(0xFF4ECDC4),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- APS Gösterimi ---
-                  _buildAPSDisplay(calculatedAPS),
-                  const SizedBox(height: 32),
-
-                  // --- Opsiyonel Eklemeler ---
+                  _buildSectionHeader('EKSTRALAR'),
                   _buildOptionalAdditions(),
+                  const SizedBox(height: 16),
                 ] else ...[
                   // Guiding message based on current step
                   Container(
@@ -2134,8 +2603,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 ],
               ],
             ),
-          ),
         ),
+      ),
 
           // --- Bottom Action Button (Only show if selection is made) ---
           if (currentPortion != null)
@@ -2176,66 +2645,54 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         .toSet()
         .toList();
 
-  if (varieties.isEmpty) return const SizedBox.shrink();
+    if (varieties.length <= 1) return const SizedBox.shrink();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       child: Row(
         children: varieties.map<Widget>((v) {
           final isSelected = _selectedVarietyName == v;
           return Padding(
-            padding: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
                 setState(() {
                   _selectedVarietyName = v;
-                  // Auto-select portion if only 1 option exists
                   final allPortions = category['portions'] as List;
                   final filtered = allPortions.where((p) => p['variety'] == v).toList();
-                  if (filtered.length == 1) {
-                    _selectedPortion = filtered.first;
+                  if (filtered.isNotEmpty) {
+                  final typedFiltered = filtered.cast<Map<String, dynamic>>();
+                  if (category['id'] == 'beer') {
+                    _selectedPortion = typedFiltered.firstWhere(
+                      (p) => p['volume'] == 500, 
+                      orElse: () => typedFiltered.first
+                    );
                   } else {
-                    _selectedPortion = null;
+                    _selectedPortion = typedFiltered.first;
                   }
+                }
                 });
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)])
-                      : LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
-                        ),
-                  color: isSelected ? null : const Color(0xFF1A1F2E),
-                  borderRadius: BorderRadius.circular(30),
+                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
-                    width: 1,
+                    color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
+                    width: 1.2,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFFF8902).withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          )
-                        ]
-                      : null,
                 ),
                 child: Text(
                   v!,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                    letterSpacing: 0.5,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
                   ),
                 ),
               ),
@@ -2248,27 +2705,29 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildPortionToggle(Map<String, dynamic> category) {
     var portions = category['portions'] as List;
-    
-    // Filter by variety if selected
     if (_selectedVarietyName != null) {
       portions = portions.where((p) => p['variety'] == _selectedVarietyName).toList();
     }
 
+    if (portions.length <= 1) return const SizedBox.shrink();
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       child: Row(
         children: portions.map<Widget>((p) {
-          final isSelected = _selectedPortion?['name'] == p['name'];
-          // Size label (remove variety name if present)
+          final isSelected = (_selectedPortion?['uid'] != null && _selectedPortion?['uid'] == p['uid']) || 
+                           (_selectedPortion?['name'] == p['name'] && 
+                            _selectedPortion?['volume'] == p['volume'] && 
+                            _selectedPortion?['variety'] == p['variety']);
           String sizeLabel = p['name'].toString();
           if (_selectedVarietyName != null) {
              sizeLabel = sizeLabel.replaceAll(_selectedVarietyName!, '').replaceAll('(', '').replaceAll(')', '').trim();
           }
 
           return Padding(
-            padding: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -2276,38 +2735,21 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)])
-                      : LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
-                        ),
-                  color: isSelected ? null : const Color(0xFF1A1F2E),
-                  borderRadius: BorderRadius.circular(30),
+                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
-                    width: 1,
+                    color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
+                    width: 1.2,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFFF8902).withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          )
-                        ]
-                      : null,
                 ),
                 child: Text(
                   sizeLabel,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                    letterSpacing: 0.5,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
                   ),
                 ),
               ),
@@ -2481,80 +2923,77 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildInfoCard(String value, String label, Color valueColor) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, bottom: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withOpacity(0.35),
+            letterSpacing: 1.5,
+          ),
+        ),
       ),
-      child: Column(
+    );
+  }
+
+  Widget _buildMinimalSummary(Map<String, dynamic> portion, double aps) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFCBD5E1),
-              letterSpacing: 0.5,
-            ),
-          ),
+          _buildMinimalInfoItem('%${portion['abv'].toStringAsFixed(1)}', 'ALKOL'),
+          _buildMinimalDivider(),
+          _buildMinimalInfoItem('${portion['volume']}ml', 'HACİM'),
+          _buildMinimalDivider(),
+          _buildMinimalInfoItem(aps.toStringAsFixed(1), 'APS', isBold: true),
         ],
       ),
     );
   }
 
-  Widget _buildAPSDisplay(double aps) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFFF8902).withOpacity(0.15),
-            const Color(0xFFEE5A6F).withOpacity(0.15),
-          ],
+  Widget _buildMinimalInfoItem(String value, String label, {bool isBold = false}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 20, // Increased for "belirgin" (prominent) look
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+            color: Colors.white.withOpacity(0.95),
+            letterSpacing: -0.5,
+          ),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFF8902).withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Toplam APS',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFFCBD5E1),
-            ),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10, // Slightly larger labels
+            fontWeight: FontWeight.w700,
+            color: Colors.white.withOpacity(0.35),
+            letterSpacing: 1,
           ),
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)],
-            ).createShader(bounds),
-            child: Text(
-              aps.toStringAsFixed(1),
-              style: GoogleFonts.inter(
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMinimalDivider() {
+    return Container(
+      height: 14,
+      width: 1.5,
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      color: Colors.white.withOpacity(0.12),
     );
   }
 
@@ -2563,7 +3002,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         _buildAdditionItem(
           icon: Icons.camera_alt,
-          label: _tempPickedImage != null ? 'Fotoğraf eklendi ✓' : 'Fotoğraf Ekle',
+          label: _tempPickedImage != null ? 'Fotoğraf eklendi' : 'Fotoğraf Ekle',
           isActive: _tempPickedImage != null,
           color: const Color(0xFFFF8902),
           onTap: () async {
@@ -2571,6 +3010,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
             if (photo != null) setState(() => _tempPickedImage = photo);
           },
+          onClear: _tempPickedImage != null 
+            ? () => setState(() => _tempPickedImage = null) 
+            : null,
+          preview: _tempPickedImage != null 
+            ? Image.file(File(_tempPickedImage!.path), fit: BoxFit.cover)
+            : null,
         ),
         const SizedBox(height: 12),
         _buildAdditionItem(
@@ -2584,6 +3029,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               setState(() => _tempLocationName = selectedLocation);
             }
           },
+          onClear: _tempLocationName != null 
+            ? () => setState(() => _tempLocationName = null) 
+            : null,
         ),
         const SizedBox(height: 12),
         _buildAdditionItem(
@@ -2599,111 +3047,148 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: AlertDialog(
                   backgroundColor: AppColors.background.withOpacity(0.9),
+                  insetPadding: const EdgeInsets.symmetric(horizontal: 24),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(32),
                     side: BorderSide(
-                      color: AppColors.primary.withOpacity(0.2), 
+                      color: AppColors.primary.withOpacity(0.15),
                       width: 1.5,
                     ),
                   ),
-                  contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFE66D).withOpacity(0.1),
-                          shape: BoxShape.circle,
+                  contentPadding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFE66D).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.edit_note_rounded,
+                            color: Color(0xFFFFE66D),
+                            size: 36,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.edit_note_rounded,
-                          color: Color(0xFFFFE66D),
-                          size: 32,
+                        const SizedBox(height: 24),
+                        Text(
+                          'Not Ekle',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.8,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Not Ekle',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.5,
+                        const SizedBox(height: 8),
+                        Text(
+                          'İçecek hakkında detaylı notunu bırakabilirsin.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            color: AppColors.textSecondary.withOpacity(0.6),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: controller,
-                        autofocus: true,
-                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
-                        decoration: InputDecoration(
-                          hintText: 'İçecek hakkında notun...',
-                          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.3)),
-                          fillColor: Colors.white.withOpacity(0.04),
-                          filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFFFE66D), width: 1.5)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: controller,
+                          autofocus: true,
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                          decoration: InputDecoration(
+                            hintText: 'Örn: Soğuk içilsin, çok şekerli olmasın...',
+                            hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.25)),
+                            fillColor: Colors.white.withOpacity(0.03),
+                            filled: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0xFFFFE66D), width: 1.5)),
+                            contentPadding: const EdgeInsets.all(20),
+                          ),
+                          maxLines: 6,
+                          minLines: 3,
                         ),
-                        maxLines: 3,
-                        minLines: 1,
-                      ),
-                      const SizedBox(height: 32),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                                color: Colors.white.withOpacity(0.05),
-                              ),
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        const SizedBox(height: 32),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.2),
+                                  color: Colors.white.withOpacity(0.04),
                                 ),
-                                child: Text(
-                                  'VAZGEÇ',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: AppColors.textSecondary.withOpacity(0.7),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                    letterSpacing: 1,
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                  ),
+                                  child: Text(
+                                    'VAZGEÇ',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: AppColors.textSecondary.withOpacity(0.8),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      letterSpacing: 1.2,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(context, controller.text),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFE66D),
-                                foregroundColor: Colors.black,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              ),
-                              child: Text(
-                                'KAYDET',
-                                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  final text = controller.text.trim();
+                                  if (text.isEmpty) {
+                                    Fluttertoast.showToast(
+                                      msg: "Lütfen bir not yazın veya vazgeçin.",
+                                      backgroundColor: Colors.redAccent,
+                                      textColor: Colors.white,
+                                      gravity: ToastGravity.CENTER,
+                                    );
+                                    return;
+                                  }
+                                  Navigator.pop(context, text);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFE66D),
+                                  foregroundColor: Colors.black,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                ),
+                                child: Text(
+                                  'KAYDET',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             );
-            if (note != null) setState(() => _tempNote = note);
+            if (note != null) {
+              setState(() {
+                _tempNote = note;
+              });
+            }
           },
+          onClear: _tempNote != null
+              ? () => setState(() => _tempNote = null)
+              : null,
         ),
       ],
     );
@@ -2715,45 +3200,74 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     required bool isActive,
     required Color color,
     required VoidCallback onTap,
+    VoidCallback? onClear,
+    Widget? preview,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), // Increased vertical padding
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF1A1F2E) : const Color(0xFF242938).withOpacity(0.5),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isActive ? color.withOpacity(0.4) : Colors.white.withOpacity(0.08),
-            style: isActive ? BorderStyle.solid : BorderStyle.none,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFF1A1F2E) : const Color(0xFF242938).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isActive ? color.withOpacity(0.4) : Colors.white.withOpacity(0.08),
+          style: isActive ? BorderStyle.solid : BorderStyle.none,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isActive ? color.withOpacity(0.15) : const Color(0xFF242938),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: isActive ? color : const Color(0xFF94A3B8), size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 16, // Increased font size
-                  fontWeight: FontWeight.w600,
-                  color: isActive ? Colors.white : const Color(0xFF94A3B8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Row(
+              children: [
+                if (preview != null)
+                  Container(
+                    width: 40,
+                    height: 40,
+                    margin: const EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: preview,
+                  )
+                else
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isActive ? color.withOpacity(0.15) : const Color(0xFF242938),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: isActive ? color : const Color(0xFF94A3B8), size: 20),
+                  ),
+                if (preview == null) const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                    ),
+                  ),
                 ),
-              ),
+                if (isActive && onClear != null)
+                  IconButton(
+                    onPressed: onClear,
+                    icon: Icon(Icons.close_rounded, color: Colors.white.withOpacity(0.4), size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  )
+                else if (isActive)
+                  const Icon(Icons.check_circle, color: Color(0xFF4ECDC4), size: 22),
+              ],
             ),
-            if (isActive) const Icon(Icons.check_circle, color: Color(0xFF4ECDC4), size: 22),
-          ],
+          ),
         ),
       ),
     );
@@ -3089,30 +3603,50 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Widget _buildFriendTag(String friendId) {
-    // In a real app, we'd look up the friend's name/photo
+    final data = _taggedFriendData[friendId];
+    final name = data?['name'] ?? 'Arkadaş';
+    final photoUrl = data?['photoUrl'];
+
     return Container(
       margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('👤', style: TextStyle(fontSize: 12)),
-          const SizedBox(width: 6),
+          if (photoUrl != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(photoUrl, width: 20, height: 20, fit: BoxFit.cover),
+              ),
+            )
+          else
+            const Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Text('👤', style: TextStyle(fontSize: 12)),
+            ),
           Text(
-            'Arkadaş', // Simplified for now
+            name,
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => setState(() => _taggedFriendIds.remove(friendId)),
+            onTap: () {
+              setState(() {
+                _taggedFriendIds.remove(friendId);
+                _taggedFriendData.remove(friendId);
+              });
+            },
             child: Icon(Icons.close, size: 14, color: Colors.white.withOpacity(0.5)),
           ),
         ],
@@ -3121,13 +3655,305 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   void _showFriendSelectionSheet() {
-    // Selection logic would go here
-    // For now, let's just add a placeholder ID
-    setState(() {
-      if (_taggedFriendIds.length < 5) {
-        _taggedFriendIds.add('friend_${_taggedFriendIds.length}');
-      }
-    });
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Local copies for draft state
+    final List<String> draftIds = List.from(_taggedFriendIds);
+    final Map<String, Map<String, dynamic>> draftData = Map.from(_taggedFriendData);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0A0E14),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 20),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'ARKADAŞ SEÇ',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(draftIds.length >= 5 ? 1 : 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${draftIds.length}/5',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Horizontal Selection Bar
+                if (draftIds.isNotEmpty)
+                  Container(
+                    height: 100,
+                    margin: const EdgeInsets.only(top: 20),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: draftIds.length,
+                      itemBuilder: (context, index) {
+                        final friendId = draftIds[index];
+                        final data = draftData[friendId];
+                        return Container(
+                          width: 70,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Stack(
+                            children: [
+                              Column(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: data?['photoUrl'] != null
+                                        ? Image.network(data!['photoUrl'], width: 48, height: 48, fit: BoxFit.cover)
+                                        : Container(
+                                            width: 48, height: 48, 
+                                            color: Colors.white.withOpacity(0.1),
+                                            child: const Icon(Icons.person, color: Colors.white30),
+                                          ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    data?['name']?.split(' ').first ?? '...',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              Positioned(
+                                right: 6,
+                                top: 0,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setSheetState(() {
+                                      draftIds.remove(friendId);
+                                      draftData.remove(friendId);
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.redAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close, size: 10, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                
+                const SizedBox(height: 20),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('friendships')
+                        .where('users', arrayContains: user.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                      }
+
+                      final friendships = snapshot.data?.docs ?? [];
+                      if (friendships.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.people_outline, size: 48, color: Colors.white.withOpacity(0.2)),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Henüz arkadaşın yok',
+                                style: TextStyle(color: Colors.white.withOpacity(0.4)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final friendUids = friendships.map((doc) {
+                        final users = List<String>.from(doc['users']);
+                        return users.firstWhere((uid) => uid != user.uid);
+                      }).toList();
+
+                      return FutureBuilder<QuerySnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .where(FieldPath.documentId, whereIn: friendUids)
+                            .get(),
+                        builder: (context, userSnapshot) {
+                          if (userSnapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                          }
+
+                          final usersDocs = userSnapshot.data?.docs ?? [];
+                          return ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            itemCount: usersDocs.length,
+                            itemBuilder: (context, index) {
+                              final friendDoc = usersDocs[index];
+                              final friendData = friendDoc.data() as Map<String, dynamic>;
+                              final friendId = friendDoc.id;
+                              final isSelected = draftIds.contains(friendId);
+
+                              return GestureDetector(
+                                onTap: () {
+                                  setSheetState(() {
+                                    if (isSelected) {
+                                      draftIds.remove(friendId);
+                                      draftData.remove(friendId);
+                                    } else if (draftIds.length < 5) {
+                                      draftIds.add(friendId);
+                                      draftData[friendId] = friendData;
+                                    }
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: friendData['photoUrl'] != null
+                                            ? Image.network(friendData['photoUrl'], width: 44, height: 44, fit: BoxFit.cover)
+                                            : Container(
+                                                width: 44,
+                                                height: 44,
+                                                color: Colors.white.withOpacity(0.1),
+                                                child: const Icon(Icons.person, color: Colors.white30),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              friendData['name'] ?? 'İsimsiz',
+                                              style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Text(
+                                              '@${friendData['username'] ?? ''}',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 12,
+                                                color: Colors.white.withOpacity(0.5),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.check, color: Colors.black, size: 16),
+                                        )
+                                      else
+                                        Icon(Icons.add_circle_outline, color: Colors.white.withOpacity(0.3)),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Commit drafts to main state
+                        setState(() {
+                          _taggedFriendIds.clear();
+                          _taggedFriendIds.addAll(draftIds);
+                          _taggedFriendData.clear();
+                          _taggedFriendData.addAll(draftData);
+                        });
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'TAMAM', 
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildModernQtyBtn(IconData icon, VoidCallback onTap) {
