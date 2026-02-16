@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>166195293260-uo080l5jlkn9bmtrf3298ueb5j4ppb33.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCBmnmF_yc2mpjz79ugcz5PjBZxosF-LzM</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,23 +11,22 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.countsip</string>
+	<string>com.countsip.app</string>
 	<key>PROJECT_ID</key>
 	<string>countsip-prod</string>
 	<key>STORAGE_BUCKET</key>
 	<string>countsip-prod.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:166195293260:ios:093cf61eaf251bef67d8e9</string>
+	<string>1:166195293260:ios:a94666050c4df7d767d8e9</string>
 </dict>
 </plist>
-
