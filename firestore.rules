@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Users can see each other's profiles for friend search and leaderboard
+      allow read: if isSignedIn();
+      // Only the user can update their own profile
+      allow write: if isOwner(userId);
+    }
+
+    // Usernames mapping for uniqueness check
+    match /usernames/{username} {
+      allow read: if true;
+      // Allow reservation if signing up or updating own username
+      allow write: if isSignedIn() && (request.resource.data.uid == request.auth.uid || resource.data.uid == request.auth.uid);
+    }
+
+    // Drink/Alcohol entries
+    match /entries/{entryId} {
+      // Owners can read their own. Public social feed access (needs optimization for privacy)
+      // For now, allow signed in users to read if they are the owner or for the feed.
+      allow read: if isSignedIn(); 
+      
+      // Only the owner can create/edit/delete their logs
+      allow create: if isOwner(request.resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+      
+      // Update: allow owner to change anything, OR allow others to ONLY toggle 'cheers'
+      allow update: if isOwner(resource.data.userId) 
+                    || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cheers']));
+    }
+
+    // Notifications and Friend Requests
+    match /notifications/{notifId} {
+      // Allow read/update if the user is the recipient
+      allow read, update, delete: if isOwner(resource.data.to);
+      // Allow creation by anyone signed in (to send requests)
+      allow create: if isSignedIn();
+    }
+
+    // Friendships
+    match /friendships/{friendshipId} {
+       // Users involved in a friendship can read it
+       allow read: if isSignedIn() && (request.auth.uid in resource.data.users);
+       // Allow creation/deletion if you are one of the parties
+       allow create: if isSignedIn() && (request.auth.uid in request.resource.data.users);
+       allow update, delete: if isSignedIn() && (request.auth.uid in resource.data.users);
+    }
+    
+    // Badges
+    match /badges/{badgeId} {
+      allow read: if isSignedIn();
+      allow write: if false; // System generated or cloud functions only (simulated here)
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -26,7 +26,27 @@ class BacResult {
     return drop.clamp(0.0, 1.0);
   }
 
-  bool get isZero => max <= 0;
+  bool get isZero => max <= 0.01; // Tiny threshold for practical zero
+
+  String get statusLabel {
+    final val = average;
+    if (val < 0.2) return 'AYIK';
+    if (val < 0.5) return 'KEYİFLİ';
+    if (val < 0.8) return 'ÇAKIRKEYİF';
+    if (val < 1.2) return 'SARHOŞ';
+    if (val < 2.0) return 'ÇOK SARHOŞ';
+    return 'RİSKLİ';
+  }
+
+  String get statusDescription {
+    final val = average;
+    if (val < 0.2) return 'Kendinden emin ve zindesin.';
+    if (val < 0.5) return 'Hafif bir gevşeme ve neşe hali.';
+    if (val < 0.8) return 'Konuşkanlık artıyor, refleksler yavaşlıyor.';
+    if (val < 1.2) return 'Dikkat ve denge kaybı belirginleşiyor.';
+    if (val < 2.0) return 'Ayakta durmak ve odaklanmak zor.';
+    return 'Hemen bir mola ver ve su iç!';
+  }
 }
 
 class BacService {
@@ -156,8 +176,14 @@ class BacService {
         // Elimination logic: Beta * hours
         final hoursSinceDrink = minsSinceDrink / 60.0;
         
-        totalAlcoholMin += math.max(0, peakBac - (betaMax * hoursSinceDrink * 10)); // beta is typically in g/dL, mult by 10 for BAC units
+        // Beta: 0.12 - 0.20 g/L per hour (Turkey standard estimation)
+        totalAlcoholMin += math.max(0, peakBac - (betaMax * hoursSinceDrink * 10)); 
         totalAlcoholMax += math.max(0, peakBac - (betaMin * hoursSinceDrink * 10));
+    }
+
+    // Ensure range is never degenerate
+    if (totalAlcoholMax - totalAlcoholMin < 0.05 && totalAlcoholMax > 0.1) {
+       totalAlcoholMin = math.max(0, totalAlcoholMax - 0.05);
     }
 
     return (min: totalAlcoholMin, max: totalAlcoholMax);

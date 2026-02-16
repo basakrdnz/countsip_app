@@ -8,11 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_decorations.dart';
 
 /// Profile Setup Screen - Collect user info after signup
 /// Height, Weight, Age, Gender (for BAC calculation)
@@ -225,6 +220,43 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     }
   }
 
+  Future<void> _handleExit() async {
+    // If on first page, sign out and go home (will be redirected to login/onboarding)
+    if (_currentPage == 0) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AlertDialog(
+            backgroundColor: AppColors.surface.withOpacity(0.9),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: Colors.white.withOpacity(0.1))),
+            title: Text('Çıkış Yapılsın mı?', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800)),
+            content: Text('Profil kurulumunu tamamlamadan çıkış yapmak üzeresin. Kaydetmediğin bilgiler silinebilir.', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.7))),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('VAZGEÇ', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.5))),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('ÇIKIŞ YAP', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (confirm == true) {
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          context.go('/login');
+        }
+      }
+    } else {
+      _previousPage();
+    }
+  }
+
   Future<void> _skipAndFinish() async {
     // Name is still required even when skipping
     if (_nameController.text.trim().isEmpty) {
@@ -350,13 +382,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           SafeArea(
             child: Column(
               children: [
-                const SizedBox(height: 12),
-                // Header (Progress)
+                // Header (Progress + Back Menu)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: Row(
                     children: [
-                      const SizedBox(width: 8), // Slight breathing room
+                      // Contextual Back/Exit Button
+                      _buildHeaderBackButton(),
+                      const SizedBox(width: 16),
                       Expanded(child: _buildPremiumIndicator()),
                       if (_currentPage > 0) ...[
                         const SizedBox(width: 12),
@@ -483,6 +516,31 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderBackButton() {
+    return GestureDetector(
+      onTap: _handleExit,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.chevron_left_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
       ),
     );
   }

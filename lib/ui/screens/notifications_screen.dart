@@ -192,54 +192,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       return Dismissible(
                         key: Key(data['id'] ?? index.toString()),
                         direction: DismissDirection.endToStart,
-                        confirmDismiss: (direction) async {
-                          HapticFeedback.mediumImpact();
-                          return await showDialog<bool>(
-                            context: context,
-                            builder: (context) => BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: AlertDialog(
-                                backgroundColor: AppColors.background.withOpacity(0.9),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                  side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                ),
-                                title: const Text(
-                                  'Bildirimi Sil',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: -0.5),
-                                ),
-                                content: const Text(
-                                  'Bu bildirimi silmek istediğine emin misin?',
-                                  style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text('VAZGEÇ', style: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.w800)),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: const Text('SİL', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
                         onDismissed: (direction) => _deleteNotification(data['id'], index),
                         background: Container(
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.red.withOpacity(0.0), Colors.red.withOpacity(0.2)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
+                            color: Colors.red.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 28),
+                          child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
                         ),
                         child: AnimationConfiguration.staggeredList(
                           position: index,

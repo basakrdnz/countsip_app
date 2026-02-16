@@ -226,7 +226,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     });
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 500),
     );
     _entranceController = AnimationController(
       vsync: this,
@@ -733,10 +733,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               Text(
                 'HIZLI EKLE',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1.2,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textTertiary.withOpacity(0.5),
+                  letterSpacing: 1.5,
                 ),
               ),
             ],
@@ -1329,18 +1329,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: _isSearchFocused ? const Color(0xFF1E2433) : const Color(0xFF1A1F2E),
+          color: _isSearchFocused ? const Color(0xFF1E2433).withOpacity(0.7) : const Color(0xFF1A1F2E).withOpacity(0.8),
           borderRadius: BorderRadius.circular(_isSearchFocused ? 20 : 16),
           border: Border.all(
             color: _isSearchFocused 
-                ? const Color(0xFFFF8902).withOpacity(0.5) 
+                ? const Color(0xFFFF8902).withOpacity(0.6) 
                 : Colors.white.withOpacity(0.12),
-            width: _isSearchFocused ? 1.8 : 1.4, // Thicker chic border
+            width: _isSearchFocused ? 2.0 : 1.4, // Thicker chic border
           ),
           boxShadow: _isSearchFocused ? [
             BoxShadow(
-              color: const Color(0xFFFF8902).withOpacity(0.12),
-              blurRadius: 25,
+              color: const Color(0xFFFF8902).withOpacity(0.15),
+              blurRadius: 30,
               spreadRadius: -2,
             )
           ] : [],
@@ -1411,6 +1411,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     if (_searchQuery.isEmpty && _recentSearches.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    // Use PreferencesService for history
+    final history = PreferencesService.instance.getSearchHistory();
 
     final List<Map<String, dynamic>> suggestions = _searchQuery.isEmpty 
         ? [] 
@@ -1847,7 +1850,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         // sheetDragY is added on top of the animation offset
         final double screenHeight = MediaQuery.of(context).size.height;
         final double topMargin = 80.0; // Margin from top when fully opened
-        final double animationOffset = screenHeight - (screenHeight - topMargin) * _animationController.value;
+        final curvedValue = Curves.easeOutExpo.transform(_animationController.value);
+        final double animationOffset = screenHeight - (screenHeight - topMargin) * curvedValue;
         final double totalOffset = (animationOffset + _sheetDragY).clamp(0.0, screenHeight);
 
         return Positioned(
@@ -1906,12 +1910,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   void _closeSheet() {
+    final currentlyClosingId = _focusedCategoryId;
     _animationController.reverse().then((_) {
       if (mounted && _animationController.status == AnimationStatus.dismissed) {
-        setState(() {
-          _focusedCategoryId = null;
-          _sheetDragY = 0;
-        });
+        // Only nullify if we're not currently showing a NEWly selected category
+        if (_focusedCategoryId == currentlyClosingId) {
+          setState(() {
+            _focusedCategoryId = null;
+            _sheetDragY = 0;
+          });
+        }
       }
     });
   }

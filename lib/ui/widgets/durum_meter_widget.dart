@@ -54,12 +54,14 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
     final double percentage = (bac / 1.5).clamp(0.0, 1.0);
     
     Color progressColor;
-    if (bac < 0.20) {
-      progressColor = Colors.greenAccent;
-    } else if (bac < 0.50) {
-      progressColor = Colors.orangeAccent;
+    if (bac < 0.2) {
+      progressColor = const Color(0xFF10B981); // Emerald
+    } else if (bac < 0.5) {
+      progressColor = const Color(0xFFF59E0B); // Amber
+    } else if (bac < 0.8) {
+      progressColor = const Color(0xFFF97316); // Orange
     } else {
-      progressColor = Colors.redAccent;
+      progressColor = const Color(0xFFEF4444); // Red
     }
 
     return Container(
@@ -117,12 +119,21 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _getWarningText(bac),
+                            widget.bacResult.statusLabel,
                             style: GoogleFonts.plusJakartaSans(
                               color: progressColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              fontStyle: FontStyle.italic,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            widget.bacResult.statusDescription,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white.withOpacity(0.4),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],

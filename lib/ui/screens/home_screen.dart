@@ -803,7 +803,7 @@ child: AppDecorations.glassCardWidget(
                           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                           eventLoader: (day) => activeEvents[DateTime.utc(day.year, day.month, day.day)] ?? [],
                           startingDayOfWeek: StartingDayOfWeek.monday,
-                          rowHeight: 62.0,
+                          rowHeight: 58.0,
                           calendarStyle: CalendarStyle(
                             outsideDaysVisible: false,
                             weekendTextStyle: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
@@ -820,7 +820,7 @@ child: AppDecorations.glassCardWidget(
                             selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
                             markerDecoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
                             markerSize: 4,
-                            cellMargin: const EdgeInsets.all(12.0),
+                            cellMargin: const EdgeInsets.all(10.0),
                             markersAlignment: Alignment.bottomCenter,
                             markerMargin: const EdgeInsets.symmetric(horizontal: 1.0),
                           ),
@@ -832,6 +832,22 @@ child: AppDecorations.glassCardWidget(
                             headerPadding: EdgeInsets.symmetric(vertical: 8.0),
                           ),
                           calendarBuilders: CalendarBuilders(
+                            markerBuilder: (context, date, events) {
+                              if (events.isNotEmpty) {
+                                return Positioned(
+                                  bottom: 6,
+                                  child: Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return null;
+                            },
                             headerTitleBuilder: (context, day) {
                               return Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -905,29 +921,7 @@ child: AppDecorations.glassCardWidget(
                                 ),
                               );
                             },
-                            markerBuilder: (context, day, events) {
-                              if (events.isEmpty) return null;
-                              return Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 2),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: events.take(3).map((event) {
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 0.8),
-                                        width: 4,
-                                        height: 4,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.primary,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              );
-                            },
+
                           ),
                           onDaySelected: (selectedDay, focusedDay) {
                             setState(() {
@@ -1327,18 +1321,18 @@ child: AppDecorations.glassCardWidget(
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withOpacity(0.04),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(UIcons.regularStraight.moon, size: 24, color: AppColors.textTertiary.withOpacity(0.4)),
+                        child: Icon(UIcons.regularStraight.moon, size: 20, color: Colors.grey.withOpacity(0.3)),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         'Bu gün için henüz kayıt yok',
                         style: TextStyle(
-                          color: AppColors.textTertiary.withOpacity(0.4),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.withOpacity(0.3),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -1670,10 +1664,10 @@ child: AppDecorations.glassCardWidget(
               Text(
                 'HIZLI EKLE',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1.2,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textTertiary.withOpacity(0.5),
+                  letterSpacing: 1.5,
                 ),
               ),
             ],
