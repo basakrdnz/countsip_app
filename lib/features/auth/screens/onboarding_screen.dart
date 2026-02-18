@@ -1,10 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../widgets/auth_background.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final int initialPage;
@@ -46,116 +45,121 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 1. HEADER (Atla + Progress Indicators)
-            Padding(
-              padding: const EdgeInsets.only(top: 10, left: 16, right: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: Text(
-                      'Atla',
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF94A3B8),
-                      ),
+    return AuthBackground(
+      showOrbs: false,
+      child: Column(
+        children: [
+          // 1. HEADER (Atla + Progress Indicators)
+          Padding(
+            padding: const EdgeInsets.only(top: 10, left: 16, right: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => context.go('/login'),
+                  child: Text(
+                    'Atla',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
-                  
-                  // PROGRESS INDICATORS (Moved here)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(_totalPages, (index) {
-                      final isActive = index == _currentPage;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 6,
-                        width: isActive ? 24 : 6,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          gradient: isActive
-                              ? const LinearGradient(
-                                  colors: [AppColors.primary, AppColors.accentPrimary],
-                                )
-                              : null,
-                          color: isActive ? null : const Color(0xFF94A3B8).withOpacity(0.3),
-                        ),
-                      );
-                    }),
+                ),
+                
+                // PROGRESS INDICATORS (Moved here)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(_totalPages, (index) {
+                    final isActive = index == _currentPage;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 6,
+                      width: isActive ? 24 : 6,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        gradient: isActive
+                            ? const LinearGradient(
+                                colors: [AppColors.primary, AppColors.accentPrimary],
+                              )
+                            : null,
+                        color: isActive ? null : Colors.white.withValues(alpha: 0.2),
+                      ),
+                    );
+                  }),
+                ),
+                
+                const SizedBox(width: 50), // Balanced with "Atla"
+              ],
+            ),
+          ),
+
+          // 2. SLIDES Content moves up as indicators are now in header
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                if (index == _totalPages) {
+                  context.go('/login');
+                  return;
+                }
+                setState(() => _currentPage = index);
+              },
+              children: [
+                _buildSlide(0),
+                _buildSlide(1),
+                _buildSlide(2),
+                const SizedBox.shrink(),
+              ],
+            ),
+          ),
+
+          // 5. BUTTON
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+            child: Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, AppColors.accentPrimary],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
-                  
-                  const SizedBox(width: 50), // Balanced with "Atla"
                 ],
               ),
-            ),
-
-            // 2. SLIDES Content moves up as indicators are now in header
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  if (index == _totalPages) {
-                    context.go('/login');
-                    return;
-                  }
-                  setState(() => _currentPage = index);
-                },
-                children: [
-                  _buildSlide(0),
-                  _buildSlide(1),
-                  _buildSlide(2),
-                  const SizedBox.shrink(),
-                ],
-              ),
-            ),
-
-            // 5. BUTTON
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-              child: Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.accentPrimary],
-                  ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _nextPage,
                   borderRadius: BorderRadius.circular(16),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _nextPage,
-                    borderRadius: BorderRadius.circular(16),
-                    splashColor: Colors.white.withOpacity(0.2),
-                    highlightColor: Colors.white.withOpacity(0.1),
-                    child: Center(
-                      child: Text(
-                        _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
-                        style: GoogleFonts.inter(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
+                  splashColor: Colors.white.withValues(alpha: 0.2),
+                  highlightColor: Colors.white.withValues(alpha: 0.1),
+                  child: Center(
+                    child: Text(
+                      _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -186,7 +190,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
         // Illustration
         Expanded(
           flex: 5,
-          child: Center(
+          child: Align(
+            alignment: Alignment.bottomCenter,
             child: TweenAnimationBuilder<double>(
               key: ValueKey(index),
               tween: Tween<double>(begin: 0, end: 1),
@@ -197,9 +202,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                   scale: 0.8 + (value * 0.2),
                   child: Opacity(
                     opacity: value.clamp(0.0, 1.0),
-                    child: Image.asset(
-                      data['icon']!,
-                      height: (index == 0 || index == 2) ? 340 : 280,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Image.asset(
+                        data['icon']!,
+                        height: (index == 0 || index == 2) ? 340 : 280,
+                      ),
                     ),
                   ),
                 );
@@ -215,7 +223,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 Text(
                   data['title']!,
                   style: GoogleFonts.inter(

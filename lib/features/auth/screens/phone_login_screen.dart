@@ -5,11 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../l10n/app_localizations.dart';
+import '../widgets/auth_background.dart';
 
 class PhoneLoginScreen extends ConsumerStatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -98,383 +97,351 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
+    return AuthBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
         children: [
-          // Main Content
-          SafeArea(
+          Center(
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Top Header: Back Button + Centered Title
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildBackButton(),
-                        Text(
-                          'CountSip',
-                          style: GoogleFonts.inter(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -1,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 100),
+
+                  // Glassmorphic Card
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Giriş Yap',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Hesabına erişmek için bilgilerini gir.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: Colors.white.withValues(alpha: 0.5),
+                                height: 1.5,
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 32),
+                            
+                            // Inputs
+                            _buildGlassInput(
+                              label: 'TELEFON',
+                              child: _buildPhoneRow(),
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            _buildGlassInput(
+                              label: 'ŞİFRE',
+                              child: _buildPasswordRow(),
+                            ),
+                            
+                            const SizedBox(height: 12),
+                            
+                            // Forgot Password
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () => context.go('/forgot-password'),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  foregroundColor: Colors.white.withValues(alpha: 0.5),
+                                ),
+                                child: Text(
+                                  'Şifremi Unuttum?',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 32),
+                            
+                            // Action Button
+                            _buildPremiumButton('Giriş Yap', _login),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                  
+                  // Error Message
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, size: 20, color: Colors.red[300]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: Colors.red[100],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // Divider + Social Buttons (outside card)
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'veya',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.3),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 44), // Balanced with back button width
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 100),
-                    
-                    // Header Text
-                    Text(
-                      'Tekrar Hoş Geldin!',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Kaldığın yerden devam etmek için giriş yap',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Input Card
-                    _buildInputCard(),
-                    
-                    // Error Text
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
+                      Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSocialButton(Icons.apple, 'Apple', () {}),
+                      const SizedBox(width: 16),
+                      _buildSocialButton(Icons.g_mobiledata, 'Google', () {}, iconSize: 28),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Sign Up
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: Colors.redAccent,
-                          fontWeight: FontWeight.w500,
+                        'Hesabın yok mu? ',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.go('/signup'),
+                        child: Text(
+                          'Kayıt Ol',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Login Button
-                    _buildGradientButton('Giriş Yap', _login),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Social Login
-                    _buildSocialLoginSection(),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Signup Link
-                    _buildSignupLink(),
-                    
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackButton() {
-    return GestureDetector(
-      onTap: () => context.go('/onboarding?page=2'),
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.chevron_left,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
-
-
-
-  Widget _buildInputCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E).withOpacity(0.6),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel('TELEFON NUMARASI'),
-          const SizedBox(height: 12),
-          _buildPhoneInput(),
-          const SizedBox(height: 20),
-          _buildLabel('ŞİFRE'),
-          const SizedBox(height: 12),
-          _buildPasswordInput(),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go('/forgot-password'),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Şifremi Unuttum',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.0,
-        color: AppColors.textTertiary.withOpacity(0.7),
-      ),
-    );
-  }
-
-  Widget _buildPhoneInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Country Code
-          _buildCountryCodeDropdown(),
-          
-          // Vertical Divider Line
-          Container(
-            width: 1,
-            height: 24,
-            color: Colors.white.withOpacity(0.08),
           ),
           
-          Expanded(
-            child: TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                prefixIcon: Icon(
-                  AppIcons.phoneCall,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-                hintText: AppLocalizations.of(context)?.phoneHint ?? '5XX XXX XX XX',
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 15,
-                  color: AppColors.textTertiary.withOpacity(0.5),
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                filled: true,
-                fillColor: AppColors.background,
+          // Top bar: Back Button + Brand
+          Positioned(
+            top: 16,
+            left: 24,
+            right: 24,
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.go('/onboarding?page=2'),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'CountSip',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'PREMIUM TRACKER',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary.withValues(alpha: 0.8),
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 44),
+                ],
               ),
             ),
           ),
         ],
-      ),
+      ), // Stack
+      ), // Scaffold
     );
   }
 
-  Widget _buildCountryCodeDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedCountryCode,
-          dropdownColor: AppColors.surface,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF94A3B8)),
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-          isDense: true,
-          items: _countryCodes.map((c) => DropdownMenuItem(
-            value: c['code'],
-            child: Text(c['code']!),
-          )).toList(),
-          onChanged: (v) => setState(() => _selectedCountryCode = v!),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPasswordInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ),
-      ),
-      child: TextField(
-        controller: _passwordController,
-        obscureText: _obscurePassword,
-        style: GoogleFonts.inter(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-        decoration: InputDecoration(
-          hintText: 'Şifren',
-          hintStyle: GoogleFonts.inter(
-            fontSize: 15,
-            color: AppColors.textTertiary.withOpacity(0.5),
-          ),
-          prefixIcon: const Icon(
-            Icons.lock_outline_rounded,
-            color: AppColors.primary,
-            size: 20,
-          ),
-          suffixIcon: IconButton(
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: AppColors.textTertiary,
-              size: 20,
-            ),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          filled: true,
-          fillColor: AppColors.background,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialLoginSection() {
+  Widget _buildGlassInput({required String label, required Widget child}) {
     return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'veya',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: AppColors.textTertiary,
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: _SocialButton(
-                icon: Icons.apple,
-                label: 'Apple',
-                onTap: () {},
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SocialButton(
-                icon: Icons.g_mobiledata,
-                label: 'Google',
-                iconSize: 32,
-                onTap: () {},
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSignupLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hesabın yok mu? ',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: AppColors.textTertiary,
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+            color: Colors.white.withValues(alpha: 0.4),
           ),
         ),
-        GestureDetector(
-          onTap: () => context.go('/signup'),
-          child: Text(
-            'Hesap Oluştur',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1F2E).withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneRow() {
+    return Row(
+      children: [
+        // Country Code
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCountryCode,
+              dropdownColor: const Color(0xFF1A1F2E),
+              icon: Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white.withValues(alpha: 0.3)),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              items: _countryCodes.map((c) => DropdownMenuItem(
+                value: c['code'],
+                child: Text(c['code']!),
+              )).toList(),
+              onChanged: (v) => setState(() => _selectedCountryCode = v!),
+            ),
+          ),
+        ),
+        Container(
+          width: 1,
+          height: 24,
+          color: Colors.white.withValues(alpha: 0.1),
+        ),
+        Expanded(
+          child: TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            decoration: InputDecoration(
+              hintText: '5XX XXX XX XX',
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             ),
           ),
         ),
@@ -482,7 +449,37 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
     );
   }
 
-  Widget _buildGradientButton(String text, VoidCallback onPressed) {
+  Widget _buildPasswordRow() {
+    return TextField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+      decoration: InputDecoration(
+        hintText: '••••••••',
+        hintStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 15,
+          color: Colors.white.withValues(alpha: 0.2),
+          letterSpacing: 2,
+        ),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        suffixIcon: IconButton(
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+          icon: Icon(
+            _obscurePassword ? AppIcons.eyeIcon : AppIcons.eyeCrossed,
+            color: Colors.white.withValues(alpha: 0.3),
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumButton(String text, VoidCallback onPressed) {
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -492,12 +489,21 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           end: Alignment.bottomRight,
           colors: [AppColors.primary, AppColors.accentPrimary],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: _isLoading ? null : onPressed,
           borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
           child: Center(
             child: _isLoading
                 ? const SizedBox(
@@ -510,11 +516,11 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   )
                 : Text(
                     text,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.5,
                     ),
                   ),
           ),
@@ -522,51 +528,27 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
       ),
     );
   }
-}
 
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final double iconSize;
-
-  const _SocialButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.iconSize = 24,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSocialButton(IconData icon, String label, VoidCallback onTap, {double iconSize = 24}) {
     return Container(
-      height: 52,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: iconSize),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFE8EDF2),
-                ),
-              ),
-            ],
+          borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.white.withValues(alpha: 0.1),
+          highlightColor: Colors.white.withValues(alpha: 0.05),
+          child: Center(
+            child: Icon(icon, color: Colors.white, size: iconSize),
           ),
         ),
       ),

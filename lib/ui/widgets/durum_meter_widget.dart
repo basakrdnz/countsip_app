@@ -11,12 +11,16 @@ class DurumMeterWidget extends StatefulWidget {
   final BacResult bacResult;
   final bool isPremium;
   final int drinkCount;
+  final bool isProfileComplete;
+  final VoidCallback? onProfileTap;
 
   const DurumMeterWidget({
     super.key,
     required this.bacResult,
     this.isPremium = false,
     required this.drinkCount,
+    this.isProfileComplete = true,
+    this.onProfileTap,
   });
 
   @override
@@ -48,20 +52,21 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     final bac = widget.bacResult.average;
-    // Temporary Unlock: User requested to see detailed analysis
-    final bool isLocked = false; // !widget.isPremium && widget.drinkCount >= 2; 
+    final bool isLocked = !widget.isProfileComplete;
     
     final double percentage = (bac / 1.5).clamp(0.0, 1.0);
     
     Color progressColor;
-    if (bac < 0.2) {
-      progressColor = const Color(0xFF10B981); // Emerald
-    } else if (bac < 0.5) {
-      progressColor = const Color(0xFFF59E0B); // Amber
-    } else if (bac < 0.8) {
-      progressColor = const Color(0xFFF97316); // Orange
-    } else {
-      progressColor = const Color(0xFFEF4444); // Red
+    switch (widget.bacResult.trend) {
+      case BacTrend.rising:
+        progressColor = const Color(0xFFEF4444); // Kırmızı — yükseliyor
+        break;
+      case BacTrend.falling:
+        progressColor = const Color(0xFFF59E0B); // Sarı — düşüyor
+        break;
+      case BacTrend.stable:
+        progressColor = AppColors.primary; // Turuncu (brand) — stabil
+        break;
     }
 
     return Container(
@@ -70,89 +75,180 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
         padding: const EdgeInsets.all(16),
         blurSigma: 12,
         color: AppColors.surface.withOpacity(0.8),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Header — always visible
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
+                    if (!isLocked) 
+                      _buildTrendIndicator(widget.bacResult.trend, progressColor)
+                    else 
+                      Icon(Icons.speed_rounded, size: 14, color: Colors.white.withOpacity(0.4)),
+                    
+                    const SizedBox(width: 8),
+                    Text(
+                      'DURUM METRE',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        color: progressColor.withOpacity(0.9), // Trend rengi
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                if (!isLocked) _buildPremiumBadge(false),
+              ],
+            ),
+
+            if (isLocked) ...[
+              // Locked content
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: widget.onProfileTap,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withOpacity(0.1), // Amber tint
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bilgiler Eksik',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Doğru tahmin yapabilmemiz için profil bilgilerinizi girmeniz gerek.',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.arrow_forward_rounded, color: Colors.white70, size: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            ] else ...[
+              // Unlocked content
+              const SizedBox(height: 16),
+              _buildAnimatedGauge(percentage, progressColor),
+              const SizedBox(height: 12),
+              
+              // Status & Range Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTrendIndicator(widget.bacResult.trend, progressColor),
-                        const SizedBox(width: 10),
                         Text(
-                          'DURUM METRE',
+                          'Tahmini Aralık',
                           style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w800,
+                            color: Colors.white.withOpacity(0.4),
                             fontSize: 11,
-                            color: Colors.white.withOpacity(0.5),
-                            letterSpacing: 0.8,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.bacResult.statusLabel,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: progressColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          widget.bacResult.statusDescription,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withOpacity(0.4),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                    _buildPremiumBadge(isLocked),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // Animated Gauge
-                _buildAnimatedGauge(percentage, progressColor),
-                const SizedBox(height: 12),
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tahmini Aralık',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white.withOpacity(0.4),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.bacResult.statusLabel,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: progressColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            widget.bacResult.statusDescription,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white.withOpacity(0.4),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildDurumRange(isLocked, widget.bacResult, progressColor),
-                  ],
-                ),
-                
-                if (!isLocked && widget.bacResult.dailyPeak != null && widget.bacResult.recoveryPercentage > 0.01) ...[
-                  const SizedBox(height: 16),
-                  Divider(color: Colors.white.withOpacity(0.05), height: 1),
-                  const SizedBox(height: 12),
-                  _buildRecoveryStats(widget.bacResult, progressColor),
+                  ),
+                  _buildDurumRange(false, widget.bacResult, progressColor),
                 ],
-              ],
-            ),
-            
-            if (isLocked) _buildLockOverlay(),
+              ),
+              
+              const SizedBox(height: 16),
+              Divider(color: Colors.white.withOpacity(0.05), height: 1),
+              const SizedBox(height: 12),
+              
+              // Always show stats row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatItem(
+                    label: 'AKTİF İÇKİ',
+                    value: '${widget.drinkCount} ADET',
+                    color: Colors.orangeAccent,
+                  ),
+                  if (widget.bacResult.trend == BacTrend.falling && widget.bacResult.recoveryPercentage > 0.01)
+                     _buildStatItem(
+                      label: 'TOPARLANMA',
+                      value: '%${(widget.bacResult.recoveryPercentage * 100).toInt()}',
+                      icon: Icons.refresh_rounded,
+                      color: Colors.blueAccent,
+                      isHighlight: true,
+                    )
+                  else
+                     _buildStatItem(
+                      label: 'GÜNLÜK ZİRVE',
+                      value: widget.bacResult.dailyPeak != null 
+                          ? '${widget.bacResult.dailyPeak!.max.toStringAsFixed(2)} ‰'
+                          : '-.-- ‰',
+                      icon: Icons.trending_up_rounded,
+                      color: Colors.redAccent.withOpacity(0.7),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -186,7 +282,7 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
   Widget _buildStatItem({
     required String label,
     required String value,
-    required IconData icon,
+    IconData? icon,
     required Color color,
     bool isHighlight = false,
   }) {
@@ -195,8 +291,7 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
       children: [
         Row(
           children: [
-            Icon(icon, size: 10, color: color),
-            const SizedBox(width: 4),
+            if (icon != null) ...[Icon(icon, size: 10, color: color), const SizedBox(width: 4)],
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
@@ -224,18 +319,22 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
   Widget _buildTrendIndicator(BacTrend trend, Color color) {
     IconData icon;
     String label;
+    Color trendColor;
     switch (trend) {
       case BacTrend.rising:
         icon = Icons.trending_up_rounded;
         label = 'YÜKSELİYOR';
+        trendColor = const Color(0xFFEF4444); // Kırmızı — artıyor
         break;
       case BacTrend.falling:
         icon = Icons.trending_down_rounded;
         label = 'DÜŞÜYOR';
+        trendColor = const Color(0xFF10B981); // Yeşil — düşüyor
         break;
       case BacTrend.stable:
         icon = Icons.trending_flat_rounded;
         label = 'STABİL';
+        trendColor = AppColors.primary; // Turuncu (brand) — stabil
         break;
     }
 
@@ -244,25 +343,26 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: trendColor.withOpacity(0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: trendColor.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 14),
+            Icon(icon, color: trendColor, size: 14),
             const SizedBox(width: 4),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w800,
                 fontSize: 9,
-                color: color,
+                color: trendColor,
                 letterSpacing: 0.5,
               ),
             ),
           ],
+
         ),
       ),
     );
@@ -383,36 +483,7 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
     );
   }
 
-  Widget _buildLockOverlay() {
-    return Positioned.fill(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-          child: Container(
-            color: Colors.black.withOpacity(0.4),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Detaylı Analiz',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
   
   String _getWarningText(double bac) {
     if (bac < 0.20) return 'Keyifler yerinde! 😌';

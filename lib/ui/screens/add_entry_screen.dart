@@ -24,6 +24,7 @@ import '../widgets/dual_camera_widget.dart';
 import '../../core/services/badge_service.dart';
 import '../../data/models/badge_model.dart' as model;
 import '../../core/services/preferences_service.dart';
+import '../../core/services/drink_data_service.dart';
 import '../../data/drink_categories.dart';
 
 class AddEntryScreen extends StatefulWidget {
@@ -248,7 +249,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     )..repeat(reverse: true);
     
     // Listen for navigation events from Home Screen
-    NavigationService.instance.selectedCategoryNotifier.addListener(_handleNavigationEvent);
+    NavigationService.instance.navigationEventNotifier.addListener(_handleNavigationEvent);
     // Check if there's already a value (in case it was set before this screen built)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleNavigationEvent();
@@ -256,12 +257,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   void _handleNavigationEvent() {
-    final categoryId = NavigationService.instance.selectedCategoryNotifier.value;
-    if (categoryId != null && mounted) {
-      debugPrint('AddEntryScreen: Received navigation event for $categoryId');
+    final event = NavigationService.instance.navigationEventNotifier.value;
+    if (event != null && mounted) {
+      debugPrint('AddEntryScreen: Received navigation event for ${event.categoryId}');
       // Clear the value so it doesn't re-trigger
-      NavigationService.instance.selectedCategoryNotifier.value = null;
+      NavigationService.instance.navigationEventNotifier.value = null;
       
+      final categoryId = event.categoryId;
       final category = _categories.firstWhere(
         (c) => c['id'] == categoryId, 
         orElse: () => {}, 
@@ -272,8 +274,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         setState(() {
           _focusedCategoryId = categoryId;
           _quantity = 1;
-          _selectedVarietyName = null;
-          _selectedPortion = null;
+          _selectedVarietyName = event.variety;
+          _selectedPortion = event.portion;
           _sheetDragY = 0;
           _selectedTime = DateTime.now(); // Reset to now
         });
@@ -376,6 +378,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }
     HapticFeedback.heavyImpact();
     PreferencesService.instance.setQuickAddConfigs(_quickAddConfigs);
+    NavigationService.instance.notifyQuickAddUpdated(); // Notify Home Screen
     setState(() {
       _isEditingQuickAdd = false;
     });
@@ -467,6 +470,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   children: [
                 Text(
                   '${category['name'].toUpperCase()} KISAYOLU',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -477,6 +481,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 const SizedBox(height: 8),
                 Text(
                   'Favoriye eklerken hazır seçimlerinizi belirleyin',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     color: Colors.white.withOpacity(0.5),
@@ -484,56 +489,70 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 ),
                 const SizedBox(height: 32),
                 if (varieties.isNotEmpty) ...[
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('ÇEŞİT', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 1.5)),
+                  Text(
+                    'ÇEŞİT',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withOpacity(0.4),
+                      letterSpacing: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    height: 44,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: varieties.length,
-                      itemBuilder: (context, i) {
-                        final v = varieties[i].toString();
+                  Center(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: varieties.map((vObj) {
+                        final v = vObj.toString();
                         final isSel = tempVariety == v;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(v),
-                            selected: tempVariety == v,
-                            onSelected: (val) {
-                              if (!val) return;
-                              setDialogState(() {
-                                tempVariety = v;
-                                tempPortion = portions.firstWhere((p) => p['variety'] == v);
-                                if (category['id'] == 'beer') {
-                                   tempPortion = portions.cast<Map<String, dynamic>>().firstWhere((p) => p['variety'] == v && p['volume'] == 500, orElse: () => tempPortion);
-                                }
-                              });
-                            },
-                            backgroundColor: Colors.white.withOpacity(0.05),
-                            selectedColor: const Color(0xFFFF8902),
-                            labelStyle: GoogleFonts.plusJakartaSans(color: isSel ? Colors.white : Colors.white60, fontWeight: FontWeight.w700),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12), 
-                              side: BorderSide(color: isSel ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.1))
+                        return ChoiceChip(
+                          label: Text(v),
+                          selected: isSel,
+                          onSelected: (val) {
+                            if (!val) return;
+                            setDialogState(() {
+                              tempVariety = v;
+                              tempPortion = portions.firstWhere((p) => p['variety'] == v);
+                              if (category['id'] == 'beer') {
+                                tempPortion = portions.cast<Map<String, dynamic>>().firstWhere((p) => p['variety'] == v && p['volume'] == 500, orElse: () => tempPortion);
+                              }
+                            });
+                          },
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          selectedColor: const Color(0xFFFF8902).withOpacity(0.15),
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            color: isSel ? const Color(0xFFFF8902) : Colors.white60,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12), 
+                            side: BorderSide(
+                              color: isSel ? const Color(0xFFFF8902).withOpacity(0.4) : Colors.white.withOpacity(0.1),
+                              width: 1.5,
                             ),
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
                   ),
                   const SizedBox(height: 24),
                 ],
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('MİKTAR', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 1.5)),
+                Text(
+                  'MİKTAR',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withOpacity(0.4),
+                    letterSpacing: 1.5,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
+                  alignment: WrapAlignment.center,
                   children: filteredPortions.map((p) {
                     final isSel = (tempPortion['uid'] != null && tempPortion['uid'] == p['uid']) || 
                                  (tempPortion['uid'] == null && tempPortion['name'] == p['name'] && tempPortion['volume'] == p['volume']);
@@ -545,11 +564,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         setDialogState(() => tempPortion = Map<String, dynamic>.from(p));
                       },
                       backgroundColor: Colors.white.withOpacity(0.05),
-                      selectedColor: const Color(0xFFFF8902),
-                      labelStyle: GoogleFonts.plusJakartaSans(color: isSel ? Colors.white : Colors.white60, fontWeight: FontWeight.w700),
+                      selectedColor: const Color(0xFFFF8902).withOpacity(0.15),
+                      labelStyle: GoogleFonts.plusJakartaSans(
+                        color: isSel ? const Color(0xFFFF8902) : Colors.white60,
+                        fontWeight: FontWeight.w700,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12), 
-                        side: BorderSide(color: isSel ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.1))
+                        side: BorderSide(
+                          color: isSel ? const Color(0xFFFF8902).withOpacity(0.4) : Colors.white.withOpacity(0.1),
+                          width: 1.5,
+                        ),
                       ),
                     );
                   }).toList(),
@@ -573,8 +598,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)]),
+                      color: const Color(0xFFFF8902).withOpacity(0.9),
                       borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF8902).withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: Text('FAVORİ EKLE', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
@@ -766,7 +798,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   Future<void> _runBackgroundTasks(String userId, int entriesCountToday) async {
     try {
       // 1. Badge Check
+      debugPrint('🏅 Starting badge check for user: $userId');
       final unlockedBadges = await BadgeService.checkBadges(userId);
+      debugPrint('🏅 Badge check complete. Newly unlocked: ${unlockedBadges.length}');
       if (unlockedBadges.isNotEmpty && mounted) {
         for (var badge in unlockedBadges) {
           if (!mounted) break;
@@ -781,8 +815,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           'showWaterReminder': true,
         });
       }
-    } catch (e) {
-      debugPrint('Background tasks error: $e');
+    } catch (e, stack) {
+      debugPrint('❌ Background tasks error: $e');
+      debugPrint('❌ Stack trace: $stack');
     }
   }
 
@@ -976,8 +1011,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildSuggestionsSection() {
     final suggestions = _quickAddConfigs.map((config) {
-      final category = _categories.firstWhere((c) => c['id'] == config['categoryId'], orElse: () => _categories.first);
-      return {...category, 'favConfig': config};
+      final data = DrinkDataService.instance.resolve(config);
+      return {
+        'id': data.id,
+        'name': data.name,
+        'emoji': data.emoji,
+        'image': data.imagePath,
+        'subtitle': data.subtitle,
+        'favConfig': config,
+      };
     }).toList();
     final glowColor = const Color(0xFFFF8902);
 
@@ -1004,7 +1046,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textTertiary.withOpacity(0.5),
+                color: const Color(0xFFFF8902).withOpacity(0.6),
                 letterSpacing: 1.5,
               ),
             ),
@@ -1082,16 +1124,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               final category = item;
               final config = item['favConfig'] as Map<String, dynamic>?;
               
-              String categoryTitle = category['name'].toUpperCase();
-              String? subtitle;
-              if (config != null) {
-                 // For Wine, users prefer seeing the Variety (Red/White) instead of generic "Standard Glass"
-                 if (category['id'] == 'wine' && config['variety'] != null) {
-                    subtitle = config['variety'].toString().toUpperCase();
-                 } else if (config['portion'] != null) {
-                    subtitle = config['portion']['name'].toString().toUpperCase();
-                 }
-              }
+              String categoryTitle = (item['name'] as String).toUpperCase();
+              String? subtitle = item['subtitle'] as String?;
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(
@@ -1182,14 +1216,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                           bottom: -15,
                           child: category['image'] != null
                               ? Image.asset(
-                                  category['image'],
+                                  category['image'] as String,
                                   width: 120, // Oversized for artistic look
                                   fit: BoxFit.contain,
                                   opacity: const AlwaysStoppedAnimation(0.8),
                                 )
                               : Center(
                                   child: Text(
-                                    category['emoji'],
+                                    category['emoji'] as String,
                                     style: const TextStyle(fontSize: 60),
                                   ),
                                 ),
@@ -3943,7 +3977,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                       ),
                       child: Text(
                         'TAMAM', 
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 1),
                       ),
                     ),
                   ),

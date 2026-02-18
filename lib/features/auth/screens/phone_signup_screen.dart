@@ -2,15 +2,15 @@ import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 import '../../../l10n/app_localizations.dart';
+import '../widgets/auth_background.dart';
 
 class PhoneSignupScreen extends ConsumerStatefulWidget {
   const PhoneSignupScreen({super.key});
@@ -239,7 +239,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
 
     try {
       final authController = ref.read(authControllerProvider.notifier);
-      final code = _codeController.text.trim();
+      // final code = _codeController.text.trim();
       
       /* TEMP: DISABLE CHECK FOR BYPASS
       // Safety check for verificationId to prevent native crash
@@ -287,97 +287,271 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
+    return AuthBackground(
+      child: Stack(
         children: [
-          // Main Content
-          SafeArea(
+          // Main Content - centered
+          Center(
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Top Header: Back Button + Centered Title
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 100),
+
+                  // Glassmorphic Card
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Step Indicator
+                            Row(
+                              children: List.generate(3, (index) {
+                                final isActive = _currentStep >= index;
+                                return Expanded(
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    height: 4,
+                                    margin: EdgeInsets.symmetric(horizontal: (index == 1) ? 6 : 0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(2),
+                                      color: isActive ? AppColors.primary : Colors.white.withValues(alpha: 0.1),
+                                      boxShadow: isActive ? [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(alpha: 0.5),
+                                          blurRadius: 6,
+                                        )
+                                      ] : [],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                            const SizedBox(height: 28),
+
+                            Text(
+                              _getStepTitle(),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _getStepTitleDescription(),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: Colors.white.withValues(alpha: 0.5),
+                                height: 1.5,
+                              ),
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Form Content
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: _buildCurrentStep(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Error Message
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, size: 20, color: Colors.red[300]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: Colors.red[100],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // Action Button
+                  _buildStepButton(),
+
+                  // Social Sign Up (only on first step, outside card)
+                  if (_currentStep == 0) ...[
+                    const SizedBox(height: 24),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildBackButton(),
-                        Text(
-                          'CountSip',
-                          style: GoogleFonts.inter(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -1,
+                        Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'veya',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.3),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 44), // Balanced with back button width
+                        Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
                       ],
                     ),
-                    
-                    const SizedBox(height: 100),
-                    
-                    // Header Text
-                    Text(
-                      _getStepTitle(),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSocialButton(Icons.apple, 'Apple', () {}),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildSocialButton(Icons.g_mobiledata, 'Google', () {}, iconSize: 28),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _getStepTitleDescription(),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Input Card
-                    _buildInputCard(),
-                    
-                    // Error Text
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Login Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: Colors.redAccent,
-                          fontWeight: FontWeight.w500,
+                        'Zaten hesabın var mı? ',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.go('/login'),
+                        child: Text(
+                          'Giriş Yap',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Action Button
-                    _buildStepButton(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Social Sign Up
-                    if (_currentStep == 0) _buildSocialSignUpSection(),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Login Link
-                    if (_currentStep == 0) _buildLoginLink(),
-                    
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+
+          // Top bar: Back Button + Brand
+          Positioned(
+            top: 16,
+            left: 24,
+            right: 24,
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (_currentStep > 0) {
+                        setState(() {
+                          _currentStep--;
+                          _error = null;
+                        });
+                      } else {
+                        context.go('/login');
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'CountSip',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'PREMIUM TRACKER',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary.withValues(alpha: 0.8),
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 44),
+                ],
               ),
             ),
           ),
@@ -404,88 +578,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
     }
   }
 
-  Widget _buildBackButton() {
-    return GestureDetector(
-      onTap: () {
-        if (_currentStep > 0) {
-          setState(() {
-            _currentStep--;
-            _error = null;
-          });
-        } else {
-          context.go('/login');
-        }
-      },
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.chevron_left,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildInputCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E).withOpacity(0.6),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Indicator
-          Row(
-            children: List.generate(3, (index) {
-              final isActive = _currentStep >= index;
-              return Expanded(
-                child: Container(
-                  height: 4,
-                  margin: EdgeInsets.symmetric(horizontal: (index == 1) ? 6 : 0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
-                    color: isActive ? AppColors.primary : Colors.white.withOpacity(0.1),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 32),
-          
-          // Form Content
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _buildCurrentStep(),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCurrentStep() {
     switch (_currentStep) {
@@ -525,14 +618,16 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           child: _resendCountdown > 0
               ? Text(
                   'Tekrar gönder: $_resendCountdown sn',
-                  style: GoogleFonts.inter(color: AppColors.textTertiary, fontSize: 13),
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
                 )
               : TextButton(
                   onPressed: _resendCode,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                  ),
                   child: Text(
                     'Kodu Tekrar Gönder',
-                    style: GoogleFonts.inter(
-                      color: AppColors.primary,
+                    style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -556,7 +651,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           obscure: _obscurePassword,
           toggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         _buildLabel('ŞİFREYİ ONAYLA'),
         const SizedBox(height: 12),
         _buildPasswordInput(
@@ -572,11 +667,11 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.0,
-        color: AppColors.textTertiary.withOpacity(0.7),
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.2,
+        color: Colors.white.withValues(alpha: 0.4),
       ),
     );
   }
@@ -584,10 +679,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   Widget _buildPhoneInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF1A1F2E).withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: Row(
@@ -596,33 +691,27 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           Container(
             width: 1,
             height: 24,
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white.withValues(alpha: 0.1),
           ),
           Expanded(
             child: TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: GoogleFonts.inter(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
               decoration: InputDecoration(
-                prefixIcon: Icon(
-                  AppIcons.phoneCall,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
                 hintText: AppLocalizations.of(context)?.phoneHint ?? '5XX XXX XX XX',
-                hintStyle: GoogleFonts.inter(
+                hintStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 15,
-                  color: AppColors.textTertiary.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.2),
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                filled: true,
-                fillColor: AppColors.background,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                filled: false,
               ),
             ),
           ),
@@ -633,16 +722,16 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
 
   Widget _buildCountryCodeDropdown() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCountryCode,
-          dropdownColor: AppColors.surface,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF94A3B8)),
-          style: GoogleFonts.inter(
+          dropdownColor: const Color(0xFF1A1F2E),
+          icon: Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.white.withValues(alpha: 0.3)),
+          style: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Colors.white,
           ),
           isDense: true,
           items: _countryCodes.map((c) => DropdownMenuItem(
@@ -658,10 +747,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   Widget _buildCodeInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF1A1F2E).withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: TextField(
@@ -670,24 +759,23 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         textAlign: TextAlign.center,
         maxLength: 6,
-        style: GoogleFonts.inter(
+        style: GoogleFonts.plusJakartaSans(
           fontSize: 24,
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: Colors.white,
           letterSpacing: 12,
         ),
         decoration: InputDecoration(
           hintText: '••••••',
-          hintStyle: GoogleFonts.inter(
+          hintStyle: GoogleFonts.plusJakartaSans(
             fontSize: 24,
-            color: AppColors.textTertiary.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.2),
             letterSpacing: 12,
           ),
           counterText: '',
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          filled: true,
-          fillColor: AppColors.background,
+          filled: false,
         ),
       ),
     );
@@ -701,43 +789,37 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF1A1F2E).withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: GoogleFonts.inter(
+        style: GoogleFonts.plusJakartaSans(
           fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
         ),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: GoogleFonts.inter(
+          hintStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
-            color: AppColors.textTertiary.withOpacity(0.5),
-          ),
-          prefixIcon: Icon(
-            AppIcons.lock,
-            color: AppColors.primary,
-            size: 20,
+            color: Colors.white.withValues(alpha: 0.2),
           ),
           suffixIcon: IconButton(
             onPressed: toggleObscure,
             icon: Icon(
               obscure ? AppIcons.eyeIcon : AppIcons.eyeCrossed,
-              color: AppColors.textTertiary,
+              color: Colors.white.withValues(alpha: 0.3),
               size: 20,
             ),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          filled: true,
-          fillColor: AppColors.background,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          filled: false,
         ),
       ),
     );
@@ -764,29 +846,38 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           end: Alignment.bottomRight,
           colors: [AppColors.primary, AppColors.accentPrimary],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: _isLoading ? null : action,
           borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
           child: Center(
             child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
                     ),
                   )
                 : Text(
                     text,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.5,
                     ),
                   ),
           ),
@@ -795,99 +886,14 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
     );
   }
 
-  Widget _buildSocialSignUpSection() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'veya',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: AppColors.textTertiary,
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: _SocialButton(
-                icon: Icons.apple,
-                label: 'Apple',
-                onTap: () {},
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SocialButton(
-                icon: Icons.g_mobiledata,
-                label: 'Google',
-                iconSize: 32,
-                onTap: () {},
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Zaten bir hesabın var mı? ',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: AppColors.textTertiary,
-          ),
-        ),
-        GestureDetector(
-          onTap: () => context.go('/login'),
-          child: Text(
-            'Giriş Yap',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final double iconSize;
-
-  const _SocialButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.iconSize = 24,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSocialButton(IconData icon, String label, VoidCallback onTap, {double iconSize = 24}) {
     return Container(
       height: 52,
       decoration: BoxDecoration(
-        color: const Color(0xFF252B35),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
         ),
       ),
       child: Material(
@@ -899,13 +905,13 @@ class _SocialButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: Colors.white, size: iconSize),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 label,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFFE8EDF2),
+                  color: Colors.white,
                 ),
               ),
             ],

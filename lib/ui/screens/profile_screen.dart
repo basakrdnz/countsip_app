@@ -280,50 +280,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     
                     const SizedBox(height: AppSpacing.lg),
                     
-                    // Stats Strip - Slim horizontal bar
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.06),
-                          width: 1,
+                    // Stats Card - Clean & Minimal
+                    Builder(builder: (context) {
+                      final totalPoints = (userData?['totalPoints'] as num?)?.toDouble() ?? 0.0;
+                      final totalDrinks = (userData?['totalDrinks'] as num?)?.toInt() ?? 0;
+                      final level = ThemeService.calculateLevel(totalPoints);
+                      final progress = (totalPoints % 50) / 50;
+                      final pointsToNext = (50 - (totalPoints % 50));
+
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Total Drinks
-                          _buildStatItem(
-                            label: 'TOPLAM İÇECEK',
-                            value: '${(userData?['totalDrinks'] as num?)?.toInt() ?? 0}',
-                          ),
-                          // Divider
-                          Container(
-                            width: 1,
-                            height: 32,
-                            color: Colors.white.withOpacity(0.1),
-                          ),
-                          // Total Points
-                          _buildStatItem(
-                            label: 'TOPLAM PUAN',
-                            value: '${(userData?['totalPoints'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
-                          ),
-                          // Divider
-                          Container(
-                            width: 1,
-                            height: 32,
-                            color: Colors.white.withOpacity(0.1),
-                          ),
-                          // Level (PRD 5.1)
-                          _buildStatItem(
-                            label: 'SEVİYE',
-                            value: '${ThemeService.calculateLevel((userData?['totalPoints'] as num?)?.toDouble() ?? 0.0)}',
-                          ),
-                        ],
-                      ),
-                    ),
+                        child: Column(
+                          children: [
+                            // Stats Row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildStatTile(label: 'TOPLAM İÇECEK', value: '$totalDrinks'),
+                                Container(width: 1, height: 36, color: Colors.white.withOpacity(0.08)),
+                                _buildStatTile(label: 'TOPLAM PUAN', value: totalPoints.toStringAsFixed(1)),
+                                Container(width: 1, height: 36, color: Colors.white.withOpacity(0.08)),
+                                _buildStatTile(label: 'SEVİYE', value: '$level', isHighlighted: true),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Level Progress
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Seviye $level', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white54)),
+                                    Text('${pointsToNext.toStringAsFixed(1)} puan kaldı', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: Colors.white24)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Stack(children: [
+                                    Container(height: 4, width: double.infinity, color: Colors.white.withOpacity(0.06)),
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 1200),
+                                      curve: Curves.easeOutCubic,
+                                      height: 4,
+                                      width: (MediaQuery.of(context).size.width - 96) * progress,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [AppColors.primary, AppColors.primary.withOpacity(0.6)]),
+                                        boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 4)],
+                                      ),
+                                    ),
+                                  ]),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                     
                     const SizedBox(height: AppSpacing.xl),
                     
@@ -346,12 +366,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 icon: Icons.emoji_events_outlined,
                                 title: 'Rozetlerim',
                                 onTap: () => context.push('/badges'),
-                              ),
-                              _buildDivider(),
-                              _buildMenuItem(
-                                icon: Icons.military_tech_outlined,
-                                title: 'Rütbe & Çerçeve',
-                                onTap: () => _showFrameSelectionSheet(context, userData),
                               ),
                               _buildDivider(),
                               _buildMenuItem(
@@ -522,101 +536,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
   
-  Widget _buildStatItem({required String label, required String value}) {
+  Widget _buildStatTile({
+    required String label,
+    required String value,
+    bool isHighlighted = false,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textTertiary,
-            letterSpacing: 1.2,
+          value,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: isHighlighted ? AppColors.primary : Colors.white,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 9,
             fontWeight: FontWeight.w700,
-            color: AppColors.primary,
+            color: Colors.white30,
+            letterSpacing: 1,
           ),
         ),
       ],
-    );
-  }
-  void _showFrameSelectionSheet(BuildContext context, Map<String, dynamic>? userData) {
-    final totalPoints = (userData?['totalPoints'] as num?)?.toDouble() ?? 0.0;
-    final userLevel = ThemeService.calculateLevel(totalPoints);
-    final userFrame = userData?['profileFrame'] ?? 'none';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: AppDecorations.glassCard().copyWith(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 24),
-            Text('RÜTBE VE ÇERÇEVE', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2)),
-            const SizedBox(height: 24),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: ProfileFrameRank.values.map((rank) {
-                  final requiredLevel = ThemeService.getRequiredLevel(rank);
-                  final isUnlocked = userLevel >= requiredLevel;
-                  final isSelected = userFrame == rank.name;
-
-                  return ListTile(
-                    leading: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: rank.frameColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          if (rank != ProfileFrameRank.none)
-                            BoxShadow(color: rank.frameColor.withOpacity(0.5), blurRadius: 4, spreadRadius: 1),
-                        ],
-                      ),
-                    ),
-                    title: Text(
-                      rank.displayName,
-                      style: TextStyle(
-                        color: isUnlocked ? Colors.white : Colors.white30,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: isUnlocked 
-                      ? Text(isSelected ? 'Seçili' : 'Açık', style: TextStyle(color: isSelected ? AppColors.primary : Colors.white24, fontSize: 12)) 
-                      : Text('Seviye $requiredLevel gerekir', style: const TextStyle(color: Colors.white24, fontSize: 12)),
-                    trailing: isUnlocked 
-                      ? (isSelected ? const Icon(Icons.check_circle, color: AppColors.primary, size: 20) : null)
-                      : const Icon(Icons.lock, size: 16, color: Colors.white10),
-                    onTap: () async {
-                      if (isUnlocked) {
-                        await FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(FirebaseAuth.instance.currentUser?.uid)
-                            .update({'profileFrame': rank.name});
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

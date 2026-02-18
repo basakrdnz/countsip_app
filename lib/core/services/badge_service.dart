@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/badge_model.dart';
 import '../../data/models/drink_entry_model.dart';
@@ -897,6 +898,7 @@ class BadgeService {
 
     // Calculations
     double totalAPS = allDrinks.fold(0.0, (sum, d) => sum + d.points);
+    debugPrint('🏅 checkBadges: ${allDrinks.length} drinks, totalAPS=$totalAPS, alreadyUnlocked=${alreadyUnlockedIds.length}');
     
     Map<String, double> categoryAPS = {};
     for (var drink in allDrinks) {
