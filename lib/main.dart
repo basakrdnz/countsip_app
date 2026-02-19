@@ -34,6 +34,7 @@ import 'ui/screens/notifications_screen.dart';
 import 'ui/screens/feed_screen.dart';
 import 'ui/screens/badges_screen.dart';
 import 'ui/screens/location_picker_screen.dart';
+import 'ui/screens/bac_stats_screen.dart';
 import 'core/services/preferences_service.dart';
 
 /// Toggle emulator with a compile-time define:
@@ -440,6 +441,32 @@ GoRouter _createRouter() {
             );
           },
         ),
+      ),
+      GoRoute(
+        path: '/bac-stats',
+        name: 'bac-stats',
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: BacStatsScreen(
+              currentBac: extra?['currentBac'],
+              weightKg: (extra?['weightKg'] as num?)?.toDouble(),
+              heightCm: (extra?['heightCm'] as num?)?.toDouble(),
+              age: extra?['age'] as int?,
+              gender: extra?['gender'] as String?,
+            ),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position: animation.drive(
+                  Tween(begin: const Offset(0, 1), end: Offset.zero)
+                      .chain(CurveTween(curve: Curves.easeOutCubic)),
+                ),
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+          );
+        },
       ),
       
       StatefulShellRoute.indexedStack(

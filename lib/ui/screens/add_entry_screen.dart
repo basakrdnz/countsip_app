@@ -1222,9 +1222,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   opacity: const AlwaysStoppedAnimation(0.8),
                                 )
                               : Center(
-                                  child: Text(
-                                    category['emoji'] as String,
-                                    style: const TextStyle(fontSize: 60),
+                                  child: Icon(
+                                    DrinkDataService.instance.resolveFromId(category['id'] as String).icon,
+                                    size: 60,
+                                    color: Colors.white.withOpacity(0.15),
                                   ),
                                 ),
                         ),
@@ -1638,9 +1639,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                               height: (category['id'] == 'tequila' || category['id'] == 'rum') ? 180 : 135,
                               fit: BoxFit.contain,
                             )
-                          : Text(
-                              category['emoji'],
-                              style: const TextStyle(fontSize: 100),
+                          : Icon(
+                              DrinkDataService.instance.resolveFromId(category['id']).icon,
+                              size: 100,
+                              color: Colors.white.withOpacity(0.3),
                             ),
                     ],
                   ),
@@ -2231,7 +2233,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                                 alignment: Alignment.center,
                                                 child: cat['image'] != null 
                                                   ? Image.asset(cat['image'], width: 30)
-                                                  : Text(cat['emoji'], style: const TextStyle(fontSize: 24)),
+                                                  : Icon(DrinkDataService.instance.resolveFromId(cat['id']).icon, size: 24, color: Colors.white.withOpacity(0.6)),
                                               ),
                                               const SizedBox(height: 12),
                                               Text(
@@ -2552,9 +2554,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                 height: 140,
                                 fit: BoxFit.contain,
                               )
-                            : Text(
-                                category['emoji'],
-                                style: const TextStyle(fontSize: 140),
+                            : Icon(
+                                DrinkDataService.instance.resolveFromId(category['id']).icon,
+                                size: 120,
+                                color: Colors.white,
                               ),
                       ),
                     ],
@@ -2987,7 +2990,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildMinimalInfoItem('%${portion['abv'].toStringAsFixed(1)}', 'ALKOL'),
+          _buildMinimalInfoItem('%${portion['abv'].toStringAsFixed(1)}', 'ORAN'),
           _buildMinimalDivider(),
           _buildMinimalInfoItem('${portion['volume']}ml', 'HACİM'),
           _buildMinimalDivider(),
@@ -3414,7 +3417,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       case 2:
         return _buildRequestField('Yaklaşık Hacim (ml)', 'Örn: 330', _customVolumeController, keyboardType: TextInputType.number);
       case 3:
-        return _buildRequestField('Alkol Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number);
+        return _buildRequestField('İçecek Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number);
       default:
         return const SizedBox();
     }
@@ -3443,9 +3446,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1)),
                 ),
-                child: Text(
-                  '${c['emoji']} ${c['name']}',
-                  style: TextStyle(color: isSelected ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      DrinkDataService.instance.resolveFromId(c['id']).icon,
+                      size: 16,
+                      color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.7),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      c['name'],
+                      style: TextStyle(color: isSelected ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -4135,9 +4149,10 @@ class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with
                                 border: Border.all(color: widget.color.withOpacity(0.3)),
                               ),
                               child: Center(
-                                child: Text(
+                                child: Icon(
                                   widget.badgeSource.icon,
-                                  style: const TextStyle(fontSize: 28),
+                                  size: 28,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),

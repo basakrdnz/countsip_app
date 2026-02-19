@@ -56,7 +56,7 @@ class _BadgesScreenState extends State<BadgesScreen> {
 
           final unlockedBadgeIds = snapshot.data?.docs.map((doc) => doc.id).toSet() ?? {};
 
-          List<Badge> filteredBadges = BadgeService.allBadges.where((badge) {
+          List<Badge> filteredBadges = BadgeService.allBadges.cast<Badge>().where((badge) {
             if (_selectedCategory == 'All') return true;
             return badge.category.name == _selectedCategory;
           }).toList();
@@ -153,9 +153,10 @@ class _BadgesScreenState extends State<BadgesScreen> {
           children: [
             Opacity(
               opacity: isUnlocked ? 1.0 : 0.2,
-              child: Text(
+              child: Icon(
                 badge.icon,
-                style: const TextStyle(fontSize: 32),
+                size: 32,
+                color: isUnlocked ? color : Colors.white,
               ),
             ),
             const SizedBox(height: 8),
@@ -216,9 +217,10 @@ class _BadgesScreenState extends State<BadgesScreen> {
               child: Center(
                 child: Opacity(
                   opacity: isUnlocked ? 1.0 : 0.3,
-                  child: Text(
+                  child: Icon(
                     badge.icon,
-                    style: const TextStyle(fontSize: 40),
+                    size: 40,
+                    color: isUnlocked ? color : Colors.white,
                   ),
                 ),
               ),
@@ -250,7 +252,7 @@ class _BadgesScreenState extends State<BadgesScreen> {
             const SizedBox(height: 30),
             if (isUnlocked)
               Text(
-                'Kazanıldı! 🎉',
+                'Kazanıldı!',
                 style: TextStyle(color: color, fontWeight: FontWeight.bold),
               )
             else

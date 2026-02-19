@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginTitle => 'Welcome Back';
 
   @override
-  String get loginSubtitle => 'Track drinks with friends 🍻';
+  String get loginSubtitle => 'Track drinks with friends';
 
   @override
   String get email => 'Email';
@@ -54,7 +54,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAccount => 'Create Account';
 
   @override
-  String get createAccountSubtitle => 'Join CountSip and start tracking 🍻';
+  String get createAccountSubtitle => 'Join CountSip and start tracking';
 
   @override
   String get confirmPassword => 'Confirm Password';

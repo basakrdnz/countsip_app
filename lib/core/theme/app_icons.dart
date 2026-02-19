@@ -74,4 +74,25 @@ class AppIcons {
   static const IconData addMember = Icons.person_add_outlined;
   static const IconData verticalMenu = Icons.more_vert_rounded;
   static const IconData memoPad = Icons.note_alt_outlined;
+
+  // Drink Icons (Replacing Emojis)
+  static const IconData drinkBeer = Icons.sports_bar_rounded;
+  static const IconData drinkWine = Icons.wine_bar_rounded;
+  static const IconData drinkLiquor = Icons.liquor_rounded;
+  static const IconData drinkCocktail = Icons.local_bar_rounded;
+  static const IconData drinkGlass = Icons.local_drink_rounded;
+  static const IconData drinkWater = Icons.water_drop_rounded;
+  static const IconData drinkCustom = Icons.auto_awesome_rounded;
+
+  // Badge & UI Emojis Replacements
+  static const IconData emojiParty = Icons.celebration_rounded;
+  static const IconData emojiStar = Icons.star_rounded;
+  static const IconData emojiFire = Icons.local_fire_department_rounded;
+  static const IconData emojiDiamond = Icons.diamond_rounded;
+  static const IconData emojiGlobe = Icons.public_rounded;
+  static const IconData emojiCrown = Icons.military_tech_rounded;
+  static const IconData emojiLeaf = Icons.eco_rounded;
+  static const IconData emojiChart = Icons.show_chart_rounded;
+  static const IconData emojiHeart = Icons.favorite_rounded;
+  static const IconData emojiTarget = Icons.track_changes_rounded;
 }

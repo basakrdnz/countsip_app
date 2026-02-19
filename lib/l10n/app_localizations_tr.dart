@@ -15,7 +15,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get loginTitle => 'Tekrar Hoş Geldin';
 
   @override
-  String get loginSubtitle => 'Arkadaşlarınla içki takibi yap 🍻';
+  String get loginSubtitle => 'Arkadaşlarınla içecek takibi yap';
 
   @override
   String get email => 'E-posta';
@@ -54,7 +54,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get createAccount => 'Hesap Oluştur';
 
   @override
-  String get createAccountSubtitle => 'CountSip\'e katıl ve takibe başla 🍻';
+  String get createAccountSubtitle => 'CountSip\'e katıl ve takibe başla';
 
   @override
   String get confirmPassword => 'Şifre Tekrar';
@@ -132,7 +132,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingTrackingTitle => 'Kolay Takip';
 
   @override
-  String get onboardingTrackingDesc => 'Birkaç dokunuşla içkilerini kaydet';
+  String get onboardingTrackingDesc => 'Birkaç dokunuşla içeceklerini kaydet';
 
   @override
   String get onboardingLeaderboardTitle => 'Yarış ve Karşılaştır';

@@ -1,10 +1,12 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../data/drink_categories.dart';
+import '../theme/app_icons.dart';
 
 class DrinkDisplayData {
   final String id;
   final String name;
   final String emoji;
+  final IconData icon;
   final String? imagePath;
   final String? subtitle;
   final Map<String, dynamic>? config;
@@ -13,6 +15,7 @@ class DrinkDisplayData {
     required this.id,
     required this.name,
     required this.emoji,
+    required this.icon,
     this.imagePath,
     this.subtitle,
     this.config,
@@ -42,10 +45,28 @@ class DrinkDataService {
       subtitle = config['portion']['name'].toString().toUpperCase();
     }
 
+    IconData getIconForId(String id) {
+      switch (id) {
+        case 'beer': return AppIcons.drinkBeer;
+        case 'wine': return AppIcons.drinkWine;
+        case 'raki': return AppIcons.drinkGlass;
+        case 'whiskey': return AppIcons.drinkGlass;
+        case 'vodka': return AppIcons.drinkCocktail;
+        case 'gin': return AppIcons.drinkCocktail;
+        case 'tequila': return AppIcons.drinkGlass;
+        case 'rum': return AppIcons.drinkGlass;
+        case 'cocktail': return AppIcons.drinkCocktail;
+        case 'liqueur': return AppIcons.drinkLiquor;
+        case 'custom': return AppIcons.drinkCustom;
+        default: return AppIcons.drinkGlass;
+      }
+    }
+
     return DrinkDisplayData(
       id: categoryId,
       name: name,
       emoji: emoji,
+      icon: getIconForId(categoryId),
       imagePath: imagePath,
       subtitle: subtitle,
       config: config,
@@ -57,3 +78,4 @@ class DrinkDataService {
     return resolve({'categoryId': id});
   }
 }
+

@@ -64,7 +64,7 @@ const List<Map<String, dynamic>> drinkCategories = [
     'id': 'gin',
     'name': 'Cin',
     'emoji': '🍸',
-    'image': 'assets/images/drinks/gin.png',
+    'image': 'assets/images/drinks/cintonik.png',
     'portions': [
       {'name': 'Shot (40ml)', 'volume': 40, 'abv': 40.0},
       {'name': 'Gin Tonik (250ml)', 'volume': 250, 'abv': 10.0},
