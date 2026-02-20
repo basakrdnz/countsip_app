@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../widgets/cached_avatar.dart';
 
 /// Friend relationship status enum
 enum FriendStatus {
@@ -706,12 +707,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                                 color: AppColors.primary.withOpacity(0.06),
                                 shape: BoxShape.circle,
                               ),
-                              child: user['photoUrl'] != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: Image.network(user['photoUrl'], fit: BoxFit.cover),
-                                    )
-                                  : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
+                              child: CachedAvatar(
+                                photoUrl: user['photoUrl'] as String?,
+                                size: 48,
+                              ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(

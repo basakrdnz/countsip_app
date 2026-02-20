@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth;
@@ -86,11 +87,15 @@ class AuthRepository {
     return linkedCredential;
   }
 
-  /// [DEV ONLY] Creates a user without phone verification for testing
+  /// [DEV ONLY] Creates a user without phone verification for testing.
+  /// Throws [UnsupportedError] in release builds.
   Future<UserCredential> createUserWithPhoneDevBypass({
     required String phoneNumber,
     required String password,
   }) async {
+    if (!kDebugMode) {
+      throw UnsupportedError('Dev bypass is not available in release builds.');
+    }
     final syntheticEmail = _generateSyntheticEmail(phoneNumber);
     
     // Create email account directly

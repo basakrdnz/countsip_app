@@ -1,8 +1,8 @@
 # Tech Stack – CountSip
 
-**Status:** Locked (MVP)  
-**Last Updated:** January 2025  
-**Flutter SDK:** 3.38+ (stable)  
+**Status:** Locked (MVP)
+**Last Updated:** February 2026
+**Flutter SDK:** 3.38+ (stable)
 **Dart SDK:** 3.10+
 
 ---
@@ -10,14 +10,14 @@
 ## Core Dependencies
 
 ### UI & Navigation
-- `go_router: ^14.0.2` - Declarative routing with deep links
+- `go_router: ^17.0.1` - Declarative routing with deep links
 - `flutter_svg: ^2.0.9` - SVG icons
 - `shimmer: ^3.0.0` - Loading states
 - `cached_network_image: ^3.3.1` - Profile photo caching
 
 ### State Management
-- `flutter_riverpod: ^2.4.10` - State management
-- `riverpod_annotation: ^2.3.5` - Code generation for providers
+- `flutter_riverpod: ^3.1.0` - State management (AsyncNotifier + riverpod_generator)
+- `riverpod_annotation: ^3.0.0` - Code generation for providers
 
 ### Firebase (Backend)
 - `firebase_core: ^3.6.0` - Firebase initialization
@@ -40,16 +40,21 @@
 ### Local Storage (Minimal)
 - `shared_preferences: ^2.2.3` - Local settings (theme, onboarding state)
 
+### Internal Utilities (`lib/core/utils/`)
+- `BadgeUtils` — Rozet koşulları için pure-logic yardımcılar (streak, max single night, time range). Firebase bağımlılığı yok; unit test edilebilir.
+- `TextSearch` — Levenshtein edit distance + fuzzy arama. İçecek kategorisi aramasında UI katmanından bağımsız.
+
 ---
 
 ## Dev Dependencies
 
 - `build_runner: ^2.4.13` - Code generation
-- `riverpod_generator: ^2.4.3` - Riverpod code gen
+- `riverpod_generator: ^3.0.0` - Riverpod code gen
 - `flutter_lints: ^5.0.0` - Linting rules
 - `flutter_test` - Testing framework (SDK)
 - `mocktail: ^1.0.4` - Mocking for tests
 - `fake_cloud_firestore: ^3.0.3` - Firestore mocking
+- `firebase_auth_mocks: ^0.14.1` - FirebaseAuth mocking for unit tests
 
 ---
 
@@ -215,11 +220,23 @@ dev_dependencies:
   # Already listed above
   fake_cloud_firestore: ^3.0.3
   firebase_auth_mocks: ^0.14.1
-  
+  mocktail: ^1.0.4
+
   # Additional for integration tests
   integration_test:
     sdk: flutter
 ```
+
+### Mevcut Test Dosyaları
+
+| Dosya | Kapsam | Test Sayısı |
+|---|---|---|
+| `test/bac_service_test.dart` | BacService (Watson formülü, emilim, durum etiketleri) | 18 |
+| `test/badge_utils_test.dart` | BadgeUtils (streak, max night, time range) | 20 |
+| `test/drink_entry_model_test.dart` | DrinkEntryModel serializasyon + copyWith | ~10 |
+| `test/drink_data_service_test.dart` | DrinkDataService resolve/resolveFromId | ~8 |
+| `test/text_search_test.dart` | TextSearch levenshtein/similarity/smartSearch | ~12 |
+| `test/auth_repository_test.dart` | AuthRepository phone kayıt, signOut, dev bypass | ~10 |
 
 ---
 

@@ -5,6 +5,7 @@ import '../../core/theme/app_icons.dart';
 import 'package:flutter/material.dart' hide Badge;
 import '../../data/models/drink_entry_model.dart';
 import 'package:intl/intl.dart';
+import '../utils/badge_utils.dart';
 
 class BadgeService {
   static final List<Badge> allBadges = [
@@ -783,8 +784,8 @@ class BadgeService {
         .toSet();
         
     int photoCount = allDrinks.where((d) => d.hasImage).length;
-    int currentStreak = _calculateStreak(allDrinks);
-    double maxSingleNight = _calculateMaxSingleNight(allDrinks);
+    int currentStreak = BadgeUtils.calculateStreak(allDrinks);
+    double maxSingleNight = BadgeUtils.calculateMaxSingleNight(allDrinks);
     int friendCount = friendIds.length;
 
     WriteBatch batch = FirebaseFirestore.instance.batch();
@@ -831,28 +832,23 @@ class BadgeService {
           stillQualifies = currentStreak >= (badge.requiredCount ?? 0);
           break;
         case BadgeCondition.timeOfDay:
-          int countInTime = allDrinks.where((d) => _isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge!.requiredTimeStart!, badge.requiredTimeEnd!)).length;
+          int countInTime = allDrinks.where((d) => BadgeUtils.isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge!.requiredTimeStart!, badge.requiredTimeEnd!)).length;
           stillQualifies = countInTime >= (badge.requiredCount ?? 0);
           break;
         case BadgeCondition.specificDate:
           stillQualifies = allDrinks.any((d) => _isSameDay(d.timestamp, badge!.requiredDate!));
           break;
         case BadgeCondition.leaderboardRank:
-          // TODO: Implement leaderboard rank check - query user's current rank
-          // and compare with badge.requiredRank. Keeping badge for now to avoid
-          // incorrectly revoking earned badges until backend supports this.
-          stillQualifies = true;
+          final rank = await _getUserLeaderboardRank(userId);
+          stillQualifies = rank > 0 && rank <= (badge.requiredCount ?? 10);
           break;
         case BadgeCondition.firstNUsers:
-          // TODO: Implement early adopter check - compare user's registration
-          // order against badge.requiredCount. Once granted, this badge should
-          // never be revoked, so keeping true is correct behavior.
-          stillQualifies = true;
+          // Early adopter: once earned this is never revoked (registration order is immutable)
+          stillQualifies = await _isFirstNUser(userId, badge.requiredCount ?? 100);
           break;
         case BadgeCondition.allBadges:
-          // TODO: Implement collection check - verify user has all other badges
-          // except this one. For now keeping true to avoid circular revocation.
-          stillQualifies = true;
+          final otherBadgeCount = allBadges.where((b) => b.condition != BadgeCondition.allBadges).length;
+          stillQualifies = currentBadges.length >= otherBadgeCount;
           break;
       }
 
@@ -922,8 +918,8 @@ class BadgeService {
         
     int photoCount = allDrinks.where((d) => d.hasImage).length;
     
-    int currentStreak = _calculateStreak(allDrinks);
-    double maxSingleNight = _calculateMaxSingleNight(allDrinks);
+    int currentStreak = BadgeUtils.calculateStreak(allDrinks);
+    double maxSingleNight = BadgeUtils.calculateMaxSingleNight(allDrinks);
     
     int friendCount = friendIds.length;
 
@@ -997,10 +993,10 @@ class BadgeService {
           if (allDrinks.isNotEmpty) {
              final lastDrink = allDrinks.last;
              final timeStr = DateFormat('HH:mm').format(lastDrink.timestamp);
-             if (_isTimeInRange(timeStr, badge.requiredTimeStart!, badge.requiredTimeEnd!)) {
+             if (BadgeUtils.isTimeInRange(timeStr, badge.requiredTimeStart!, badge.requiredTimeEnd!)) {
                 // Count how many drinks in total in this range
                 int countInRange = allDrinks.where((d) => 
-                  _isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge.requiredTimeStart!, badge.requiredTimeEnd!)
+                  BadgeUtils.isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge.requiredTimeStart!, badge.requiredTimeEnd!)
                 ).length;
                 progress = (countInRange / badge.requiredCount!).clamp(0.0, 1.0);
                 shouldUnlock = countInRange >= badge.requiredCount!;
@@ -1008,19 +1004,19 @@ class BadgeService {
           }
           break;
         case BadgeCondition.leaderboardRank:
-          // TODO: Query leaderboard for user's rank and unlock if within requiredRank
-          shouldUnlock = false;
-          progress = 0.0;
+          final rank = await _getUserLeaderboardRank(userId);
+          final requiredRank = badge.requiredCount ?? 10;
+          shouldUnlock = rank > 0 && rank <= requiredRank;
+          progress = shouldUnlock ? 1.0 : 0.0;
           break;
         case BadgeCondition.firstNUsers:
-          // TODO: Check user registration order against requiredCount threshold
-          shouldUnlock = false;
-          progress = 0.0;
+          shouldUnlock = await _isFirstNUser(userId, badge.requiredCount ?? 100);
+          progress = shouldUnlock ? 1.0 : 0.0;
           break;
         case BadgeCondition.allBadges:
-          // TODO: Check if user has all other badges to award collector badge
-          shouldUnlock = false;
-          progress = 0.0;
+          final otherBadgeCount = allBadges.where((b) => b.condition != BadgeCondition.allBadges).length;
+          shouldUnlock = alreadyUnlockedIds.length >= otherBadgeCount;
+          progress = (alreadyUnlockedIds.length / otherBadgeCount).clamp(0.0, 1.0);
           break;
       }
       
@@ -1043,79 +1039,56 @@ class BadgeService {
     return newlyUnlocked;
   }
 
-  static int _calculateStreak(List<DrinkEntry> drinks) {
-    if (drinks.isEmpty) return 0;
-    
-    // Sort drinks by date
-    final sortedDrinks = List<DrinkEntry>.from(drinks)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
-    // Get unique days with entries
-    final uniqueDays = sortedDrinks.map((d) => 
-      DateTime(d.timestamp.year, d.timestamp.month, d.timestamp.day)).toSet().toList();
-      
-    uniqueDays.sort((a, b) => b.compareTo(a));
-    
-    int streak = 0;
-    DateTime today = DateTime.now();
-    DateTime checkDate = DateTime(today.year, today.month, today.day);
-    
-    // If no entry today, check if there was one yesterday to continue the streak
-    if (uniqueDays.first != checkDate) {
-      checkDate = checkDate.subtract(const Duration(days: 1));
-      if (uniqueDays.first != checkDate) return 0;
+  /// Returns the user's rank in the leaderboard (1-based). Returns -1 on error.
+  /// Returns the user's rank in the leaderboard (1-based). Returns -1 on error.
+  /// Uses aggregate count to avoid downloading the entire users collection.
+  static Future<int> _getUserLeaderboardRank(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      final userPoints =
+          (userDoc.data()?['totalPoints'] as num?)?.toDouble() ?? 0.0;
+
+      // Count users with strictly more points (those ranked above us).
+      final aheadSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('totalPoints', isGreaterThan: userPoints)
+          .count()
+          .get();
+      return (aheadSnap.count ?? 0) + 1;
+    } catch (e) {
+      debugPrint('leaderboardRank query failed: $e');
+      return -1;
     }
-    
-    for (var day in uniqueDays) {
-      if (day == checkDate) {
-        streak++;
-        checkDate = checkDate.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
   }
 
-  static double _calculateMaxSingleNight(List<DrinkEntry> drinks) {
-    if (drinks.isEmpty) return 0;
-    
-    // Group by "night" (e.g., 6 AM to 6 AM next day)
-    Map<String, double> nightAPS = {};
-    
-    for (var drink in drinks) {
-      // Adjust time: drinks between 00:00 and 06:00 belong to previous day's night
-      DateTime adjustedDate = drink.timestamp;
-      if (drink.timestamp.hour < 6) {
-        adjustedDate = drink.timestamp.subtract(const Duration(days: 1));
-      }
-      String key = DateFormat('yyyy-MM-dd').format(adjustedDate);
-      nightAPS[key] = (nightAPS[key] ?? 0) + drink.points;
-    }
-    
-    if (nightAPS.isEmpty) return 0;
-    return nightAPS.values.reduce((a, b) => a > b ? a : b);
-  }
-  
-  static bool _isTimeInRange(String time, String start, String end) {
-    // time format HH:mm
-    int t = _timeToInt(time);
-    int s = _timeToInt(start);
-    int e = _timeToInt(end);
-    
-    if (s <= e) {
-      return t >= s && t <= e;
-    } else {
-      // Overnight range (e.g., 22:00 to 02:00)
-      return t >= s || t <= e;
+  /// Returns true if the user registered within the first [n] users (by createdAt).
+  /// Uses aggregate count to avoid downloading N user documents.
+  static Future<bool> _isFirstNUser(String userId, int n) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      final createdAt = userDoc.data()?['createdAt'] as Timestamp?;
+      if (createdAt == null) return false;
+
+      // Count how many users registered before this user.
+      // If that count is < n, then this user is among the first n.
+      final earlierSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('createdAt', isLessThan: createdAt)
+          .count()
+          .get();
+      return (earlierSnap.count ?? n) < n;
+    } catch (e) {
+      debugPrint('firstNUsers query failed: $e');
+      return false;
     }
   }
-  
-  static int _timeToInt(String time) {
-    var parts = time.split(':');
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
-  }
+
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }

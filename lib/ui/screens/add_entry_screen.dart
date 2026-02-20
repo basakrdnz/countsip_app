@@ -21,11 +21,14 @@ import '../../core/theme/app_decorations.dart';
 import 'package:uicons/uicons.dart';
 import 'package:image_picker/image_picker.dart';
 import '../widgets/dual_camera_widget.dart';
+import '../widgets/custom_drink_request_form.dart';
+import '../widgets/cached_avatar.dart';
 import '../../core/services/badge_service.dart';
 import '../../data/models/badge_model.dart' as model;
 import '../../core/services/preferences_service.dart';
 import '../../core/services/drink_data_service.dart';
 import '../../data/drink_categories.dart';
+import '../../core/utils/text_search.dart';
 
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({super.key});
@@ -57,13 +60,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   final FocusNode _searchFocusNode = FocusNode();
   List<String> _recentSearches = [];
   bool _isSearchFocused = false;
-  
-  // Custom Drink Request Controllers
-  final _customNameController = TextEditingController();
-  final _customAbvController = TextEditingController();
-  final _customVolumeController = TextEditingController(); // Added
-  final _customDescController = TextEditingController();
-  int _currentRequestStep = 0; // Added for Wizard
   
   XFile? _pickedImage;
   int _quantity = 1;
@@ -127,74 +123,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   // --- Smart Search Helper ---
-  int _levenshtein(String s, String t) {
-    if (s == t) return 0;
-    if (s.isEmpty) return t.length;
-    if (t.isEmpty) return s.length;
-
-    List<int> v0 = List<int>.generate(t.length + 1, (i) => i);
-    List<int> v1 = List<int>.filled(t.length + 1, 0);
-
-    for (int i = 0; i < s.length; i++) {
-      v1[0] = i + 1;
-      for (int j = 0; j < t.length; j++) {
-        int cost = (s[i] == t[j]) ? 0 : 1;
-        v1[j + 1] = [v1[j] + 1, v0[j + 1] + 1, v0[j] + cost]
-            .reduce((curr, next) => curr < next ? curr : next);
-      }
-      for (int j = 0; j < t.length + 1; j++) {
-        v0[j] = v1[j];
-      }
-    }
-    return v0[t.length];
-  }
-
-  List<Map<String, dynamic>> _getSmartSuggestions(String query) {
-    if (query.length < 2) return [];
-    
-    final List<(Map<String, dynamic> cat, int score)> scored = [];
-    final lowerQuery = query.toLowerCase();
-
-    for (var cat in _categories) {
-      final catName = cat['name'].toString().toLowerCase();
-      final distance = _levenshtein(lowerQuery, catName);
-      
-      // Calculate similarity score (0.0 to 1.0)
-      final maxLength = max(lowerQuery.length, catName.length);
-      final similarity = 1.0 - (distance / maxLength);
-
-      if (similarity > 0.4) { // Threshold for "close enough"
-        scored.add((cat, (similarity * 100).toInt()));
-      }
-      
-      // Also check portions
-      if (cat['portions'] != null) {
-        for (var p in cat['portions'] as List<dynamic>) {
-          final pName = (p['name'] ?? '').toString().toLowerCase();
-          final pVariety = (p['variety'] ?? '').toString().toLowerCase();
-          
-          final dName = _levenshtein(lowerQuery, pName);
-          final dVariety = _levenshtein(lowerQuery, pVariety);
-          
-          final sName = 1.0 - (dName / max(lowerQuery.length, pName.length));
-          final sVariety = 1.0 - (dVariety / max(lowerQuery.length, pVariety.length));
-          
-          final bestSim = max(sName, sVariety);
-          if (bestSim > 0.4) {
-             scored.add(({
-               ...cat, 
-               'displayName': "${cat['name']} - ${p['name']}",
-               'isPortionMatch': true,
-               'selectedPortion': p,
-             }, (bestSim * 100).toInt()));
-          }
-        }
-      }
-    }
-
-    scored.sort((a, b) => b.$2.compareTo(a.$2));
-    return scored.map((s) => s.$1).take(3).toList();
-  }
+  List<Map<String, dynamic>> _getSmartSuggestions(String query) =>
+      TextSearch.smartSearch(query, _categories);
 
 
   final ScrollController _scrollController = ScrollController();
@@ -315,9 +245,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     _searchController.dispose();
     _noteController.dispose();
     _locationController.dispose();
-    _customNameController.dispose();
-    _customAbvController.dispose();
-    _customDescController.dispose();
     _scrollController.dispose();
     _sheetScrollController.dispose();
     _animationController.dispose();
@@ -668,9 +595,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       _quantity = 1;
       _focusedCategoryId = null;
       _selectedPortion = null;
-      _customNameController.clear();
-      _customAbvController.clear();
-      _customDescController.clear();
       _taggedFriendIds.clear();
       _taggedFriendData.clear();
       _tempPickedImage = null;
@@ -2669,7 +2593,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: _buildCustomRequestForm(),
+        child: CustomDrinkRequestForm(
+          onSubmitSuccess: () => setState(() => _focusedCategoryId = null),
+        ),
       ),
     );
   }
@@ -3669,10 +3595,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           if (photoUrl != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(photoUrl, width: 20, height: 20, fit: BoxFit.cover),
-              ),
+              child: CachedAvatar(photoUrl: photoUrl, size: 20, borderRadius: 10),
             )
           else
             const Padding(
@@ -3786,15 +3709,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                             children: [
                               Column(
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: data?['photoUrl'] != null
-                                        ? Image.network(data!['photoUrl'], width: 48, height: 48, fit: BoxFit.cover)
-                                        : Container(
-                                            width: 48, height: 48, 
-                                            color: Colors.white.withOpacity(0.1),
-                                            child: const Icon(Icons.person, color: Colors.white30),
-                                          ),
+                                  CachedAvatar(
+                                    photoUrl: data?['photoUrl'] as String?,
+                                    size: 48,
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
@@ -3912,16 +3829,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   ),
                                   child: Row(
                                     children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: friendData['photoUrl'] != null
-                                            ? Image.network(friendData['photoUrl'], width: 44, height: 44, fit: BoxFit.cover)
-                                            : Container(
-                                                width: 44,
-                                                height: 44,
-                                                color: Colors.white.withOpacity(0.1),
-                                                child: const Icon(Icons.person, color: Colors.white30),
-                                              ),
+                                      CachedAvatar(
+                                        photoUrl: friendData['photoUrl'] as String?,
+                                        size: 44,
+                                        borderRadius: 20,
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(

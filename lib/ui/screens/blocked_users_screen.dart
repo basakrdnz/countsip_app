@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../widgets/cached_avatar.dart';
 
 class BlockedUsersScreen extends StatelessWidget {
   const BlockedUsersScreen({super.key});
@@ -228,12 +229,10 @@ class BlockedUsersScreen extends StatelessWidget {
                             color: AppColors.primary.withOpacity(0.06),
                             shape: BoxShape.circle,
                           ),
-                          child: userData['photoUrl'] != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: Image.network(userData['photoUrl'], fit: BoxFit.cover),
-                                )
-                              : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
+                          child: CachedAvatar(
+                            photoUrl: userData['photoUrl'] as String?,
+                            size: 48,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
