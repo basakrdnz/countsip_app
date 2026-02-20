@@ -144,3 +144,84 @@
 - **CachedNetworkImage Derleme Hatası**: `errorBuilder` beklerken `errorWidget` parametresi kullanılarak çözüldü.
 - **Nested Try-Catch Karmaşası**: İçecek kaydetme fonksiyonundaki parantez ve iç içe try-catch hataları temizlendi, tek bir asenkron akışa oturtuldu.
 - **Boş Fotoğraf**: Fotoğraf yüklenemese bile verinin Firestore'a kaydedilmesi garanti altına alındı.
+
+---
+
+> Tarih: 2026-02-20
+
+## Ne yaptık? (Proje İncelemesi – Kritik Sorun Düzeltmeleri)
+
+### Özel Completer Kaldırıldı ✅
+- `auth_controller.dart`'taki 36 satırlık elle yazılmış `Completer<T>` + `_InternalCompleter<T>` sınıfları silindi.
+- Bu sınıflar 50 ms aralıklı polling döngüsü içeriyor, `dart:async`'in standart `Completer`'ını yeniden implemente ediyordu.
+- Yerine doğrudan `dart:async` import'u ve standart `Completer` kullanıldı.
+
+### Badge Sistemi Tamamlandı ✅
+- `badge_service.dart`'taki 3 adet TODO koşulu implement edildi:
+  - `leaderboardRank` — `totalPoints`'a göre sıralama
+  - `firstNUsers` — `createdAt`'a göre ilk N kullanıcı kontrolü
+  - `allBadges` — diğer tüm rozetler kazanıldıysa tetiklenir
+- `_getUserLeaderboardRank()` ve `_isFirstNUser()` yardımcı metodları eklendi.
+
+### Büyük Ekranlar Ayrıştırıldı ✅
+- **`home_screen.dart`** (~305 satır): Otomatik kayan hızlı ekleme bölümü `lib/ui/widgets/home_quick_add_section.dart` dosyasına çıkarıldı → `HomeQuickAddSection` StatefulWidget.
+- **`add_entry_screen.dart`** (~224 satır): 4 adımlı özel içecek istek formu `lib/ui/widgets/custom_drink_request_form.dart` dosyasına çıkarıldı → `CustomDrinkRequestForm` StatefulWidget.
+
+### İlk Unit Testler Eklendi ✅
+- `test/bac_service_test.dart`: `BacService` için 18 test (kenar durumlar, emilim, cinsiyet farklılıkları, durum etiketleri, toparlanma yüzdesi).
+
+---
+
+> Tarih: 2026-02-20
+
+## Ne yaptık? (Performans İyileştirme, Görsel Önbellekleme, Utility Ayrıştırma ve Testler)
+
+### Hata Düzeltmeleri ✅
+- **`drink_entry_model.dart` — `toMap()` bug'ı**: `FieldValue.serverTimestamp()` istemci taraflı serializasyon için geçersizdir; `Timestamp.fromDate(createdAt)` ile değiştirildi.
+- **`drink_entry_model.dart`** — 22 alanın tamamı için `copyWith()` metodu eklendi.
+- **`auth_repository.dart`** — `createUserWithPhoneDevBypass` artık release build'lerde `kDebugMode` kontrolü ile korunuyor; production'da `UnsupportedError` fırlatıyor.
+- **`lib/core/utils/badge_utils.dart`** — Yanlış import (`badge_service.dart show DrinkEntry`) düzeltildi; doğru yol: `drink_entry_model.dart`.
+
+### Performans İyileştirmeleri ✅
+- **`badge_service.dart`** — `_getUserLeaderboardRank` ve `_isFirstNUser` artık tüm koleksiyonu indirmek yerine Firestore aggregate `count()` sorgusu kullanıyor (O(n) → O(1) okuma).
+- **`feed_service.dart`** — Entry sorgusuna `limit(50)` eklendi; `whereIn` batch boyutu 10'la sınırlandırıldı; try-catch ve `debugPrint` ile hata yönetimi eklendi.
+
+### Yeni Utility Sınıfları ✅
+- **`lib/core/utils/badge_utils.dart`** — `BadgeUtils` statik sınıfı oluşturuldu. `BadgeService`'teki private metodlar test edilemez olduğu için public utility'ye çıkarıldı:
+  - `calculateStreak(List<DrinkEntry>)` — ardışık gün serisi
+  - `calculateMaxSingleNight(List<DrinkEntry>)` — 06:00–05:59 gece gruplaması
+  - `isTimeInRange(String, String, String)` — gece yarısını aşan aralık desteği
+- **`lib/core/utils/text_search.dart`** — `TextSearch` statik sınıfı oluşturuldu. `add_entry_screen.dart` içindeki ~68 satır UI katmanı kodu servis katmanına taşındı:
+  - `levenshtein(String, String)` — edit distance
+  - `similarity(String, String)` — 0.0–1.0 puan
+  - `smartSearch(String, List<Map>)` — kategori + porsiyon + çeşit üzerinde fuzzy arama
+
+### Görsel Önbellekleme ✅
+- **`lib/ui/widgets/cached_avatar.dart`** — `CachedAvatar` widget'ı oluşturuldu. `CachedNetworkImage` ile placeholder ve hata fallback desteği; fotoğraf yoksa baş harf veya kişi ikonu gösteriyor.
+- Projedeki 7 adet önbelleksiz `Image.network` çağrısı `CachedAvatar` ile değiştirildi:
+  - `add_entry_screen.dart` (3 yer)
+  - `add_friend_screen.dart` (1 yer)
+  - `friends_screen.dart` (2 yer)
+  - `blocked_users_screen.dart` (1 yer)
+
+### Unit Test Kapsamı Genişletildi ✅
+5 yeni test dosyası, toplam ~90 test eklendi:
+
+| Dosya | Kapsam |
+|---|---|
+| `test/badge_utils_test.dart` | calculateStreak, calculateMaxSingleNight, isTimeInRange (20 test) |
+| `test/drink_entry_model_test.dart` | toMap/fromFirestore round-trip, copyWith |
+| `test/drink_data_service_test.dart` | resolve() ve resolveFromId() |
+| `test/text_search_test.dart` | levenshtein, similarity, smartSearch |
+| `test/auth_repository_test.dart` | isPhoneNumberRegistered, signOut, createUserWithPhoneDevBypass |
+
+## Neden yaptık?
+- `FieldValue.serverTimestamp()` sadece Firestore'a doğrudan yazarken geçerlidir; `toMap()` ile nesne oluşturma sırasında `MissingPluginException` hatası veriyordu.
+- Tüm koleksiyonu indiren leaderboard sorguları ölçeklendirilemezdi; `count()` ile kullanıcı sayısından bağımsız hale getirildi.
+- `Image.network` önbelleksiz çalışır; her render'da ağ isteği yapılır ve liste kaydırırken flaşlama oluşur.
+- Private metodlar Dart'ta test dosyalarından erişilemez; `BadgeUtils` ve `TextSearch` bunu çözdü.
+- Dev bypass'ın release build'de çalışabilmesi güvenlik açığıydı.
+
+## Çıkan sorunlar ve çözümler
+- **Python string replace badge_service'i bozdu**: `_isTimeInRange(` yerine `BadgeUtils.isTimeInRange(` yazılırken metot TANIMI da etkilendi (`static bool BadgeUtils.isTimeInRange(...)` geçersiz Dart). Eski private metot gövdeleri (satır 1090–1162) silindi, yalnızca `_isSameDay` korundu.
+- **"File has not been read yet" hatası**: `add_entry_screen.dart` önceki değişikliklerden sonra Edit ile düzenlenmek istendi; önce Read zorunlu olduğu için dosya okundu, ardından düzenleme yapıldı.

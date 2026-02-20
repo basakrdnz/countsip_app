@@ -1,6 +1,6 @@
 # CountSip - TODO Listesi
 
-> Son güncelleme: 11 Şubat 2026
+> Son güncelleme: 20 Şubat 2026
 
 ---
 
@@ -237,7 +237,32 @@ En az 10 ekstra kokteyl eklenecek:
 ### 9.3 Gamification
 - [ ] Achievement system
 - [ ] Level sistemi
-- [ ] Streak (ardışık günler)
+- [x] Streak (ardışık günler) — `BadgeUtils.calculateStreak` ile implement edildi
+
+---
+
+---
+
+## 🧪 10. Kod Kalitesi ve Test Kapsamı
+
+### 10.1 Tamamlanan Testler ✅
+- [x] `test/bac_service_test.dart` — BacService (18 test)
+- [x] `test/badge_utils_test.dart` — BadgeUtils (20 test)
+- [x] `test/drink_entry_model_test.dart` — Model serializasyon
+- [x] `test/drink_data_service_test.dart` — DrinkDataService
+- [x] `test/text_search_test.dart` — Levenshtein + fuzzy arama
+- [x] `test/auth_repository_test.dart` — Auth akışları
+
+### 10.2 Açık Test Borcu
+- [ ] **`widget_test.dart` genişletilmeli** — Mevcut dosyada yalnızca 1 trivial test var
+- [ ] **`NotificationsScreen` widget testi** — Sayfalama (pagination) mantığı test edilmeli
+- [ ] **`FeedScreen` widget testi** — `StreamBuilder` + cheers toggle test edilmeli
+- [ ] **`HomeQuickAddSection` widget testi** — Otomatik kaydırma ve hızlı ekleme
+
+### 10.3 Refactoring Backlog
+- [ ] **Pagination Mixin** — `feed_screen.dart` ve `notifications_screen.dart` neredeyse özdeş sayfalama kodu (~%90 örtüşme) taşıyor; ortak bir `PaginatedListMixin` çıkarılabilir
+- [ ] **EntriesRepository** — 98 doğrudan Firestore çağrısı UI ekranlarında dağılmış; `data/repositories/entries_repository.dart` katmanı oluşturularak UI bağımlılığı kırılabilir
+- [ ] **Firestore koleksiyon sabitleri** — `'blocks'`, `'users'`, `'friendships'` gibi string literal'lar tüm ekranlarda tekrarlanıyor; merkezi bir `FirestoreCollections` sınıfına taşınabilir
 
 ---
 

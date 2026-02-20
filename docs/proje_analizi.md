@@ -53,11 +53,25 @@ lib/
 │   │   ├── notifications_screen.dart
 │   │   └── root_shell_page.dart     # Bottom nav shell
 │   └── widgets/
+│       ├── cached_avatar.dart           # Önbellekli avatar widget (CachedNetworkImage)
+│       ├── home_quick_add_section.dart  # Hızlı ekleme kayan listesi (HomeScreen'den ayrıştırıldı)
+│       └── custom_drink_request_form.dart # 4 adımlı özel içecek istek formu
 │
 └── data/
+    ├── models/
+    │   └── drink_entry_model.dart       # DrinkEntry modeli + copyWith()
+    ├── services/
+    │   └── drink_data_service.dart
     └── repositories/
         └── auth_repository.dart
 ```
+
+### Utility Sınıfları (`lib/core/utils/`)
+
+| Dosya | Açıklama |
+|---|---|
+| `badge_utils.dart` | Rozet hesaplama: streak, max single night, time range — Firebase bağımsız, test edilebilir |
+| `text_search.dart` | Levenshtein edit distance + fuzzy arama — UI katmanından bağımsız |
 
 ---
 
@@ -136,13 +150,19 @@ lib/
 - **Firebase Analytics** - Kullanım takibi
 
 ### Firestore Collections:
-- `users` - Kullanıcı profilleri
-- `entries` - İçecek kayıtları
+- `users` - Kullanıcı profilleri (`totalPoints`, `weeklyPoints`, `createdAt`)
+- `entries` - İçecek kayıtları (`DrinkEntry` modeli)
 - `friendships` - Arkadaşlık ilişkileri
+- `blocks` - Engellenen kullanıcılar (`blockerUid`, `blockedUid`, `createdAt`)
+- `phoneNumbers` - SHA-256 hash ile telefon numarası kayıt kaydı
+- `badges` - Rozet tanımları
+- `userBadges` - Kazanılan rozetler
+- `drink_requests` - Özel içecek talepleri
+- `notifications` - Bildirimler
 
 ---
 
-## 📱 Ekranlar Özeti (13 Ekran)
+## 📱 Ekranlar Özeti (15 Ekran)
 
 | Ekran | Dosya | Açıklama |
 |-------|-------|----------|
@@ -153,11 +173,13 @@ lib/
 | Forgot Password | `phone_forgot_password_screen.dart` | Şifre sıfırlama |
 | Profile Setup | `profile_setup_screen.dart` | İsim/kullanıcı adı kurulumu |
 | Home | `home_screen.dart` | Ana feed + takvim |
-| Add Entry | `add_entry_screen.dart` | İçecek ekleme |
+| Add Entry | `add_entry_screen.dart` | İçecek ekleme (fuzzy arama, CachedAvatar) |
 | Leaderboard | `leaderboard_screen.dart` | Sıralama tablosu |
 | Profile | `profile_screen.dart` | Kullanıcı profili |
 | Settings | `settings_screen.dart` | Uygulama ayarları |
-| Friends | `friends_screen.dart` | Arkadaş listesi |
+| Friends | `friends_screen.dart` | Arkadaş listesi (CachedAvatar) |
+| Add Friend | `add_friend_screen.dart` | Arkadaş arama (CachedAvatar) |
+| Blocked Users | `blocked_users_screen.dart` | Engellenen kullanıcılar (CachedAvatar) |
 | Notifications | `notifications_screen.dart` | Bildirimler |
 
 ---
@@ -191,18 +213,26 @@ lib/
 ## ✅ Mevcut Durum
 
 ### Tamamlananlar:
-- ✅ Firebase entegrasyonu
-- ✅ Auth akışı (telefon, profil kurulumu)
-- ✅ Onboarding ekranları (3D ikonlar ile)
-- ✅ Tab navigation yapısı
+- ✅ Firebase entegrasyonu (Auth, Firestore, Storage, Analytics, App Check)
+- ✅ Auth akışı — telefon numarası + SHA-256 hash ile unique email, profil kurulumu
+- ✅ Onboarding ekranları (3D ikonlar + glassmorphism animasyonu)
+- ✅ Tab navigation yapısı (GoRouter 17 + StatefulNavigationShell)
 - ✅ Native splash screen
 - ✅ Tema sistemi
+- ✅ Home feed (arkadaş aktiviteleri, sosyal beslemeleri)
+- ✅ İçecek ekleme formu (fuzzy arama, porsiyon seçimi, fotoğraf, not, konum)
+- ✅ Leaderboard (haftalık + all-time, aggregate count sorguları)
+- ✅ Arkadaşlık sistemi (ekle, kabul et, engelle, kaldır)
+- ✅ BAC hesaplama (Watson formülü, cinsiyet bazlı TBW, 45 dk emilim eğrisi)
+- ✅ Rozet sistemi (14 koşul tipi, 5 nadirlık seviyesi, TR/EN lokalizasyonu)
+- ✅ Görsel önbellekleme (`CachedAvatar` widget, tüm ekranlarda standartlaştırıldı)
+- ✅ Unit test kapsamı (~90 test, 6 test dosyası)
 
-### Devam Edenler:
-- 🔄 Home feed ekranı
-- 🔄 Add drink form/modal
-- 🔄 Leaderboard sorguları
-- 🔄 Arkadaşlık sistemi
+### Teknik Borç:
+- 🔄 98 doğrudan Firestore çağrısı UI ekranlarında — `EntriesRepository` katmanı eksik
+- 🔄 `feed_screen.dart` ve `notifications_screen.dart` özdeş pagination kodu taşıyor
+- 🔄 Firestore koleksiyon isimleri string literal olarak dağılmış durumda
+- 🔄 `widget_test.dart` yalnızca 1 trivial test içeriyor
 
 ---
 
