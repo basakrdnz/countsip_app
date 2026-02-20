@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../widgets/cached_avatar.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -405,12 +406,10 @@ class _FriendsListTabState extends State<_FriendsListTab> {
               color: AppColors.primary.withOpacity(0.06),
               shape: BoxShape.circle,
             ),
-            child: friendData['photoUrl'] != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Image.network(friendData['photoUrl'], fit: BoxFit.cover),
-                  )
-                : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
+            child: CachedAvatar(
+              photoUrl: friendData['photoUrl'] as String?,
+              size: 48,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -858,12 +857,10 @@ class _RequestsTab extends StatelessWidget {
                                 color: AppColors.primary.withOpacity(0.06),
                                 shape: BoxShape.circle,
                               ),
-                              child: senderData['photoUrl'] != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: Image.network(senderData['photoUrl'], fit: BoxFit.cover),
-                                    )
-                                  : Icon(AppIcons.user, color: AppColors.primary.withOpacity(0.6), size: 22),
+                              child: CachedAvatar(
+                                photoUrl: senderData['photoUrl'] as String?,
+                                size: 48,
+                              ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(

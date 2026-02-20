@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/badge_model.dart';
 import '../../data/models/drink_entry_model.dart';
 import 'package:intl/intl.dart';
+import '../utils/badge_utils.dart';
 
 class BadgeService {
   static final List<Badge> allBadges = [
@@ -781,8 +782,8 @@ class BadgeService {
         .toSet();
         
     int photoCount = allDrinks.where((d) => d.hasImage).length;
-    int currentStreak = _calculateStreak(allDrinks);
-    double maxSingleNight = _calculateMaxSingleNight(allDrinks);
+    int currentStreak = BadgeUtils.calculateStreak(allDrinks);
+    double maxSingleNight = BadgeUtils.calculateMaxSingleNight(allDrinks);
     int friendCount = friendIds.length;
 
     WriteBatch batch = FirebaseFirestore.instance.batch();
@@ -829,7 +830,7 @@ class BadgeService {
           stillQualifies = currentStreak >= (badge.requiredCount ?? 0);
           break;
         case BadgeCondition.timeOfDay:
-          int countInTime = allDrinks.where((d) => _isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge!.requiredTimeStart!, badge.requiredTimeEnd!)).length;
+          int countInTime = allDrinks.where((d) => BadgeUtils.isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge!.requiredTimeStart!, badge.requiredTimeEnd!)).length;
           stillQualifies = countInTime >= (badge.requiredCount ?? 0);
           break;
         case BadgeCondition.specificDate:
@@ -915,8 +916,8 @@ class BadgeService {
         
     int photoCount = allDrinks.where((d) => d.hasImage).length;
     
-    int currentStreak = _calculateStreak(allDrinks);
-    double maxSingleNight = _calculateMaxSingleNight(allDrinks);
+    int currentStreak = BadgeUtils.calculateStreak(allDrinks);
+    double maxSingleNight = BadgeUtils.calculateMaxSingleNight(allDrinks);
     
     int friendCount = friendIds.length;
 
@@ -990,10 +991,10 @@ class BadgeService {
           if (allDrinks.isNotEmpty) {
              final lastDrink = allDrinks.last;
              final timeStr = DateFormat('HH:mm').format(lastDrink.timestamp);
-             if (_isTimeInRange(timeStr, badge.requiredTimeStart!, badge.requiredTimeEnd!)) {
+             if (BadgeUtils.isTimeInRange(timeStr, badge.requiredTimeStart!, badge.requiredTimeEnd!)) {
                 // Count how many drinks in total in this range
                 int countInRange = allDrinks.where((d) => 
-                  _isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge.requiredTimeStart!, badge.requiredTimeEnd!)
+                  BadgeUtils.isTimeInRange(DateFormat('HH:mm').format(d.timestamp), badge.requiredTimeStart!, badge.requiredTimeEnd!)
                 ).length;
                 progress = (countInRange / badge.requiredCount!).clamp(0.0, 1.0);
                 shouldUnlock = countInRange >= badge.requiredCount!;
@@ -1037,14 +1038,24 @@ class BadgeService {
   }
 
   /// Returns the user's rank in the leaderboard (1-based). Returns -1 on error.
+  /// Returns the user's rank in the leaderboard (1-based). Returns -1 on error.
+  /// Uses aggregate count to avoid downloading the entire users collection.
   static Future<int> _getUserLeaderboardRank(String userId) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
+      final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .orderBy('totalPoints', descending: true)
+          .doc(userId)
           .get();
-      final index = snapshot.docs.indexWhere((doc) => doc.id == userId);
-      return index >= 0 ? index + 1 : -1;
+      final userPoints =
+          (userDoc.data()?['totalPoints'] as num?)?.toDouble() ?? 0.0;
+
+      // Count users with strictly more points (those ranked above us).
+      final aheadSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('totalPoints', isGreaterThan: userPoints)
+          .count()
+          .get();
+      return (aheadSnap.count ?? 0) + 1;
     } catch (e) {
       debugPrint('leaderboardRank query failed: $e');
       return -1;
@@ -1052,93 +1063,30 @@ class BadgeService {
   }
 
   /// Returns true if the user registered within the first [n] users (by createdAt).
+  /// Uses aggregate count to avoid downloading N user documents.
   static Future<bool> _isFirstNUser(String userId, int n) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
+      final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .orderBy('createdAt', descending: false)
-          .limit(n)
+          .doc(userId)
           .get();
-      return snapshot.docs.any((doc) => doc.id == userId);
+      final createdAt = userDoc.data()?['createdAt'] as Timestamp?;
+      if (createdAt == null) return false;
+
+      // Count how many users registered before this user.
+      // If that count is < n, then this user is among the first n.
+      final earlierSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('createdAt', isLessThan: createdAt)
+          .count()
+          .get();
+      return (earlierSnap.count ?? n) < n;
     } catch (e) {
       debugPrint('firstNUsers query failed: $e');
       return false;
     }
   }
 
-  static int _calculateStreak(List<DrinkEntry> drinks) {
-    if (drinks.isEmpty) return 0;
-    
-    // Sort drinks by date
-    final sortedDrinks = List<DrinkEntry>.from(drinks)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
-    // Get unique days with entries
-    final uniqueDays = sortedDrinks.map((d) => 
-      DateTime(d.timestamp.year, d.timestamp.month, d.timestamp.day)).toSet().toList();
-      
-    uniqueDays.sort((a, b) => b.compareTo(a));
-    
-    int streak = 0;
-    DateTime today = DateTime.now();
-    DateTime checkDate = DateTime(today.year, today.month, today.day);
-    
-    // If no entry today, check if there was one yesterday to continue the streak
-    if (uniqueDays.first != checkDate) {
-      checkDate = checkDate.subtract(const Duration(days: 1));
-      if (uniqueDays.first != checkDate) return 0;
-    }
-    
-    for (var day in uniqueDays) {
-      if (day == checkDate) {
-        streak++;
-        checkDate = checkDate.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
-  }
-
-  static double _calculateMaxSingleNight(List<DrinkEntry> drinks) {
-    if (drinks.isEmpty) return 0;
-    
-    // Group by "night" (e.g., 6 AM to 6 AM next day)
-    Map<String, double> nightAPS = {};
-    
-    for (var drink in drinks) {
-      // Adjust time: drinks between 00:00 and 06:00 belong to previous day's night
-      DateTime adjustedDate = drink.timestamp;
-      if (drink.timestamp.hour < 6) {
-        adjustedDate = drink.timestamp.subtract(const Duration(days: 1));
-      }
-      String key = DateFormat('yyyy-MM-dd').format(adjustedDate);
-      nightAPS[key] = (nightAPS[key] ?? 0) + drink.points;
-    }
-    
-    if (nightAPS.isEmpty) return 0;
-    return nightAPS.values.reduce((a, b) => a > b ? a : b);
-  }
-  
-  static bool _isTimeInRange(String time, String start, String end) {
-    // time format HH:mm
-    int t = _timeToInt(time);
-    int s = _timeToInt(start);
-    int e = _timeToInt(end);
-    
-    if (s <= e) {
-      return t >= s && t <= e;
-    } else {
-      // Overnight range (e.g., 22:00 to 02:00)
-      return t >= s || t <= e;
-    }
-  }
-  
-  static int _timeToInt(String time) {
-    var parts = time.split(':');
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
-  }
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
