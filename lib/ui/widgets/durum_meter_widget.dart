@@ -1,10 +1,10 @@
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
-import '../../core/theme/app_icons.dart';
+
 import '../../core/services/bac_service.dart';
 
 class DurumMeterWidget extends StatefulWidget {
@@ -13,6 +13,7 @@ class DurumMeterWidget extends StatefulWidget {
   final int drinkCount;
   final bool isProfileComplete;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onTap;
 
   const DurumMeterWidget({
     super.key,
@@ -21,6 +22,7 @@ class DurumMeterWidget extends StatefulWidget {
     required this.drinkCount,
     this.isProfileComplete = true,
     this.onProfileTap,
+    this.onTap,
   });
 
   @override
@@ -69,7 +71,9 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
         break;
     }
 
-    return Container(
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: AppDecorations.glassCardWidget(
         padding: const EdgeInsets.all(16),
@@ -252,32 +256,12 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
-  Widget _buildRecoveryStats(BacResult res, Color color) {
-    final recovery = (res.recoveryPercentage * 100).toInt();
-    final peakText = '${res.dailyPeak!.min.toStringAsFixed(2)}-${res.dailyPeak!.max.toStringAsFixed(2)} ‰';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _buildStatItem(
-          label: 'GÜNLÜK ZİRVE',
-          value: peakText,
-          icon: Icons.high_quality_rounded, // or Icons.vertical_align_top
-          color: color.withOpacity(0.6),
-        ),
-        _buildStatItem(
-          label: 'TOPARLANMA',
-          value: '%$recovery',
-          icon: Icons.refresh_rounded, // Changed icon to better represent recovery
-          color: Colors.blueAccent,
-          isHighlight: true,
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildStatItem({
     required String label,
@@ -485,10 +469,5 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
 
 
   
-  String _getWarningText(double bac) {
-    if (bac < 0.20) return 'Keyifler yerinde! 😌';
-    if (bac < 0.50) return 'Çakırkeyif mod açıldı. 😉';
-    if (bac < 1.00) return 'Dikkatli ol, denge şaşabilir. 🥴';
-    return 'Eve taksiyle dönme vakti! 🚖';
-  }
+
 }

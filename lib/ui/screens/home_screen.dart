@@ -492,7 +492,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           final entry = entries[index];
                           final entryId = entry['id'] as String;
                           final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-                          final drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+                          final String categoryId = entry['categoryId'] as String? ?? 'cocktail';
+                          final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
                           final portion = entry['portion'] as String? ?? '';
                           final quantity = entry['quantity'] as int? ?? 1;
                           final points = (entry['points'] ?? 0).toDouble();
@@ -527,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Center(
-                                            child: Text(drinkEmoji, style: const TextStyle(fontSize: 24)),
+                                            child: Icon(drinkData.icon, size: 24, color: AppColors.primary),
                                           ),
                                         ),
                                       ],
@@ -963,6 +964,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                 _userData?['height'] != null &&
                                 _userData?['weight'] != null,
                             onProfileTap: () => context.push('/profile-details'),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              context.push('/bac-stats', extra: {
+                                'currentBac': _currentBacResult,
+                                'weightKg': (_userData?['weight'] as num?)?.toDouble(),
+                                'heightCm': (_userData?['height'] as num?)?.toDouble(),
+                                'age': _userData?['age'] as int?,
+                                'gender': _userData?['gender'] as String?,
+                              });
+                            },
                           ),
                         ),
                         // Quick Add Section
@@ -1180,8 +1191,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     final entry = entries[index];
                     final entryId = entry['id'] as String;
                     final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-                    String drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
-                    if (drinkType == 'Rakı') drinkEmoji = '🥛'; 
+                    final String categoryId = entry['categoryId'] as String? ?? 'cocktail';
+                    final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
                     final portion = entry['portion'] as String? ?? '';
                     final quantity = entry['quantity'] as int? ?? 1;
                     final points = (entry['points'] ?? 0).toDouble();
@@ -1234,10 +1245,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      Text(
-                                        '$drinkEmoji  ',
-                                        style: const TextStyle(fontSize: 14),
+                                      Icon(
+                                        drinkData.icon,
+                                        size: 14,
+                                        color: AppColors.primary,
                                       ),
+                                      const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           '$quantity x $drinkType',
@@ -1368,7 +1381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Bu alkol kaydını silmek üzeresin. Bu işlem geri alınamaz.',
+                  'Bu içecek kaydını silmek üzeresin. Bu işlem geri alınamaz.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -1433,7 +1446,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showEntryDetails(Map<String, dynamic> entry) {
     HapticFeedback.lightImpact();
     final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-    final drinkEmoji = entry['drinkEmoji'] as String? ?? '🍹';
+    final String categoryId = entry['categoryId'] as String? ?? 'cocktail';
+    final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
     final portion = entry['portion'] as String? ?? '';
     final quantity = entry['quantity'] as int? ?? 1;
     final points = (entry['points'] ?? 0).toDouble();
@@ -1480,7 +1494,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: AppColors.primary.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Center(child: Text(drinkEmoji, style: const TextStyle(fontSize: 32))),
+                    child: Center(child: Icon(drinkData.icon, size: 32, color: AppColors.primary)),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

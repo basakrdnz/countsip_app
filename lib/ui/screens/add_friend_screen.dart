@@ -488,9 +488,24 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             Container(
               margin: const EdgeInsets.all(AppSpacing.lg),
               padding: const EdgeInsets.all(20),
-              decoration: AppDecorations.glassCard(
-                borderRadius: 24,
-                color: AppColors.primary.withOpacity(0.08),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.08),
+                    Colors.white.withValues(alpha: 0.03),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,12 +513,20 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.12),
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primary.withValues(alpha: 0.25),
+                              AppColors.primary.withValues(alpha: 0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                         ),
-                        child: Icon(AppIcons.share, color: AppColors.primary, size: 20),
+                        child: Icon(AppIcons.share, color: AppColors.primary, size: 22),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

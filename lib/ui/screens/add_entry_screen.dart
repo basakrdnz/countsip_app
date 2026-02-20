@@ -1146,9 +1146,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   opacity: const AlwaysStoppedAnimation(0.8),
                                 )
                               : Center(
-                                  child: Text(
-                                    category['emoji'] as String,
-                                    style: const TextStyle(fontSize: 60),
+                                  child: Icon(
+                                    DrinkDataService.instance.resolveFromId(category['id'] as String).icon,
+                                    size: 60,
+                                    color: Colors.white.withOpacity(0.15),
                                   ),
                                 ),
                         ),
@@ -1562,9 +1563,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                               height: (category['id'] == 'tequila' || category['id'] == 'rum') ? 180 : 135,
                               fit: BoxFit.contain,
                             )
-                          : Text(
-                              category['emoji'],
-                              style: const TextStyle(fontSize: 100),
+                          : Icon(
+                              DrinkDataService.instance.resolveFromId(category['id']).icon,
+                              size: 100,
+                              color: Colors.white.withOpacity(0.3),
                             ),
                     ],
                   ),
@@ -2155,7 +2157,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                                 alignment: Alignment.center,
                                                 child: cat['image'] != null 
                                                   ? Image.asset(cat['image'], width: 30)
-                                                  : Text(cat['emoji'], style: const TextStyle(fontSize: 24)),
+                                                  : Icon(DrinkDataService.instance.resolveFromId(cat['id']).icon, size: 24, color: Colors.white.withOpacity(0.6)),
                                               ),
                                               const SizedBox(height: 12),
                                               Text(
@@ -2476,9 +2478,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                 height: 140,
                                 fit: BoxFit.contain,
                               )
-                            : Text(
-                                category['emoji'],
-                                style: const TextStyle(fontSize: 140),
+                            : Icon(
+                                DrinkDataService.instance.resolveFromId(category['id']).icon,
+                                size: 120,
+                                color: Colors.white,
                               ),
                       ),
                     ],
@@ -2913,7 +2916,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildMinimalInfoItem('%${portion['abv'].toStringAsFixed(1)}', 'ALKOL'),
+          _buildMinimalInfoItem('%${portion['abv'].toStringAsFixed(1)}', 'ORAN'),
           _buildMinimalDivider(),
           _buildMinimalInfoItem('${portion['volume']}ml', 'HACİM'),
           _buildMinimalDivider(),
@@ -3285,6 +3288,231 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }
   }
 
+  Widget _buildCustomRequestForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Text(
+            'İçki Sihirbazı',
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: -1.0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildStepIndicator(),
+        const SizedBox(height: 32),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _buildCurrentStep(),
+        ),
+        const SizedBox(height: 40),
+        _buildWizardControls(),
+      ],
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (index) {
+        final isActive = index <= _currentRequestStep;
+        return Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentRequestStep) {
+      case 0:
+        return _buildRequestField('İçecek Adı', 'Örn: Hibiscus Gin Tonic', _customNameController);
+      case 1:
+        return _buildCategoryPickerForRequest();
+      case 2:
+        return _buildRequestField('Yaklaşık Hacim (ml)', 'Örn: 330', _customVolumeController, keyboardType: TextInputType.number);
+      case 3:
+        return _buildRequestField('İçecek Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number);
+      default:
+        return const SizedBox();
+    }
+  }
+
+  Widget _buildCategoryPickerForRequest() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'KATEGORİ SEÇİN',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Colors.white30, letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _categories.where((c) => c['id'] != 'custom').map((c) {
+            final isSelected = _customDescController.text == c['name'];
+            return GestureDetector(
+              onTap: () => setState(() => _customDescController.text = c['name']),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      DrinkDataService.instance.resolveFromId(c['id']).icon,
+                      size: 16,
+                      color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.7),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      c['name'],
+                      style: TextStyle(color: isSelected ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWizardControls() {
+    return Row(
+      children: [
+        if (_currentRequestStep > 0)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: OutlinedButton(
+                onPressed: () => setState(() => _currentRequestStep--),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                child: const Text('GERİ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: _currentRequestStep < 3 
+                ? () {
+                    // Validation
+                    if (_currentRequestStep == 0 && _customNameController.text.isEmpty) return;
+                    setState(() => _currentRequestStep++);
+                  }
+                : _submitRequest,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            child: Text(
+              _currentRequestStep < 3 ? 'DEVAM ET' : 'TALEBİ GÖNDER',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRequestField(String label, String hint, TextEditingController controller, {TextInputType? keyboardType, int maxLines = 1}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            color: Colors.white30,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Colors.white),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.white24, fontSize: 15),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submitRequest() async {
+    if (_customNameController.text.trim().isEmpty) {
+      Fluttertoast.showToast(msg: "Lütfen içecek adını girin");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await FirebaseFirestore.instance.collection('drink_requests').add({
+        'name': _customNameController.text.trim(),
+        'abv': double.tryParse(_customAbvController.text) ?? 0.0,
+        'volume': int.tryParse(_customVolumeController.text) ?? 0,
+        'category': _customDescController.text.trim(),
+        'requestedBy': user?.uid,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      Fluttertoast.showToast(
+        msg: "İsteğin başarıyla gönderildi! Onaylanınca eklenecek.",
+        gravity: ToastGravity.CENTER,
+      );
+
+      _customNameController.clear();
+      _customAbvController.clear();
+      _customDescController.clear();
+      
+      setState(() {
+        _focusedCategoryId = null;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      Fluttertoast.showToast(msg: "Hata oluştu: $e");
+    }
+  }
 
   Widget _buildDrinkingWithSelector() {
     return Column(
@@ -3832,9 +4060,10 @@ class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with
                                 border: Border.all(color: widget.color.withOpacity(0.3)),
                               ),
                               child: Center(
-                                child: Text(
+                                child: Icon(
                                   widget.badgeSource.icon,
-                                  style: const TextStyle(fontSize: 28),
+                                  size: 28,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),

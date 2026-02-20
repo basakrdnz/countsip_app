@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum BadgeCategory {
   consumption, // Tüketim
   variety, // Çeşittilik
@@ -37,7 +39,7 @@ class Badge {
   final String id; // Unique ID
   final String name; // Rozet adı (TR)
   final String nameEn; // Rozet adı (EN)
-  final String icon; // Emoji icon
+  final IconData icon; // Material IconData
   final String description; // Açıklama
   final String descriptionEn; // English Description
   final BadgeCategory category; // Kategori
@@ -113,7 +115,9 @@ class Badge {
       'id': id,
       'name': name,
       'nameEn': nameEn,
-      'icon': icon,
+      'iconCodePoint': icon.codePoint,
+      'iconFontFamily': icon.fontFamily,
+      'iconFontPackage': icon.fontPackage,
       'description': description,
       'descriptionEn': descriptionEn,
       'category': category.name,
@@ -134,7 +138,13 @@ class Badge {
       id: map['id'],
       name: map['name'],
       nameEn: map['nameEn'],
-      icon: map['icon'],
+      icon: map['iconCodePoint'] != null 
+          ? IconData(
+              map['iconCodePoint'], 
+              fontFamily: map['iconFontFamily'], 
+              fontPackage: map['iconFontPackage']
+            )
+          : Icons.emoji_events_rounded, // Fallback for old records where 'icon' was a string emoji
       description: map['description'],
       descriptionEn: map['descriptionEn'],
       category: BadgeCategory.values.byName(map['category']),

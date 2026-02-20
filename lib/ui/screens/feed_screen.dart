@@ -14,6 +14,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/services/feed_service.dart';
+import '../../core/services/drink_data_service.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -304,10 +305,11 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
     final timeStr = timestamp != null ? timeago.format(timestamp.toDate(), locale: 'tr') : '';
     final hasCheered = _localCheers.contains(currentUserId);
     final drinkType = item['drinkType'] ?? 'İçecek';
-    String drinkEmoji = item['drinkEmoji'] ?? '🍹';
-    if (drinkType == 'Rakı') drinkEmoji = '🥛'; // Fix incorrect historical data
-    final portion = item['portion'] ?? '';
     final isOwnPost = item['userId'] == currentUserId;
+    final portion = item['portion'] ?? '';
+    
+    final String categoryId = item['categoryId'] ?? 'cocktail';
+    final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
 
     return GestureDetector(
       onTap: () {
@@ -347,7 +349,7 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
                           ),
-                          child: Text(drinkEmoji, style: const TextStyle(fontSize: 12)),
+                          child: Icon(drinkData.icon, size: 12, color: AppColors.textPrimary),
                         ),
                       ),
                     ],

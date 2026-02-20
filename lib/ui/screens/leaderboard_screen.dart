@@ -167,13 +167,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   Widget _buildFiltersRow() {
     // Left: Ranking chips  |  Right: Time chips
-    final timeOpts = [('Haftalık', 'weekly'), ('Aylık', 'monthly'), ('Hepsi', 'allTime')];
+    final List<(IconData?, String, String)> timeOpts = [
+      (null, 'Haftalık', 'weekly'), 
+      (null, 'Aylık', 'monthly'), 
+      (null, 'Hepsi', 'allTime')
+    ];
 
     return Row(
       children: [
         // Ranking toggle (Puan / İçecek) — compact pill group
         _buildChipGroup(
-          items: [('🏆  Puan', 'totalPoints'), ('🍺  İçecek', 'totalDrinks')],
+          items: [(AppIcons.emojiCrown, 'Puan', 'totalPoints'), (AppIcons.drinkBeer, 'İçecek', 'totalDrinks')],
           selected: _rankingType,
           onSelect: (v) => setState(() => _rankingType = v),
         ),
@@ -189,7 +193,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildChipGroup({
-    required List<(String, String)> items,
+    required List<(IconData?, String, String)> items,
     required String selected,
     required ValueChanged<String> onSelect,
   }) {
@@ -204,7 +208,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: items.map((item) {
-          final (label, value) = item;
+          final (icon, label, value) = item;
           final isSelected = selected == value;
           return GestureDetector(
             onTap: () { HapticFeedback.selectionClick(); onSelect(value); },
@@ -221,15 +225,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 ),
               ),
               child: Center(
-                child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                    color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                    letterSpacing: -0.2,
-                  ),
-                  child: Text(label),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 14, color: isSelected ? AppColors.primary : AppColors.textTertiary),
+                      const SizedBox(width: 4),
+                    ],
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                        color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                        letterSpacing: -0.2,
+                      ),
+                      child: Text(label),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -580,7 +593,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         decoration: AppDecorations.rankBadge(rank),
         child: Center(
           child: rank == 1
-              ? const Text('🏆', style: TextStyle(fontSize: 15))
+              ? const Icon(AppIcons.emojiCrown, size: 18, color: Colors.white)
               : Text(
                   '$rank',
                   style: const TextStyle(
