@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/animated_notification_bell.dart';
 import '../widgets/durum_meter_widget.dart';
+import '../widgets/home_quick_add_section.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -40,11 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   
-  // Quick Add Auto-Scroll State
-  late ScrollController _quickAddScrollController;
-  Timer? _scrollTimer;
-  bool _isAutoScrolling = true;
-  
   // Quick Add Data
   List<Map<String, dynamic>> _quickAddConfigs = [];
   List<String> _quickAddIds = [];
@@ -67,26 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // Quick Add Sync
     _loadQuickAddPreferences();
     NavigationService.instance.quickAddUpdateNotifier.addListener(_loadQuickAddPreferences);
-
-    // Initialize Quick Add Scroll
-    _quickAddScrollController = ScrollController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        // Shorter delay to ensure layout
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            try {
-              if (_quickAddScrollController.hasClients) {
-                 _quickAddScrollController.jumpTo(1000 * 167.0); 
-                 _startAutoScroll();
-              }
-            } catch (e) {
-              debugPrint('Scroll init error: $e');
-            }
-          }
-        });
-      }
-    });
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -112,8 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     NavigationService.instance.quickAddUpdateNotifier.removeListener(_loadQuickAddPreferences);
-    _scrollTimer?.cancel();
-    _quickAddScrollController.dispose();
     super.dispose();
   }
 
@@ -138,39 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
-  void _startAutoScroll() {
-    if (!_isAutoScrolling) return;
-    
-    // Balanced slow movement (User feedback: 0.05 was too slow)
-    const double scrollSpeed = 0.15; 
-    const Duration tick = Duration(milliseconds: 16); 
-
-    _scrollTimer?.cancel();
-    _scrollTimer = Timer.periodic(tick, (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      
-      if (_quickAddScrollController.hasClients) {
-        final maxScroll = _quickAddScrollController.position.maxScrollExtent;
-        final currentScroll = _quickAddScrollController.offset;
-        
-        // Loop logic: if far right, jump back to middle
-        // 167.0 = 155 (card width) + 12 (padding)
-        double nextScroll = currentScroll + scrollSpeed;
-        
-        // Reset if we go too far (arbitrary large number)
-        if (nextScroll >= maxScroll) {
-          nextScroll = 1000 * 167.0; 
-          _quickAddScrollController.jumpTo(nextScroll);
-        } else {
-          _quickAddScrollController.jumpTo(nextScroll);
-        }
-      }
-    });
-  }
 
   Future<void> _loadData() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -1026,7 +967,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         // Quick Add Section
                         const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                        SliverToBoxAdapter(child: _buildQuickAddSection()),
+                        SliverToBoxAdapter(child: HomeQuickAddSection(quickAddConfigs: _quickAddConfigs)),
                         const SliverToBoxAdapter(child: SizedBox(height: 8)),
                         
                         // Calendar Section (Takvimli Kısım)
@@ -1677,246 +1618,4 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-  Widget _buildQuickAddSection() {
-    // Map configs to displayable data
-    final displayOptions = _quickAddConfigs.map((config) {
-      final data = DrinkDataService.instance.resolve(config);
-      return {
-        'id': data.id,
-        'name': data.name,
-        'emoji': data.emoji,
-        'imagePath': data.imagePath,
-        'subtitle': data.subtitle,
-        'config': config,
-      };
-    }).toList();
-
-    if (displayOptions.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              Container(
-                width: 3,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'HIZLI EKLE',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFFF8902).withOpacity(0.6),
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 110, // Slightly smaller than Add Screen
-          child: Listener(
-            onPointerDown: (_) {
-               _isAutoScrolling = false;
-               _scrollTimer?.cancel();
-            },
-            onPointerUp: (_) {
-               _isAutoScrolling = true;
-               // Delay resume slightly
-               Future.delayed(const Duration(milliseconds: 1000), () {
-                 if (mounted && _isAutoScrolling) _startAutoScroll();
-               });
-            },
-            child: ListView.builder(
-              controller: _quickAddScrollController,
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              // Infinite loop simulation
-              itemCount: 100000, 
-              itemBuilder: (context, index) {
-                // Modulo to repeat items
-                final option = displayOptions[index % displayOptions.length];
-                final hasImage = option['imagePath'] != null; // Checked safely
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      // Set selected category and Pre-fill for Add Screen
-                      final config = option['config'] as Map<String, dynamic>;
-                      NavigationService.instance.selectCategory(
-                        option['id']! as String,
-                        variety: config['variety'] as String?,
-                        portion: config['portion'] as Map<String, dynamic>?,
-                      );
-                      
-                      // Navigate to Add Tab
-                      StatefulNavigationShell.of(context).goBranch(1);
-                    },
-                    child: Container(
-                      width: 155, // Synced width
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.12),
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        children: [
-                          // 1. Background Nebula (Subtle)
-                          Positioned(
-                            top: -30,
-                            right: -30,
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    const Color(0xFFFF8902).withOpacity(0.08),
-                                    const Color(0xFFFF8902).withOpacity(0.0),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // 2. True Glassmorphism Blur
-                          Positioned.fill(
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.white.withOpacity(0.03),
-                                      Colors.black.withOpacity(0.12),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // 3. Glass Shine Sweep
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: const Alignment(-1.5, -1.2),
-                                  end: const Alignment(1.5, 1.2),
-                                  colors: [
-                                    Colors.white.withOpacity(0.0),
-                                    Colors.white.withOpacity(0.05),
-                                    Colors.white.withOpacity(0.0),
-                                  ],
-                                  stops: const [0.3, 0.45, 0.6],
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // 4. Content - Artistic Half-Visible Image
-                          Positioned(
-                            left: -35, 
-                            top: -15,
-                            bottom: -15,
-                            child: hasImage
-                                ? Image.asset(
-                                    option['imagePath']! as String,
-                                    width: 120, 
-                                    fit: BoxFit.contain,
-                                    opacity: const AlwaysStoppedAnimation(0.8),
-                                  )
-                                : Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 40),
-                                      child: Text(
-                                        option['emoji']! as String,
-                                        style: const TextStyle(fontSize: 60),
-                                      ),
-                                    ),
-                                  ),
-                          ),
-
-                          // 5. Title & Action
-                          Positioned(
-                            right: 12,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      (option['name']! as String).toUpperCase(),
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                    if (option['subtitle'] != null) ...[
-                                      const SizedBox(height: 1),
-                                      Text(
-                                        (option['subtitle']! as String),
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: (option['subtitle'] as String).length > 12 ? 8 : 9,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white.withOpacity(0.6),
-                                          letterSpacing: 0.1,
-                                        ),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ],
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'EKLE',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFFFF8902).withOpacity(0.7),
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }

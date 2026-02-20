@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -289,41 +290,6 @@ class AuthController extends AsyncNotifier<User?> {
   @Deprecated('Google Sign-In removed')
   Future<void> signInWithGoogle() async {
     throw UnimplementedError('Google Sign-In kaldırıldı');
-  }
-}
-
-/// Completer for async operations
-class Completer<T> {
-  final _completer = _InternalCompleter<T>();
-  
-  Future<T> get future => _completer.future;
-  
-  void complete(T value) => _completer.complete(value);
-}
-
-class _InternalCompleter<T> {
-  T? _value;
-  bool _isCompleted = false;
-  final List<void Function(T)> _callbacks = [];
-  
-  Future<T> get future {
-    if (_isCompleted) {
-      return Future.value(_value as T);
-    }
-    return Future(() async {
-      while (!_isCompleted) {
-        await Future.delayed(const Duration(milliseconds: 50));
-      }
-      return _value as T;
-    });
-  }
-  
-  void complete(T value) {
-    _value = value;
-    _isCompleted = true;
-    for (final callback in _callbacks) {
-      callback(value);
-    }
   }
 }
 

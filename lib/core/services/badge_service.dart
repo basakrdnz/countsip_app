@@ -836,21 +836,16 @@ class BadgeService {
           stillQualifies = allDrinks.any((d) => _isSameDay(d.timestamp, badge!.requiredDate!));
           break;
         case BadgeCondition.leaderboardRank:
-          // TODO: Implement leaderboard rank check - query user's current rank
-          // and compare with badge.requiredRank. Keeping badge for now to avoid
-          // incorrectly revoking earned badges until backend supports this.
-          stillQualifies = true;
+          final rank = await _getUserLeaderboardRank(userId);
+          stillQualifies = rank > 0 && rank <= (badge.requiredCount ?? 10);
           break;
         case BadgeCondition.firstNUsers:
-          // TODO: Implement early adopter check - compare user's registration
-          // order against badge.requiredCount. Once granted, this badge should
-          // never be revoked, so keeping true is correct behavior.
-          stillQualifies = true;
+          // Early adopter: once earned this is never revoked (registration order is immutable)
+          stillQualifies = await _isFirstNUser(userId, badge.requiredCount ?? 100);
           break;
         case BadgeCondition.allBadges:
-          // TODO: Implement collection check - verify user has all other badges
-          // except this one. For now keeping true to avoid circular revocation.
-          stillQualifies = true;
+          final otherBadgeCount = allBadges.where((b) => b.condition != BadgeCondition.allBadges).length;
+          stillQualifies = currentBadges.length >= otherBadgeCount;
           break;
       }
 
@@ -1006,19 +1001,19 @@ class BadgeService {
           }
           break;
         case BadgeCondition.leaderboardRank:
-          // TODO: Query leaderboard for user's rank and unlock if within requiredRank
-          shouldUnlock = false;
-          progress = 0.0;
+          final rank = await _getUserLeaderboardRank(userId);
+          final requiredRank = badge.requiredCount ?? 10;
+          shouldUnlock = rank > 0 && rank <= requiredRank;
+          progress = shouldUnlock ? 1.0 : 0.0;
           break;
         case BadgeCondition.firstNUsers:
-          // TODO: Check user registration order against requiredCount threshold
-          shouldUnlock = false;
-          progress = 0.0;
+          shouldUnlock = await _isFirstNUser(userId, badge.requiredCount ?? 100);
+          progress = shouldUnlock ? 1.0 : 0.0;
           break;
         case BadgeCondition.allBadges:
-          // TODO: Check if user has all other badges to award collector badge
-          shouldUnlock = false;
-          progress = 0.0;
+          final otherBadgeCount = allBadges.where((b) => b.condition != BadgeCondition.allBadges).length;
+          shouldUnlock = alreadyUnlockedIds.length >= otherBadgeCount;
+          progress = (alreadyUnlockedIds.length / otherBadgeCount).clamp(0.0, 1.0);
           break;
       }
       
@@ -1039,6 +1034,36 @@ class BadgeService {
     }
     
     return newlyUnlocked;
+  }
+
+  /// Returns the user's rank in the leaderboard (1-based). Returns -1 on error.
+  static Future<int> _getUserLeaderboardRank(String userId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .orderBy('totalPoints', descending: true)
+          .get();
+      final index = snapshot.docs.indexWhere((doc) => doc.id == userId);
+      return index >= 0 ? index + 1 : -1;
+    } catch (e) {
+      debugPrint('leaderboardRank query failed: $e');
+      return -1;
+    }
+  }
+
+  /// Returns true if the user registered within the first [n] users (by createdAt).
+  static Future<bool> _isFirstNUser(String userId, int n) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .orderBy('createdAt', descending: false)
+          .limit(n)
+          .get();
+      return snapshot.docs.any((doc) => doc.id == userId);
+    } catch (e) {
+      debugPrint('firstNUsers query failed: $e');
+      return false;
+    }
   }
 
   static int _calculateStreak(List<DrinkEntry> drinks) {
