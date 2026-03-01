@@ -182,6 +182,78 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // fromMap
+  // -------------------------------------------------------------------------
+  group('DrinkEntry.fromMap', () {
+    test('deserializes all required fields from raw map', () {
+      final now = DateTime(2024, 6, 15, 20, 0);
+      final map = <String, dynamic>{
+        'userId': 'user-abc',
+        'drinkType': 'Beer',
+        'drinkEmoji': '🍺',
+        'portion': '500ml',
+        'volume': 500,
+        'abv': 5.0,
+        'quantity': 2,
+        'points': 25.0,
+        'note': 'Good',
+        'locationName': 'Bar',
+        'intoxicationLevel': 2,
+        'timestamp': Timestamp.fromDate(now),
+        'createdAt': Timestamp.fromDate(now),
+        'hasImage': false,
+      };
+      final entry = DrinkEntry.fromMap('map-001', map);
+      expect(entry.id, 'map-001');
+      expect(entry.userId, 'user-abc');
+      expect(entry.volume, 500);
+      expect(entry.abv, 5.0);
+      expect(entry.timestamp.isAtSameMomentAs(now), isTrue);
+    });
+
+    test('handles volume and abv stored as num (int/double interop)', () {
+      final map = <String, dynamic>{
+        'userId': 'u', 'drinkType': 'Wine', 'drinkEmoji': '🍷',
+        'portion': '150ml', 'volume': 150, 'abv': 13, // int abv
+        'quantity': 1, 'points': 4, // int points
+        'note': '', 'locationName': '', 'intoxicationLevel': 0,
+        'timestamp': Timestamp.fromDate(DateTime(2024)),
+        'createdAt': Timestamp.fromDate(DateTime(2024)),
+        'hasImage': false,
+      };
+      final entry = DrinkEntry.fromMap('x', map);
+      expect(entry.abv, isA<double>());
+      expect(entry.abv, 13.0);
+      expect(entry.points, isA<double>());
+    });
+
+    test('fromMap and fromFirestore produce equivalent entries', () async {
+      final firestore = FakeFirebaseFirestore();
+      final now = DateTime(2024, 6, 15, 20, 0);
+      final data = <String, dynamic>{
+        'userId': 'user-abc', 'drinkType': 'Raki', 'drinkEmoji': '🥛',
+        'portion': '50ml', 'volume': 50, 'abv': 45.0, 'quantity': 1,
+        'points': 22.5, 'note': '', 'locationName': '', 'intoxicationLevel': 0,
+        'timestamp': Timestamp.fromDate(now),
+        'createdAt': Timestamp.fromDate(now),
+        'hasImage': false,
+      };
+
+      final ref = await firestore.collection('entries').add(data);
+      final doc = await ref.get();
+
+      final fromFirestore = DrinkEntry.fromFirestore(doc);
+      data['id'] = doc.id;
+      final fromMap = DrinkEntry.fromMap(doc.id, data);
+
+      expect(fromFirestore.id, fromMap.id);
+      expect(fromFirestore.volume, fromMap.volume);
+      expect(fromFirestore.abv, fromMap.abv);
+      expect(fromFirestore.timestamp, fromMap.timestamp);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // copyWith
   // -------------------------------------------------------------------------
   group('DrinkEntry.copyWith', () {

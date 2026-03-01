@@ -78,7 +78,8 @@ class DrinkDataService {
     );
   }
 
-  /// Helper for legacy list rendering where only IDs might be present
+  /// Resolves a category by [id] alone, without any variety or portion context.
+  /// Equivalent to `resolve({'categoryId': id})`.
   DrinkDisplayData resolveFromId(String id) {
     return resolve({'categoryId': id});
   }

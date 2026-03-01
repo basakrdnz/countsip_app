@@ -42,10 +42,10 @@ void main() {
       expect(result.subtitle, isNull);
     });
 
-    test('config is stored in result', () {
-      final config = {'categoryId': 'whiskey'};
-      final result = service.resolve(config);
-      expect(result.config, equals(config));
+    test('resolved category is stored in result', () {
+      final result = service.resolve({'categoryId': 'whiskey'});
+      expect(result.category, isNotNull);
+      expect(result.category!.id, 'whiskey');
     });
   });
 
