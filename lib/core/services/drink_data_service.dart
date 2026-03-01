@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/drink_categories.dart';
+import '../../data/models/drink_category_model.dart';
 import '../theme/app_icons.dart';
 
 class DrinkDisplayData {
@@ -9,7 +10,8 @@ class DrinkDisplayData {
   final IconData icon;
   final String? imagePath;
   final String? subtitle;
-  final Map<String, dynamic>? config;
+  final DrinkCategory? category;
+  final DrinkPortion? portion;
 
   DrinkDisplayData({
     required this.id,
@@ -18,7 +20,8 @@ class DrinkDisplayData {
     required this.icon,
     this.imagePath,
     this.subtitle,
-    this.config,
+    this.category,
+    this.portion,
   });
 }
 
@@ -26,16 +29,18 @@ class DrinkDataService {
   static final DrinkDataService instance = DrinkDataService._internal();
   DrinkDataService._internal();
 
+  /// Resolves a JSON config (e.g. from SharedPreferences quick-add) into
+  /// display-ready data by looking up the typed [DrinkCategory] list.
   DrinkDisplayData resolve(Map<String, dynamic> config) {
     final String categoryId = config['categoryId'];
     final category = drinkCategories.firstWhere(
-      (c) => c['id'] == categoryId,
+      (c) => c.id == categoryId,
       orElse: () => drinkCategories.first,
     );
 
-    String name = category['name'];
-    String emoji = category['emoji'];
-    String? imagePath = category['image'];
+    String name = category.name;
+    String emoji = category.emoji;
+    String? imagePath = category.image;
     String? subtitle;
 
     // Handle variety-based subtitles (e.g., Wine variety)
@@ -69,11 +74,12 @@ class DrinkDataService {
       icon: getIconForId(categoryId),
       imagePath: imagePath,
       subtitle: subtitle,
-      config: config,
+      category: category,
     );
   }
 
-  /// Helper for legacy list rendering where only IDs might be present
+  /// Resolves a category by [id] alone, without any variety or portion context.
+  /// Equivalent to `resolve({'categoryId': id})`.
   DrinkDisplayData resolveFromId(String id) {
     return resolve({'categoryId': id});
   }

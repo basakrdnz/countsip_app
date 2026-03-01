@@ -9,6 +9,11 @@ class FeedService {
   /// Maximum feed entries returned per snapshot.
   static const int _feedLimit = 50;
 
+  /// In-memory cache for the current user's friend IDs.
+  /// Cleared whenever a new user signs in.
+  static List<String>? _cachedFriendIds;
+  static String? _cachedForUserId;
+
   static Stream<List<Map<String, dynamic>>> getSocialFeed() async* {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -17,20 +22,23 @@ class FeedService {
     }
 
     try {
-      // 1. Get friend IDs.
-      final friendshipDocs = await FirebaseFirestore.instance
-          .collection('friendships')
-          .where('users', arrayContains: user.uid)
-          .get();
+      // 1. Get friend IDs — use in-memory cache to avoid redundant Firestore reads.
+      if (_cachedFriendIds == null || _cachedForUserId != user.uid) {
+        final friendshipDocs = await FirebaseFirestore.instance
+            .collection('friendships')
+            .where('users', arrayContains: user.uid)
+            .get();
 
-      final friendIds = friendshipDocs.docs.map((doc) {
-        final users = doc.data()['users'] as List;
-        return users.firstWhere((id) => id != user.uid) as String;
-      }).toList();
+        _cachedFriendIds = friendshipDocs.docs.map((doc) {
+          final users = doc.data()['users'] as List;
+          return users.firstWhere((id) => id != user.uid) as String;
+        }).toList();
+        _cachedForUserId = user.uid;
+      }
 
       // Include self; cap at Firestore whereIn limit.
       final allInterestedIds =
-          [user.uid, ...friendIds].take(_whereInLimit).toList();
+          [user.uid, ..._cachedFriendIds!].take(_whereInLimit).toList();
 
       // 2. Stream entries for those IDs, capped at _feedLimit.
       yield* FirebaseFirestore.instance
@@ -50,15 +58,25 @@ class FeedService {
     }
   }
 
-  static Future<void> toggleCheers(String entryId, String userId) async {
+  /// Invalidates the in-memory friend ID cache (call on sign-out or friendship change).
+  static void invalidateFriendCache() {
+    _cachedFriendIds = null;
+    _cachedForUserId = null;
+  }
+
+  /// Toggles a "cheers" reaction without reading the document first.
+  ///
+  /// Uses [FieldValue.arrayUnion] / [FieldValue.arrayRemove] directly,
+  /// avoiding an unnecessary round-trip read.
+  static Future<void> toggleCheers(
+    String entryId,
+    String userId, {
+    required bool currentlyLiked,
+  }) async {
     try {
       final ref =
           FirebaseFirestore.instance.collection('entries').doc(entryId);
-      final doc = await ref.get();
-      if (!doc.exists) return;
-
-      final cheers = List<String>.from(doc.data()?['cheers'] ?? []);
-      if (cheers.contains(userId)) {
+      if (currentlyLiked) {
         await ref.update({'cheers': FieldValue.arrayRemove([userId])});
       } else {
         await ref.update({'cheers': FieldValue.arrayUnion([userId])});

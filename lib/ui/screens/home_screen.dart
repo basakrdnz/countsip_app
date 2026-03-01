@@ -22,9 +22,9 @@ import '../../core/theme/app_decorations.dart';
 import '../../core/services/badge_service.dart';
 import '../../core/services/bac_service.dart';
 import '../../core/services/navigation_service.dart';
-import '../../data/drink_categories.dart'; // Import Categories
 import '../../core/services/preferences_service.dart';
 import '../../core/services/drink_data_service.dart';
+import '../../data/models/drink_entry_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -153,13 +153,19 @@ class _HomeScreenState extends State<HomeScreen> {
       final weight = (userDataMap['weight'] ?? 70).toDouble();
       final gender = userDataMap['gender'] ?? 'Male';
       
+      // Convert raw Firestore maps to typed DrinkEntry objects for BAC calculation
+      final drinkEntries = flatEntries
+          .where((d) => d['timestamp'] != null)
+          .map((d) => DrinkEntry.fromMap(d['id'] as String? ?? '', d))
+          .toList();
+
       // Calculate Dynamic BAC with complete profile
       final bacResult = BacService.calculateDynamicBac(
-        weightKg: weight, 
+        weightKg: weight,
         heightCm: (userDataMap['height'] ?? 175).toDouble(),
         age: userDataMap['age'] ?? 25,
-        gender: gender, 
-        drinks: flatEntries,
+        gender: gender,
+        drinks: drinkEntries,
       );
       
       // Calculate Active Session Drink Count (Drinks in last 12h?)
