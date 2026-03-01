@@ -182,46 +182,7 @@ class AuthRepository {
     return digest.toString().substring(0, 32); // First 32 chars
   }
 
-  // ============================================
-  // LEGACY METHODS (kept for compatibility)
-  // ============================================
-
   Future<void> signOut() async {
     await _auth.signOut();
-  }
-
-  // Deprecated - use signInWithPhone instead
-  @Deprecated('Use signInWithPhone instead')
-  Future<UserCredential> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    return await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-  }
-
-  // Deprecated - use createUserWithPhone instead
-  @Deprecated('Use createUserWithPhone instead')
-  Future<UserCredential> createUserWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    return await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-  }
-
-  // Deprecated - use resetPasswordWithPhone instead
-  @Deprecated('Use resetPasswordWithPhone instead')
-  Future<void> sendPasswordResetEmail(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
-  }
-
-  // Google Sign-In - Removed (not needed with phone auth)
-  Future<UserCredential?> signInWithGoogle() async {
-    throw UnimplementedError('Google Sign-In kaldırıldı. Telefon ile giriş yapın.');
   }
 }

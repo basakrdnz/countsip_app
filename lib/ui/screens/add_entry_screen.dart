@@ -28,6 +28,7 @@ import '../../data/models/badge_model.dart' as model;
 import '../../core/services/preferences_service.dart';
 import '../../core/services/drink_data_service.dart';
 import '../../data/drink_categories.dart';
+import '../../data/models/drink_category_model.dart';
 import '../../core/utils/text_search.dart';
 
 class AddEntryScreen extends StatefulWidget {
@@ -39,7 +40,7 @@ class AddEntryScreen extends StatefulWidget {
 
 class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStateMixin {
   // Drink data is imported from lib/data/drink_categories.dart
-  static const List<Map<String, dynamic>> _categories = drinkCategories;
+  static const List<DrinkCategory> _categories = drinkCategories;
 
   // --- State ---
   String? _selectedPortionKey; // Combined key: categoryId|portionName
@@ -65,7 +66,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   int _quantity = 1;
   String? _focusedCategoryId;
   String? _selectedVarietyName;
-  Map<String, dynamic>? _selectedPortion;
+  DrinkPortion? _selectedPortion;
   
   // Modern Animations State
   late AnimationController _scoreAnimationController;
@@ -194,12 +195,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       NavigationService.instance.navigationEventNotifier.value = null;
       
       final categoryId = event.categoryId;
-      final category = _categories.firstWhere(
-        (c) => c['id'] == categoryId, 
-        orElse: () => {}, 
-      );
-      
-      if (category.isNotEmpty) {
+      final category = _categories.where((c) => c.id == categoryId).firstOrNull;
+
+      if (category != null) {
         // Reset state and select category
         setState(() {
           _focusedCategoryId = categoryId;
@@ -356,18 +354,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  void _showFavoriteConfigDialog(Map<String, dynamic> category) {
-    final portions = category['portions'] as List;
-    final varieties = portions.map((p) => p['variety']).where((v) => v != null).toSet().toList();
-    
+  void _showFavoriteConfigDialog(DrinkCategory category) {
+    final portions = category.portions;
+    final varieties = portions.map((p) => p.variety).where((v) => v != null).toSet().toList();
+
     String? tempVariety = varieties.isNotEmpty ? varieties.first.toString() : null;
-    Map<String, dynamic> tempPortion = varieties.isNotEmpty 
-        ? portions.firstWhere((p) => p['variety'] == tempVariety) 
+    DrinkPortion tempPortion = varieties.isNotEmpty
+        ? portions.firstWhere((p) => p.variety == tempVariety)
         : portions.first;
 
-    if (category['id'] == 'beer') {
-      final p500 = portions.cast<Map<String, dynamic>>().firstWhere(
-        (p) => (tempVariety == null || p['variety'] == tempVariety) && p['volume'] == 500,
+    if (category.id == 'beer') {
+      final p500 = portions.firstWhere(
+        (p) => (tempVariety == null || p.variety == tempVariety) && p.volume == 500,
         orElse: () => tempPortion
       );
       tempPortion = p500;
@@ -380,7 +378,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           final filteredPortions = varieties.isNotEmpty
-              ? portions.where((p) => p['variety'] == tempVariety).toList()
+              ? portions.where((p) => p.variety == tempVariety).toList()
               : portions;
 
           return SafeArea(
@@ -396,7 +394,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   mainAxisSize: MainAxisSize.min,
                   children: [
                 Text(
-                  '${category['name'].toUpperCase()} KISAYOLU',
+                  '${category.name.toUpperCase()} KISAYOLU',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
@@ -441,9 +439,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                             if (!val) return;
                             setDialogState(() {
                               tempVariety = v;
-                              tempPortion = portions.firstWhere((p) => p['variety'] == v);
-                              if (category['id'] == 'beer') {
-                                tempPortion = portions.cast<Map<String, dynamic>>().firstWhere((p) => p['variety'] == v && p['volume'] == 500, orElse: () => tempPortion);
+                              tempPortion = portions.firstWhere((p) => p.variety == v);
+                              if (category.id == 'beer') {
+                                tempPortion = portions.firstWhere((p) => p.variety == v && p.volume == 500, orElse: () => tempPortion);
                               }
                             });
                           },
@@ -481,14 +479,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
                   children: filteredPortions.map((p) {
-                    final isSel = (tempPortion['uid'] != null && tempPortion['uid'] == p['uid']) || 
-                                 (tempPortion['uid'] == null && tempPortion['name'] == p['name'] && tempPortion['volume'] == p['volume']);
+                    final isSel = tempPortion.name == p.name && tempPortion.volume == p.volume;
                     return ChoiceChip(
-                      label: Text(p['name'].toString()),
+                      label: Text(p.name),
                       selected: isSel,
                       onSelected: (val) {
                         if (!val) return;
-                        setDialogState(() => tempPortion = Map<String, dynamic>.from(p));
+                        setDialogState(() => tempPortion = p);
                       },
                       backgroundColor: Colors.white.withOpacity(0.05),
                       selectedColor: const Color(0xFFFF8902).withOpacity(0.15),
@@ -512,12 +509,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     HapticFeedback.heavyImpact();
                     setState(() {
                       final config = {
-                        'categoryId': category['id'],
+                        'categoryId': category.id,
                         'variety': tempVariety,
-                        'portion': tempPortion,
+                        'portion': tempPortion.toJson(),
                       };
                       _quickAddConfigs.add(config);
-                      _quickAddIds.add(category['id']);
+                      _quickAddIds.add(category.id);
                     });
                     Navigator.pop(context);
                   },
@@ -575,7 +572,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   double _getTotalScore() {
     if (_selectedPortion == null) return 0.0;
-    return _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']) * _quantity;
+    return _calculateScore(_selectedPortion!.volume, _selectedPortion!.abv) * _quantity;
   }
 
   int _getTotalCount() {
@@ -641,9 +638,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         debugPrint('Daily entries check skipped: $e');
       }
 
-      final totalScore = _calculateScore(_selectedPortion!['volume'], _selectedPortion!['abv']);
-      final category = _categories.firstWhere((c) => c['id'] == _focusedCategoryId);
-      final portionName = _selectedPortion!['name'];
+      final totalScore = _calculateScore(_selectedPortion!.volume, _selectedPortion!.abv);
+      final category = _categories.firstWhere((c) => c.id == _focusedCategoryId);
+      final portionName = _selectedPortion!.name;
 
       String? imageUrl;
       if (_pickedImage != null) {
@@ -669,11 +666,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       
       batch.set(entryRef, {
         'userId': user.uid,
-        'drinkType': category['name'],
-        'drinkEmoji': category['emoji'],
+        'drinkType': category.name,
+        'drinkEmoji': category.emoji,
         'portion': portionName,
-        'volume': _selectedPortion!['volume'],
-        'abv': _selectedPortion!['abv'],
+        'volume': _selectedPortion!.volume,
+        'abv': _selectedPortion!.abv,
         'quantity': 1,
         'points': totalScore,
         'note': _noteController.text.trim(),
@@ -1138,16 +1135,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                           left: -35, // Offset to make it half-visible
                           top: -15,
                           bottom: -15,
-                          child: category['image'] != null
+                          child: category.image != null
                               ? Image.asset(
-                                  category['image'] as String,
+                                  category.image!,
                                   width: 120, // Oversized for artistic look
                                   fit: BoxFit.contain,
                                   opacity: const AlwaysStoppedAnimation(0.8),
                                 )
                               : Center(
                                   child: Icon(
-                                    DrinkDataService.instance.resolveFromId(category['id'] as String).icon,
+                                    DrinkDataService.instance.resolveFromId(category.id).icon,
                                     size: 60,
                                     color: Colors.white.withOpacity(0.15),
                                   ),
@@ -1216,8 +1213,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                               onTap: () {
                                 HapticFeedback.mediumImpact();
                                 setState(() {
-                                  _quickAddConfigs.removeWhere((c) => c['categoryId'] == category['id']);
-                                  _quickAddIds.remove(category['id']);
+                                  _quickAddConfigs.removeWhere((c) => c['categoryId'] == category.id);
+                                  _quickAddIds.remove(category.id);
                                 });
                               },
                               child: Container(
@@ -1244,7 +1241,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildCategoryGrid() {
     final filteredCategories = _categories.where((c) {
-      return c['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      return c.name.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
     if (filteredCategories.isEmpty) {
@@ -1292,47 +1289,47 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  void _onCategorySelected(Map<String, dynamic> category, {Map<String, dynamic>? preSelectedPortion}) {
+  void _onCategorySelected(Map<String, dynamic> categoryMap, {Map<String, dynamic>? preSelectedPortion}) {
     HapticFeedback.mediumImpact();
-    
+
+    // Resolve the typed category from _categories
+    final category = _categories.firstWhere((c) => c.id == categoryMap['id']);
+    final portions = category.portions;
+
     String? initialVariety;
-    Map<String, dynamic>? initialPortion = preSelectedPortion;
+    DrinkPortion? initialPortion = preSelectedPortion != null ? DrinkPortion.fromJson(preSelectedPortion) : null;
 
     if (initialPortion == null) {
-      final portions = category['portions'] as List;
-      final varieties = portions.map((p) => p['variety']).where((v) => v != null).toSet().toList();
-      
+      final varieties = portions.map((p) => p.variety).where((v) => v != null).toSet().toList();
+
       if (varieties.isNotEmpty) {
         initialVariety = varieties.first.toString();
-        // Use cast to ensure type safety during variety matching
-        final typedPortions = portions.cast<Map<String, dynamic>>();
-        final candidates = typedPortions.where((p) => p['variety'] == initialVariety).toList();
-        
-        if (category['id'] == 'beer') {
+        final candidates = portions.where((p) => p.variety == initialVariety).toList();
+
+        if (category.id == 'beer') {
           initialPortion = candidates.firstWhere(
-            (p) => p['volume'] == 500, 
-            orElse: () => (candidates.isNotEmpty ? candidates.first : portions.cast<Map<String, dynamic>>().first) as Map<String, dynamic>
+            (p) => p.volume == 500,
+            orElse: () => candidates.isNotEmpty ? candidates.first : portions.first,
           );
         } else {
-          initialPortion = candidates.isNotEmpty ? candidates.first : portions.cast<Map<String, dynamic>>().first;
+          initialPortion = candidates.isNotEmpty ? candidates.first : portions.first;
         }
       } else if (portions.isNotEmpty) {
-        final typedPortions = portions.cast<Map<String, dynamic>>();
-        if (category['id'] == 'beer') {
-          initialPortion = typedPortions.firstWhere(
-            (p) => p['volume'] == 500, 
-            orElse: () => typedPortions.first as Map<String, dynamic>
+        if (category.id == 'beer') {
+          initialPortion = portions.firstWhere(
+            (p) => p.volume == 500,
+            orElse: () => portions.first,
           );
         } else {
-          initialPortion = typedPortions.first;
+          initialPortion = portions.first;
         }
       }
     } else {
-      initialVariety = initialPortion['variety'];
+      initialVariety = initialPortion.variety;
     }
 
     setState(() {
-      _focusedCategoryId = category['id'];
+      _focusedCategoryId = category.id;
       _quantity = 1;
       _selectedVarietyName = initialVariety;
       _selectedPortion = initialPortion;
@@ -1347,14 +1344,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     _bounceController.forward(from: 0);
   }
 
-  Widget _buildCategoryCard(Map<String, dynamic> category) {
-    final portions = category['portions'] as List;
-    final varieties = portions.map((p) => p['variety']).where((v) => v != null).toSet();
+  Widget _buildCategoryCard(DrinkCategory category) {
+    final portions = category.portions;
+    final varieties = portions.map((p) => p.variety).where((v) => v != null).toSet();
     final int displayCount = varieties.isNotEmpty ? varieties.length : portions.length;
     // Force Orange/Gold glow for all categories as per 'turuncu ağırlıklı' request
-    final glowColor = const Color(0xFFFF8902); 
+    final glowColor = const Color(0xFFFF8902);
 
-    final bool isFavorite = _quickAddIds.contains(category['id']);
+    final bool isFavorite = _quickAddIds.contains(category.id);
     
     return GestureDetector(
       onTap: () {
@@ -1362,8 +1359,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
            HapticFeedback.mediumImpact();
            if (isFavorite) {
               setState(() {
-                _quickAddConfigs.removeWhere((c) => c['categoryId'] == category['id']);
-                _quickAddIds.remove(category['id']);
+                _quickAddConfigs.removeWhere((c) => c['categoryId'] == category.id);
+                _quickAddIds.remove(category.id);
               });
            } else {
               if (_quickAddConfigs.length < 5) {
@@ -1374,7 +1371,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
            }
            return;
         }
-        _onCategorySelected(category);
+        _onCategorySelected({'id': category.id, 'name': category.name, 'emoji': category.emoji, 'image': category.image});
       },
       child: ColorFiltered(
         colorFilter: _isEditingQuickAdd && !isFavorite
@@ -1408,7 +1405,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             ),
           ],
         ),
-        clipBehavior: (category['id'] == 'tequila' || category['id'] == 'rum') ? Clip.none : Clip.antiAlias,
+        clipBehavior: (category.id == 'tequila' || category.id == 'rum') ? Clip.none : Clip.antiAlias,
         child: Stack(
           children: [
             // 1. Nebula Ambient Aura (Orange) - Broad and very subtle
@@ -1556,15 +1553,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                           ],
                         ),
                       ),
-                      category['image'] != null
+                      category.image != null
                           ? Image.asset(
-                              category['image'],
-                              width: (category['id'] == 'tequila' || category['id'] == 'rum') ? 180 : 135,
-                              height: (category['id'] == 'tequila' || category['id'] == 'rum') ? 180 : 135,
+                              category.image!,
+                              width: (category.id == 'tequila' || category.id == 'rum') ? 180 : 135,
+                              height: (category.id == 'tequila' || category.id == 'rum') ? 180 : 135,
                               fit: BoxFit.contain,
                             )
                           : Icon(
-                              DrinkDataService.instance.resolveFromId(category['id']).icon,
+                              DrinkDataService.instance.resolveFromId(category.id).icon,
                               size: 100,
                               color: Colors.white.withOpacity(0.3),
                             ),
@@ -1575,7 +1572,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
                   // Title
                   Text(
-                    category['name'],
+                    category.name,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
@@ -1861,9 +1858,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     // Use PreferencesService for history
     final history = PreferencesService.instance.getSearchHistory();
 
-    final List<Map<String, dynamic>> suggestions = _searchQuery.isEmpty 
-        ? [] 
-        : _categories.where((c) => c['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    final List<DrinkCategory> suggestions = _searchQuery.isEmpty
+        ? []
+        : _categories.where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
     return Positioned.fill(
       top: MediaQuery.of(context).padding.top + 180, // Position below the search bar
@@ -1973,26 +1970,29 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                 final query = _searchQuery.toLowerCase();
 
                                 for (var cat in _categories) {
-                                  final catName = cat['name'].toString().toLowerCase();
-                                  
+                                  final catName = cat.name.toLowerCase();
+
                                   // 1. Direct Category Match
                                   if (catName.contains(query)) {
-                                    deepSuggestions.add(cat);
-                                  } 
+                                    deepSuggestions.add({
+                                      'id': cat.id, 'name': cat.name, 'emoji': cat.emoji, 'image': cat.image,
+                                      'portions': cat.portions,
+                                    });
+                                  }
                                   // 2. Deep Portion Match (if not already matched by category name)
-                                  else if (cat['portions'] != null) {
-                                    final portions = cat['portions'] as List;
-                                    for (var p in portions) {
-                                      final pName = p['name'].toString().toLowerCase();
-                                      final pVariety = (p['variety'] ?? '').toString().toLowerCase();
-                                      
+                                  else {
+                                    for (var p in cat.portions) {
+                                      final pName = p.name.toLowerCase();
+                                      final pVariety = (p.variety ?? '').toLowerCase();
+
                                       if (pName.contains(query) || pVariety.contains(query)) {
                                         // Create a combined entry for the portion match
                                         deepSuggestions.add({
-                                          ...cat,
-                                          'displayName': "${cat['name']} - ${p['name']}",
+                                          'id': cat.id, 'name': cat.name, 'emoji': cat.emoji, 'image': cat.image,
+                                          'portions': cat.portions,
+                                          'displayName': "${cat.name} - ${p.name}",
                                           'isPortionMatch': true,
-                                          'selectedPortion': p,
+                                          'selectedPortion': p.toJson(),
                                         });
                                       }
                                     }
@@ -2392,14 +2392,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     if (_focusedCategoryId == null) return const SizedBox.shrink();
     if (_focusedCategoryId == 'custom') return _buildCustomFocusedView();
     
-    final category = _categories.firstWhere((c) => c['id'] == _focusedCategoryId);
-    
+    final category = _categories.firstWhere((c) => c.id == _focusedCategoryId);
+
     // Calculate APS dynamically for display
     final currentPortion = _selectedPortion;
-    final double calculatedAPS = currentPortion != null ? (currentPortion['volume'] * currentPortion['abv'] / 100.0) * _quantity : 0.0;
+    final double calculatedAPS = currentPortion != null ? (currentPortion.volume * currentPortion.abv / 100.0) * _quantity : 0.0;
 
-    final categoryPortions = category['portions'] as List;
-    final varieties = categoryPortions.map((p) => p['variety']).where((v) => v != null).toSet();
+    final categoryPortions = category.portions;
+    final varieties = categoryPortions.map((p) => p.variety).where((v) => v != null).toSet();
     final hasVarieties = varieties.length > 1;
 
     return Stack(
@@ -2437,7 +2437,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             children: [
           // Header Word
           Text(
-            category['name'],
+            category.name,
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -2471,15 +2471,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                       // Pulsing Emoji or Image
                       ScaleTransition(
                         scale: _pulseAnimation,
-                        child: category['image'] != null
+                        child: category.image != null
                             ? Image.asset(
-                                category['image'],
+                                category.image!,
                                 width: 140, // Smaller for minimalist look
                                 height: 140,
                                 fit: BoxFit.contain,
                               )
                             : Icon(
-                                DrinkDataService.instance.resolveFromId(category['id']).icon,
+                                DrinkDataService.instance.resolveFromId(category.id).icon,
                                 size: 120,
                                 color: Colors.white,
                               ),
@@ -2490,7 +2490,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
                 const SizedBox(height: 4),
                 Text(
-                  category['name'],
+                  category.name,
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -2515,8 +2515,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 // --- Size Selection ---
                 if (!hasVarieties || _selectedVarietyName != null) ...[
                   // Only show if there's actually a choice
-                  if ((category['portions'] as List).where((p) => p['variety'] == _selectedVarietyName).length > 1 || 
-                      (!hasVarieties && (category['portions'] as List).length > 1)) ...[
+                  if (category.portions.where((p) => p.variety == _selectedVarietyName).length > 1 ||
+                      (!hasVarieties && category.portions.length > 1)) ...[
                     _buildSectionHeader('MİKTAR SEÇİN'),
                     _buildPortionToggle(category),
                     const SizedBox(height: 20),
@@ -2600,10 +2600,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildVarietyToggle(Map<String, dynamic> category) {
-    final portions = category['portions'] as List;
+  Widget _buildVarietyToggle(DrinkCategory category) {
+    final portions = category.portions;
     final varieties = portions
-        .map((p) => p['variety'] as String?)
+        .map((p) => p.variety)
         .where((v) => v != null)
         .toSet()
         .toList();
@@ -2624,17 +2624,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 HapticFeedback.lightImpact();
                 setState(() {
                   _selectedVarietyName = v;
-                  final allPortions = category['portions'] as List;
-                  final filtered = allPortions.where((p) => p['variety'] == v).toList();
+                  final allPortions = category.portions;
+                  final filtered = allPortions.where((p) => p.variety == v).toList();
                   if (filtered.isNotEmpty) {
-                  final typedFiltered = filtered.cast<Map<String, dynamic>>();
-                  if (category['id'] == 'beer') {
-                    _selectedPortion = typedFiltered.firstWhere(
-                      (p) => p['volume'] == 500, 
-                      orElse: () => typedFiltered.first
+                  if (category.id == 'beer') {
+                    _selectedPortion = filtered.firstWhere(
+                      (p) => p.volume == 500,
+                      orElse: () => filtered.first
                     );
                   } else {
-                    _selectedPortion = typedFiltered.first;
+                    _selectedPortion = filtered.first;
                   }
                 }
                 });
@@ -2666,10 +2665,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildPortionToggle(Map<String, dynamic> category) {
-    var portions = category['portions'] as List;
+  Widget _buildPortionToggle(DrinkCategory category) {
+    var portions = category.portions.toList();
     if (_selectedVarietyName != null) {
-      portions = portions.where((p) => p['variety'] == _selectedVarietyName).toList();
+      portions = portions.where((p) => p.variety == _selectedVarietyName).toList();
     }
 
     if (portions.length <= 1) return const SizedBox.shrink();
@@ -2680,11 +2679,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       child: Row(
         children: portions.map<Widget>((p) {
-          final isSelected = (_selectedPortion?['uid'] != null && _selectedPortion?['uid'] == p['uid']) || 
-                           (_selectedPortion?['name'] == p['name'] && 
-                            _selectedPortion?['volume'] == p['volume'] && 
-                            _selectedPortion?['variety'] == p['variety']);
-          String sizeLabel = p['name'].toString();
+          final isSelected = _selectedPortion?.name == p.name &&
+                            _selectedPortion?.volume == p.volume &&
+                            _selectedPortion?.variety == p.variety;
+          String sizeLabel = p.name;
           if (_selectedVarietyName != null) {
              sizeLabel = sizeLabel.replaceAll(_selectedVarietyName!, '').replaceAll('(', '').replaceAll(')', '').trim();
           }
@@ -2904,7 +2902,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildMinimalSummary(Map<String, dynamic> portion, double aps) {
+  Widget _buildMinimalSummary(DrinkPortion portion, double aps) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
@@ -2916,9 +2914,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildMinimalInfoItem('%${portion['abv'].toStringAsFixed(1)}', 'ORAN'),
+          _buildMinimalInfoItem('%${portion.abv.toStringAsFixed(1)}', 'ORAN'),
           _buildMinimalDivider(),
-          _buildMinimalInfoItem('${portion['volume']}ml', 'HACİM'),
+          _buildMinimalInfoItem('${portion.volume}ml', 'HACİM'),
           _buildMinimalDivider(),
           _buildMinimalInfoItem(aps.toStringAsFixed(1), 'APS', isBold: true),
         ],
@@ -3361,10 +3359,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _categories.where((c) => c['id'] != 'custom').map((c) {
-            final isSelected = _customDescController.text == c['name'];
+          children: _categories.where((c) => c.id != 'custom').map((c) {
+            final isSelected = _customDescController.text == c.name;
             return GestureDetector(
-              onTap: () => setState(() => _customDescController.text = c['name']),
+              onTap: () => setState(() => _customDescController.text = c.name),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
@@ -3376,13 +3374,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      DrinkDataService.instance.resolveFromId(c['id']).icon,
+                      DrinkDataService.instance.resolveFromId(c.id).icon,
                       size: 16,
                       color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.7),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      c['name'],
+                      c.name,
                       style: TextStyle(color: isSelected ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ],

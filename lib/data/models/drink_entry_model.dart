@@ -128,20 +128,26 @@ class DrinkEntry {
   }
 
   factory DrinkEntry.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>;
+    return DrinkEntry.fromMap(doc.id, data);
+  }
+
+  /// Creates a [DrinkEntry] from a raw Firestore data map.
+  /// The [id] is the document ID, which is typically stored in [data] as 'id'.
+  factory DrinkEntry.fromMap(String id, Map<String, dynamic> data) {
     return DrinkEntry(
-      id: doc.id,
+      id: id,
       userId: data['userId'] ?? '',
       drinkType: data['drinkType'] ?? '',
       drinkEmoji: data['drinkEmoji'] ?? '',
       portion: data['portion'] ?? '',
-      volume: data['volume'] ?? 0,
-      abv: (data['abv'] ?? 0).toDouble(),
-      quantity: data['quantity'] ?? 0,
-      points: (data['points'] ?? 0).toDouble(),
+      volume: (data['volume'] as num?)?.toInt() ?? 0,
+      abv: (data['abv'] as num?)?.toDouble() ?? 0.0,
+      quantity: (data['quantity'] as num?)?.toInt() ?? 0,
+      points: (data['points'] as num?)?.toDouble() ?? 0.0,
       note: data['note'] ?? '',
       locationName: data['locationName'] ?? '',
-      intoxicationLevel: data['intoxicationLevel'] ?? 0,
+      intoxicationLevel: (data['intoxicationLevel'] as num?)?.toInt() ?? 0,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       hasImage: data['hasImage'] ?? false,

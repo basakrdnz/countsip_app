@@ -293,8 +293,13 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
     });
 
     HapticFeedback.lightImpact();
-    // Optimistically update
-    FeedService.toggleCheers(widget.item['id'], widget.currentUserId);
+    // Optimistically update — pass current like state before local toggle
+    final wasLiked = !_localCheers.contains(widget.currentUserId);
+    FeedService.toggleCheers(
+      widget.item['id'],
+      widget.currentUserId,
+      currentlyLiked: wasLiked,
+    );
   }
 
   @override

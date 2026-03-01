@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/services/bac_service.dart';
+import '../../data/models/drink_entry_model.dart';
 
 class BacStatsScreen extends StatefulWidget {
   final BacResult? currentBac;
@@ -172,13 +173,18 @@ class _BacStatsScreenState extends State<BacStatsScreen>
     final todayStart = DateTime(now.year, now.month, now.day);
     final spots = <FlSpot>[];
 
+    // Pre-convert today's Firestore maps to typed DrinkEntry objects once
+    final todayEntries = today
+        .where((e) => e['timestamp'] != null)
+        .map((e) => DrinkEntry.fromMap(e['id'] as String? ?? '', e))
+        .toList();
+
     // Simulate every 15 minutes from todayStart → now
     DateTime runner = todayStart;
     while (runner.isBefore(now.add(const Duration(minutes: 1)))) {
-      final relevantDrinks = today.where((e) {
-        final ts = (e['timestamp'] as Timestamp).toDate();
-        return ts.isBefore(runner);
-      }).toList();
+      final relevantDrinks = todayEntries
+          .where((e) => e.timestamp.isBefore(runner))
+          .toList();
 
       if (relevantDrinks.isNotEmpty) {
         final result = BacService.calculateDynamicBac(

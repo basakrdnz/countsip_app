@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../../data/models/drink_category_model.dart';
+
 /// Utility class for fuzzy text search functionality.
 /// Used by AddEntryScreen to find drink categories and portions.
 class TextSearch {
@@ -40,9 +42,12 @@ class TextSearch {
   ///
   /// Returns up to [maxResults] category maps, sorted by similarity score.
   /// Matches are checked against category name, portion name, and variety.
+  /// The return type remains `List<Map<String, dynamic>>` because results
+  /// include extra fields like `displayName`, `isPortionMatch`, and
+  /// `selectedPortion`.
   static List<Map<String, dynamic>> smartSearch(
     String query,
-    List<Map<String, dynamic>> categories, {
+    List<DrinkCategory> categories, {
     double threshold = 0.4,
     int maxResults = 3,
   }) {
@@ -52,32 +57,40 @@ class TextSearch {
     final List<(Map<String, dynamic>, int)> scored = [];
 
     for (final cat in categories) {
-      final catName = cat['name'].toString().toLowerCase();
+      final catName = cat.name.toLowerCase();
       final catSim = similarity(lowerQuery, catName);
 
       if (catSim > threshold) {
-        scored.add((cat, (catSim * 100).toInt()));
+        scored.add(({
+          'id': cat.id,
+          'name': cat.name,
+          'emoji': cat.emoji,
+          'image': cat.image,
+          'portions': cat.portions,
+        }, (catSim * 100).toInt()));
       }
 
       // Also search inside portions (name + variety).
-      if (cat['portions'] != null) {
-        for (final p in cat['portions'] as List<dynamic>) {
-          final pName = (p['name'] ?? '').toString().toLowerCase();
-          final pVariety = (p['variety'] ?? '').toString().toLowerCase();
+      for (final p in cat.portions) {
+        final pName = p.name.toLowerCase();
+        final pVariety = (p.variety ?? '').toLowerCase();
 
-          final sName = pName.isEmpty ? 0.0 : similarity(lowerQuery, pName);
-          final sVariety =
-              pVariety.isEmpty ? 0.0 : similarity(lowerQuery, pVariety);
-          final bestSim = max(sName, sVariety);
+        final sName = pName.isEmpty ? 0.0 : similarity(lowerQuery, pName);
+        final sVariety =
+            pVariety.isEmpty ? 0.0 : similarity(lowerQuery, pVariety);
+        final bestSim = max(sName, sVariety);
 
-          if (bestSim > threshold) {
-            scored.add(({
-              ...cat,
-              'displayName': '${cat['name']} - ${p['name']}',
-              'isPortionMatch': true,
-              'selectedPortion': p,
-            }, (bestSim * 100).toInt()));
-          }
+        if (bestSim > threshold) {
+          scored.add(({
+            'id': cat.id,
+            'name': cat.name,
+            'emoji': cat.emoji,
+            'image': cat.image,
+            'portions': cat.portions,
+            'displayName': '${cat.name} - ${p.name}',
+            'isPortionMatch': true,
+            'selectedPortion': p.toJson(),
+          }, (bestSim * 100).toInt()));
         }
       }
     }

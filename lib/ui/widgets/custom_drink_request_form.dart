@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/drink_categories.dart';
+import '../../data/models/drink_category_model.dart';
 
 /// Standalone widget for the custom drink request wizard.
 /// Extracted from AddEntryScreen to reduce file size.
@@ -20,7 +21,7 @@ class CustomDrinkRequestForm extends StatefulWidget {
 }
 
 class _CustomDrinkRequestFormState extends State<CustomDrinkRequestForm> {
-  static const List<Map<String, dynamic>> _categories = drinkCategories;
+  static const List<DrinkCategory> _categories = drinkCategories;
 
   final _nameController = TextEditingController();
   final _abvController = TextEditingController();
@@ -121,10 +122,10 @@ class _CustomDrinkRequestFormState extends State<CustomDrinkRequestForm> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _categories.where((c) => c['id'] != 'custom').map((c) {
-            final isSelected = _categoryController.text == c['name'];
+          children: _categories.where((c) => c.id != 'custom').map((c) {
+            final isSelected = _categoryController.text == c.name;
             return GestureDetector(
-              onTap: () => setState(() => _categoryController.text = c['name'] as String),
+              onTap: () => setState(() => _categoryController.text = c.name),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
@@ -137,7 +138,7 @@ class _CustomDrinkRequestFormState extends State<CustomDrinkRequestForm> {
                   ),
                 ),
                 child: Text(
-                  '${c['emoji']} ${c['name']}',
+                  '${c.emoji} ${c.name}',
                   style: TextStyle(
                     color: isSelected ? AppColors.primary : Colors.white,
                     fontWeight: FontWeight.bold,

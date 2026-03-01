@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math' as math;
+import '../../data/models/drink_entry_model.dart';
 
 enum BacTrend { rising, falling, stable }
 
@@ -53,14 +53,26 @@ class BacService {
   // Density of ethanol in g/ml
   static const double _densityAlcohol = 0.789;
 
-  /// Overhauled BAC Calculation Engine
-  /// Uses Watson Formula for TBW and models absorption curves.
+  /// Calculates a dynamic Blood Alcohol Concentration (BAC) estimate using
+  /// the **Watson Formula** for Total Body Water (TBW).
+  ///
+  /// The Watson Formula estimates TBW based on height, weight, age, and gender:
+  ///   - Female: TBW = -2.097 + 0.1069*height + 0.2466*weight
+  ///   - Male:   TBW =  2.447 - 0.09516*age + 0.1074*height + 0.3362*weight
+  ///
+  /// BAC is then derived per-drink using a Widmark-style model:
+  ///   1. Alcohol mass (g) = volume (ml) * ABV * ethanol density (0.789 g/ml)
+  ///   2. Absorption follows a linear ramp over ~45 minutes
+  ///   3. Elimination uses a beta range (0.012 - 0.018 per hour) to produce a
+  ///      min/max BAC window
+  ///
+  /// Returns a [BacResult] containing the current range, trend, and daily peak.
   static BacResult calculateDynamicBac({
     required double weightKg,
     required double heightCm,
     required int age,
     required String gender,
-    required List<Map<String, dynamic>> drinks,
+    required List<DrinkEntry> drinks,
   }) {
     if (weightKg <= 0 || drinks.isEmpty) {
       return BacResult(min: 0, max: 0, trend: BacTrend.stable);
@@ -94,7 +106,7 @@ class BacService {
       double maxAvg = (currentRange.min + currentRange.max) / 2;
 
       if (drinks.isNotEmpty) {
-        final firstDrinkTime = drinks.map((d) => (d['timestamp'] as Timestamp).toDate()).reduce((a, b) => a.isBefore(b) ? a : b);
+        final firstDrinkTime = drinks.map((d) => d.timestamp).reduce((a, b) => a.isBefore(b) ? a : b);
         
         // Step through time in 15-min intervals to find peak
         DateTime runner = firstDrinkTime;
@@ -143,9 +155,11 @@ class BacService {
       );
     }
 
+    /// Computes the BAC range at a specific [targetTime] by summing each
+    /// drink's contribution (absorption minus elimination).
     static ({double min, double max}) _calculateForTime(
       DateTime targetTime,
-      List<Map<String, dynamic>> drinks,
+      List<DrinkEntry> drinks,
       double vDist,
       double betaMin,
       double betaMax,
@@ -154,11 +168,11 @@ class BacService {
       double totalAlcoholMax = 0.0;
 
       for (var drink in drinks) {
-        final timestamp = (drink['timestamp'] as Timestamp).toDate();
+        final timestamp = drink.timestamp;
         if (timestamp.isAfter(targetTime)) continue;
 
-        final volume = (drink['volume'] ?? 0).toDouble();
-        final abv = (drink['abv'] ?? 0).toDouble();
+        final volume = drink.volume.toDouble();
+        final abv = drink.abv;
         final alcoholGrams = volume * (abv / 100.0) * _densityAlcohol;
 
         // Absorption Curve Model (Simple linear ramp over 45 minutes)

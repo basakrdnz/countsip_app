@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/services/drink_data_service.dart';
 import '../../core/services/navigation_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/models/drink_category_model.dart';
 
 class HomeQuickAddSection extends StatefulWidget {
   final List<Map<String, dynamic>> quickAddConfigs;
@@ -142,10 +143,11 @@ class _HomeQuickAddSectionState extends State<HomeQuickAddSection> {
                     onTap: () {
                       HapticFeedback.lightImpact();
                       final config = option['config'] as Map<String, dynamic>;
+                      final portionMap = config['portion'] as Map<String, dynamic>?;
                       NavigationService.instance.selectCategory(
                         option['id']! as String,
                         variety: config['variety'] as String?,
-                        portion: config['portion'] as Map<String, dynamic>?,
+                        portion: portionMap != null ? DrinkPortion.fromJson(portionMap) : null,
                       );
                       StatefulNavigationShell.of(context).goBranch(1);
                     },
