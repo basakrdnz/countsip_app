@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // Hot reload trigger v2
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,6 +34,7 @@ class _FeedScreenState extends State<FeedScreen> {
   DocumentSnapshot? _lastDocument;
   static const int _pageSize = 10;
   static const int _maxItems = 50;
+  String _currentFilter = 'all'; // 'all' or 'me'
 
   @override
   void initState() {
@@ -187,6 +188,11 @@ class _FeedScreenState extends State<FeedScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Scaffold(body: Center(child: Text('Giriş yapılmadı')));
 
+    // Filter items locally for immediate response
+    final displayItems = _currentFilter == 'me' 
+        ? _feedItems.where((item) => item['userId'] == user.uid).toList()
+        : _feedItems;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -199,6 +205,42 @@ class _FeedScreenState extends State<FeedScreen> {
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
         automaticallyImplyLeading: false,
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.filter_list_rounded, color: AppColors.textPrimary.withOpacity(0.7)),
+            color: AppColors.surfaceElevated,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            onSelected: (value) {
+              setState(() {
+                _currentFilter = value;
+              });
+              HapticFeedback.selectionClick();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'all',
+                child: Row(
+                  children: [
+                    Icon(Icons.public, color: _currentFilter == 'all' ? AppColors.primary : AppColors.textPrimary.withOpacity(0.5), size: 20),
+                    const SizedBox(width: 12),
+                    Text('Tümü', style: TextStyle(color: _currentFilter == 'all' ? AppColors.primary : AppColors.textPrimary, fontWeight: _currentFilter == 'all' ? FontWeight.bold : FontWeight.normal)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'me',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: _currentFilter == 'me' ? AppColors.primary : AppColors.textPrimary.withOpacity(0.5), size: 20),
+                    const SizedBox(width: 12),
+                    Text('Sadece Ben', style: TextStyle(color: _currentFilter == 'me' ? AppColors.primary : AppColors.textPrimary, fontWeight: _currentFilter == 'me' ? FontWeight.bold : FontWeight.normal)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _feedItems.isEmpty && _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -211,16 +253,16 @@ class _FeedScreenState extends State<FeedScreen> {
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                     padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: _feedItems.length + (_hasMore && _isLoading && _feedItems.length < _maxItems ? 1 : 0),
+                    itemCount: displayItems.length + (_hasMore && _isLoading && _feedItems.length < _maxItems ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (index == _feedItems.length) {
+                      if (index == displayItems.length) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 32),
                           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                         );
                       }
 
-                      final item = _feedItems[index];
+                      final item = displayItems[index];
                       return AnimationConfiguration.staggeredList(
                         position: index,
                         duration: const Duration(milliseconds: 500),
@@ -310,17 +352,30 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
           HapticFeedback.selectionClick();
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutQuart,
+      child: Container(
         margin: const EdgeInsets.only(bottom: 20),
-        decoration: AppDecorations.glassCard(borderRadius: 24).copyWith(
-          border: (isOwnPost && !_isExpanded)
-              ? Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.5)
-              : null,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutQuart,
+              constraints: BoxConstraints(
+                minHeight: (isOwnPost && !_isExpanded) ? 60 : 0, // Thinner when collapsed
+              ),
+              decoration: AppDecorations.outlinedGlassCard(
+                borderRadius: 24,
+                backgroundColor: (isOwnPost && !_isExpanded) 
+                    ? Colors.transparent // Faded background
+                    : null,
+                borderColor: (isOwnPost && !_isExpanded)
+                    ? Colors.white.withOpacity(0.08) // Very subtle border
+                    : null,
+              ),
+              child: Opacity(
+                opacity: (isOwnPost && !_isExpanded) ? 0.6 : 1.0, // Silik görünüm
+                child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header: User Info + Drink Badge (The "Strip" always visible)
@@ -330,7 +385,7 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                 children: [
                   Stack(
                     children: [
-                      _buildUserAvatar(item['userId'], size: 40),
+                      _buildUserAvatar(item['userId'], size: (isOwnPost && !_isExpanded) ? 32 : 40, isSubdued: isOwnPost && !_isExpanded),
                       Positioned(
                         bottom: -2,
                         right: -2,
@@ -341,7 +396,7 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
                           ),
-                          child: Icon(drinkData.icon, size: 12, color: AppColors.textPrimary),
+                          child: Icon(drinkData.icon, size: (isOwnPost && !_isExpanded) ? 10 : 12, color: AppColors.textPrimary),
                         ),
                       ),
                     ],
@@ -351,13 +406,13 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFeedHeader(item['userId'], drinkType, portion, timestamp?.toDate()),
-                        const SizedBox(height: 4),
+                        _buildFeedHeader(item['userId'], drinkType, portion, timestamp?.toDate(), isOwnPost && !_isExpanded),
+                        SizedBox(height: (isOwnPost && !_isExpanded) ? 4 : 8),
                         Row(
                           children: [
-                            Icon(Icons.access_time_rounded, size: 10, color: AppColors.textPrimary.withOpacity(0.3)),
+                            Icon(Icons.access_time_rounded, size: 12, color: AppColors.textPrimary.withOpacity(0.4)),
                             const SizedBox(width: 4),
-                            Text(timeStr, style: TextStyle(color: AppColors.textPrimary.withOpacity(0.35), fontSize: 10, fontWeight: FontWeight.w600)),
+                            Text(timeStr, style: TextStyle(color: AppColors.textPrimary.withOpacity(0.45), fontSize: 11, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ],
@@ -520,33 +575,39 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
               sizeCurve: Curves.easeOutQuart,
               firstCurve: Curves.easeOutQuart,
               secondCurve: Curves.easeOutQuart,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+            ), // Close AnimatedCrossFade
+          ], // Close children list
+        ), // Close Column
+              ), // Close Opacity
+      ), // Close AnimatedContainer
+    ), // Close BackdropFilter
+  ), // Close ClipRRect
+        ), // outer Container
+      ); // GestureDetector
+    }
 
-  // Identical helper methods moved into the widget
-  Widget _buildUserAvatar(String userId, {double size = 40}) {
+  Widget _buildUserAvatar(String userId, {double size = 40, bool isSubdued = false}) {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() as Map<String, dynamic>?;
         final photoUrl = data?['photoUrl'];
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)),
-          child: photoUrl != null 
-            ? ClipRRect(borderRadius: BorderRadius.circular(size / 2), child: CachedNetworkImage(imageUrl: photoUrl, fit: BoxFit.cover))
-            : Icon(Icons.person, color: Colors.white24, size: size * 0.6),
+        return Opacity(
+          opacity: isSubdued ? 0.6 : 1.0,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)),
+            child: photoUrl != null 
+              ? ClipRRect(borderRadius: BorderRadius.circular(size / 2), child: CachedNetworkImage(imageUrl: photoUrl, fit: BoxFit.cover))
+              : Icon(Icons.person, color: Colors.white24, size: size * 0.6),
+          ),
         );
       },
     );
   }
 
-  Widget _buildFeedHeader(String userId, String drinkType, String portion, DateTime? timestamp) {
+  Widget _buildFeedHeader(String userId, String drinkType, String portion, DateTime? timestamp, [bool isSubdued = false]) {
     if (timestamp == null) return Container();
     
     final startOfDay = DateTime(timestamp.year, timestamp.month, timestamp.day);
@@ -587,56 +648,65 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
             if (portion.toLowerCase().contains('shot')) action = 'bir shot';
             if (portion.toLowerCase().contains('duble')) action = 'bir duble';
             
-            return Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: isSubdued ? 14 : 15,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    if (sequence > 1) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'BUGÜN $sequence.',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                SizedBox(height: isSubdued ? 2 : 6),
                 RichText(
                   text: TextSpan(
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      color: AppColors.textPrimary,
-                      height: 1.3,
+                      fontSize: isSubdued ? 12 : 13,
+                      color: AppColors.textPrimary.withOpacity(0.7),
+                      height: 1.4,
                     ),
                     children: [
                       TextSpan(
-                        text: name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const TextSpan(text: ' '),
-                      TextSpan(
                         text: action,
-                        style: TextStyle(color: AppColors.textPrimary.withOpacity(0.6), fontWeight: FontWeight.w500),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                       const TextSpan(text: ' '),
                       TextSpan(
                         text: drinkType,
                         style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
-                      TextSpan(
-                        text: ' içti',
-                        style: TextStyle(color: AppColors.textPrimary.withOpacity(0.6), fontWeight: FontWeight.w500),
-                      ),
+                      const TextSpan(text: ' içti'),
                     ],
                   ),
                 ),
-                if (sequence > 1) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Bugün $sequence.',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ],
               ],
             );
           },

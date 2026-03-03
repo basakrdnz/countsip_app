@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
+import 'dart:ui'; // Hot reload trigger
 import 'app_colors.dart';
 
 class AppDecorations {
@@ -25,6 +25,55 @@ class AppDecorations {
           offset: const Offset(0, 4),
         ),
       ],
+    );
+  }
+
+  /// NEW Approved Style: Outlined & Transparent Glass Card
+  static BoxDecoration outlinedGlassCard({
+    double borderRadius = 24.0,
+    double borderWidth = 1.5,
+    Color? backgroundColor,
+    Color? borderColor,
+  }) {
+    return BoxDecoration(
+      color: backgroundColor ?? Colors.white.withOpacity(0.04),
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: borderColor ?? Colors.white.withOpacity(0.18),
+        width: borderWidth,
+      ),
+    );
+  }
+
+  /// Outlined Glass Widget wrapper with BackdropFilter
+  static Widget outlinedGlassWidget({
+    required Widget child,
+    double borderRadius = 24.0,
+    double borderWidth = 1.5,
+    double blurSigma = 12.0,
+    Color? backgroundColor,
+    Color? borderColor,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+  }) {
+    return Container(
+      margin: margin,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+          child: Container(
+            padding: padding,
+            decoration: outlinedGlassCard(
+              borderRadius: borderRadius,
+              borderWidth: borderWidth,
+              backgroundColor: backgroundColor,
+              borderColor: borderColor,
+            ),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 

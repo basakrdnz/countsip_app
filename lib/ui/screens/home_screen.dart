@@ -745,7 +745,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: AppDecorations.glassCard(),
                   child: TableCalendar(
                     locale: 'tr_TR',
-                    availableGestures: AvailableGestures.all,
+                    availableGestures: AvailableGestures.horizontalSwipe,
                     firstDay: DateTime.utc(2020, 1, 1),
                     lastDay: DateTime.utc(2030, 12, 31),
                           focusedDay: _focusedDay,

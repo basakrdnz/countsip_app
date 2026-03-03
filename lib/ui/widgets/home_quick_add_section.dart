@@ -156,8 +156,8 @@ class _HomeQuickAddSectionState extends State<HomeQuickAddSection> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.12),
-                          width: 1.2,
+                          color: Colors.white.withOpacity(0.25),
+                          width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -196,8 +196,8 @@ class _HomeQuickAddSectionState extends State<HomeQuickAddSection> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Colors.white.withOpacity(0.03),
-                                      Colors.black.withOpacity(0.12),
+                                      Colors.white.withOpacity(0.02),
+                                      Colors.black.withOpacity(0.05),
                                     ],
                                   ),
                                 ),

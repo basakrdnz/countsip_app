@@ -2520,17 +2520,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 if (hasVarieties) ...[
                   _buildSectionHeader('ÇEŞİT SEÇİN'),
                   _buildVarietyToggle(category),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
 
-                // --- Size Selection ---
                 if (!hasVarieties || _selectedVarietyName != null) ...[
                   // Only show if there's actually a choice
                   if (category.portions.where((p) => p.variety == _selectedVarietyName).length > 1 ||
                       (!hasVarieties && category.portions.length > 1)) ...[
                     _buildSectionHeader('MİKTAR SEÇİN'),
                     _buildPortionToggle(category),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                   ],
                 ],
 
@@ -2538,14 +2537,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 if (currentPortion != null) ...[
                   _buildSectionHeader('İÇİLME ZAMANI'),
                   _buildTimeSelector(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  _buildSectionHeader('KİMİNLE?'),
-                  _buildDrinkingWithSelector(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionHeader('EKSTRALAR'),
-                  _buildOptionalAdditions(),
+                  // Compact icon bar: friends + extras
+                  _buildCompactActionBar(),
                   const SizedBox(height: 16),
                 ] else ...[
                   // Guiding message based on current step
@@ -2621,23 +2616,21 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
     if (varieties.length <= 1) return const SizedBox.shrink();
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: Row(
+    return Center(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
         children: varieties.map<Widget>((v) {
           final isSelected = _selectedVarietyName == v;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _selectedVarietyName = v;
-                  final allPortions = category.portions;
-                  final filtered = allPortions.where((p) => p.variety == v).toList();
-                  if (filtered.isNotEmpty) {
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() {
+                _selectedVarietyName = v;
+                final allPortions = category.portions;
+                final filtered = allPortions.where((p) => p.variety == v).toList();
+                if (filtered.isNotEmpty) {
                   if (category.id == 'beer') {
                     _selectedPortion = filtered.firstWhere(
                       (p) => p.volume == 500,
@@ -2647,26 +2640,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     _selectedPortion = filtered.first;
                   }
                 }
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
-                    width: 1.2,
-                  ),
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
+                  width: 1.2,
                 ),
-                child: Text(
-                  v!,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
-                  ),
+              ),
+              child: Text(
+                v!,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
                 ),
               ),
             ),
@@ -2684,11 +2676,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
     if (portions.length <= 1) return const SizedBox.shrink();
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: Row(
+    return Center(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
         children: portions.map<Widget>((p) {
           final isSelected = _selectedPortion?.name == p.name &&
                             _selectedPortion?.volume == p.volume &&
@@ -2698,31 +2690,28 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
              sizeLabel = sizeLabel.replaceAll(_selectedVarietyName!, '').replaceAll('(', '').replaceAll(')', '').trim();
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                setState(() => _selectedPortion = p);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
-                    width: 1.2,
-                  ),
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _selectedPortion = p);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
+                  width: 1.2,
                 ),
-                child: Text(
-                  sizeLabel,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
-                  ),
+              ),
+              child: Text(
+                sizeLabel,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
                 ),
               ),
             ),
@@ -2733,22 +2722,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Widget _buildTimeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'İÇİLME ZAMANI',
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Colors.white.withOpacity(0.4),
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 4), // Aligned to 0 on horizontal left
           child: Row(
             children: _timeShortcuts.map((shortcut) {
               final int value = shortcut['value'];
@@ -2773,29 +2750,133 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 onTap: () async {
                   HapticFeedback.lightImpact();
                   if (value == -1) {
-                    final picked = await showTimePicker(
+                    // Scroll-wheel time picker bottom sheet
+                    final now = DateTime.now();
+                    int tempHour = _selectedTime.hour;
+                    int tempMinute = _selectedTime.minute;
+                    final hourController = FixedExtentScrollController(initialItem: tempHour);
+                    final minuteController = FixedExtentScrollController(initialItem: tempMinute);
+
+                    await showModalBottomSheet(
                       context: context,
-                      initialTime: TimeOfDay.fromDateTime(_selectedTime),
-                      builder: (context, child) {
-                        return Theme(
-                          data: Theme.of(context).copyWith(
-                            colorScheme: const ColorScheme.dark(
-                              primary: Color(0xFFFF8902),
-                              onPrimary: Colors.white,
-                              surface: Color(0xFF1A1F2E),
-                              onSurface: Colors.white,
-                            ),
+                      backgroundColor: Colors.transparent,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      builder: (ctx) => StatefulBuilder(
+                        builder: (ctx, setSheetState) => Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1A1F2E),
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                           ),
-                          child: child!,
-                        );
-                      },
+                          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Handle bar
+                              Container(
+                                width: 40, height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Text('Saat Seç',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16, fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              // Scroll pickers row
+                              SizedBox(
+                                height: 140,
+                                child: Row(
+                                  children: [
+                                    // Hour picker
+                                    Expanded(
+                                      child: CupertinoPicker(
+                                        scrollController: hourController,
+                                        itemExtent: 48,
+                                        selectionOverlay: const CupertinoPickerDefaultSelectionOverlay(
+                                          background: Color(0x22FFFFFF),
+                                        ),
+                                        onSelectedItemChanged: (i) {
+                                          tempHour = i;
+                                        },
+                                        children: List.generate(24, (i) => Center(
+                                          child: Text(
+                                            i.toString().padLeft(2, '0'),
+                                            style: GoogleFonts.inter(
+                                              fontSize: 24, fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        )),
+                                      ),
+                                    ),
+                                    // Colon separator
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: Text(':',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 28, fontWeight: FontWeight.w900,
+                                          color: Colors.white.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                    // Minute picker
+                                    Expanded(
+                                      child: CupertinoPicker(
+                                        scrollController: minuteController,
+                                        itemExtent: 48,
+                                        selectionOverlay: const CupertinoPickerDefaultSelectionOverlay(
+                                          background: Color(0x22FFFFFF),
+                                        ),
+                                        onSelectedItemChanged: (i) {
+                                          tempMinute = i;
+                                        },
+                                        children: List.generate(60, (i) => Center(
+                                          child: Text(
+                                            i.toString().padLeft(2, '0'),
+                                            style: GoogleFonts.inter(
+                                              fontSize: 24, fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        )),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              // Confirm button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    final n = DateTime.now();
+                                    setState(() {
+                                      _selectedTime = DateTime(n.year, n.month, n.day, tempHour, tempMinute);
+                                    });
+                                    Navigator.pop(ctx);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  ),
+                                  child: Text('Tamam', style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
-                    if (picked != null) {
-                      final now = DateTime.now();
-                      setState(() {
-                        _selectedTime = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
-                      });
-                    }
                   } else {
                     setState(() {
                       _selectedTime = DateTime.now().subtract(Duration(minutes: value));
@@ -2835,8 +2916,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               );
             }).toList(),
           ),
-        ),
-      ],
     );
   }
 
@@ -2897,7 +2976,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24, bottom: 8),
+      padding: const EdgeInsets.only(bottom: 12), // Removed left: 24 padding, using parent container's padding
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
@@ -2968,6 +3047,173 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       color: Colors.white.withOpacity(0.12),
     );
   }
+
+  // Simple chip-based action bar — same style as time selector
+  Widget _buildCompactActionBar() {
+    final hasFriends = _taggedFriendIds.isNotEmpty;
+    final hasPhoto = _tempPickedImage != null;
+    final hasLocation = _tempLocationName != null;
+    final hasNote = _tempNote != null;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildSimpleChip(
+            icon: Icons.people_outline_rounded,
+            label: hasFriends ? '${_taggedFriendIds.length} Arkadas' : 'Arkadas',
+            isActive: hasFriends,
+            activeColor: AppColors.primary,
+            onTap: _showFriendSelectionSheet,
+            onClear: hasFriends ? () => setState(() => _taggedFriendIds.clear()) : null,
+          ),
+          const SizedBox(width: 8),
+          _buildSimpleChip(
+            icon: Icons.camera_alt_outlined,
+            label: hasPhoto ? 'Fotograf' : 'Fotograf',
+            isActive: hasPhoto,
+            activeColor: const Color(0xFFFF8902),
+            onTap: () async {
+              final picker = ImagePicker();
+              final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+              if (photo != null) setState(() => _tempPickedImage = photo);
+            },
+            onClear: hasPhoto ? () => setState(() => _tempPickedImage = null) : null,
+          ),
+          const SizedBox(width: 8),
+          _buildSimpleChip(
+            icon: Icons.location_on_outlined,
+            label: hasLocation ? _tempLocationName! : 'Konum',
+            isActive: hasLocation,
+            activeColor: const Color(0xFF4ECDC4),
+            onTap: () async {
+              final String? loc = await context.push('/location-picker');
+              if (loc != null) setState(() => _tempLocationName = loc);
+            },
+            onClear: hasLocation ? () => setState(() => _tempLocationName = null) : null,
+          ),
+          const SizedBox(width: 8),
+          _buildSimpleChip(
+            icon: Icons.edit_note_outlined,
+            label: hasNote ? 'Not' : 'Not',
+            isActive: hasNote,
+            activeColor: const Color(0xFFFFE66D),
+            onTap: () async {
+              final controller = TextEditingController(text: _tempNote);
+              final String? note = await showDialog<String>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: const Color(0xFF1A1F2E),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  contentPadding: const EdgeInsets.all(24),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Not', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: controller,
+                        autofocus: true,
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                        decoration: InputDecoration(
+                          hintText: 'Örn: Soğuk içilsin...',
+                          hintStyle: const TextStyle(color: Colors.white24),
+                          fillColor: Colors.white10,
+                          filled: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.all(14),
+                        ),
+                        maxLines: 3,
+                        minLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text('VAZGEÇ', style: GoogleFonts.inter(color: Colors.white38, fontWeight: FontWeight.w700, fontSize: 12)),
+                            ),
+                          ),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                final t = controller.text.trim();
+                                if (t.isNotEmpty) Navigator.pop(context, t);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFE66D),
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: Text('KAYDET', style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              if (note != null) setState(() => _tempNote = note);
+            },
+            onClear: hasNote ? () => setState(() => _tempNote = null) : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleChip({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required Color activeColor,
+    required VoidCallback onTap,
+    VoidCallback? onClear,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onClear,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor.withOpacity(0.12) : const Color(0xFF1A1F2E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? activeColor.withOpacity(0.5) : Colors.white.withOpacity(0.06),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isActive ? activeColor : Colors.white.withOpacity(0.4),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: isActive ? activeColor : Colors.white.withOpacity(0.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
 
   Widget _buildOptionalAdditions() {
     return Column(
@@ -3524,35 +3770,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   Widget _buildDrinkingWithSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.people_outline, size: 16, color: Colors.white.withOpacity(0.5)),
-            const SizedBox(width: 8),
-            Text(
-              'KİMİNLE İÇİYORSUN?',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: Colors.white.withOpacity(0.5),
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
             children: [
               _buildAddFriendTag(),
               ..._taggedFriendIds.map((id) => _buildFriendTag(id)),
             ],
           ),
-        ),
-      ],
     );
   }
 
