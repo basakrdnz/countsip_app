@@ -170,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         final userData = snapshot.data?.data();
-        final name = userData?['name'] as String? ?? 'Misafir';
+        final name = (userData?['name'] as String? ?? 'Misafir').split(' ').first;
         final username = userData?['username'] as String?;
         final photoUrl = userData?['photoUrl'] as String?;
 

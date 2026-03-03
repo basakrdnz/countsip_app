@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:uicons/uicons.dart';
 import 'package:share_plus/share_plus.dart';
@@ -742,10 +743,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                         decoration: AppDecorations.glassCard(),
-                        child: TableCalendar(
-                          locale: 'tr_TR',
-                          firstDay: DateTime.utc(2020, 1, 1),
-                          lastDay: DateTime.utc(2030, 12, 31),
+                  child: TableCalendar(
+                    locale: 'tr_TR',
+                    availableGestures: AvailableGestures.all,
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
                           focusedDay: _focusedDay,
                           calendarFormat: _calendarFormat,
                           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
@@ -908,13 +910,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               _focusedDay = focusedDay;
                             });
                           },
-                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
             if (_selectedDay != null) ...[
               const SizedBox(height: 16),
               _buildInlineDayDetails(
@@ -1094,7 +1096,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: -1,
-              color: AppColors.primary,
+              color: Colors.white,
             ),
           ),
           StreamBuilder<QuerySnapshot>(

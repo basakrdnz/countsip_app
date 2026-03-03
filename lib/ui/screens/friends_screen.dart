@@ -407,7 +407,7 @@ class _FriendsListTabState extends State<_FriendsListTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  friendData['name'] ?? 'İsimsiz',
+                  (friendData['name'] ?? 'İsimsiz').toString().split(' ').first,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -435,9 +435,11 @@ class _FriendsListTabState extends State<_FriendsListTab> {
             ),
             onSelected: (value) {
               if (value == 'block') {
-                _showBlockDialog(context, friendUid, friendData['name'] ?? 'Bu kullanıcı', friendshipId);
+                final friendName = (friendData['name'] ?? 'Bu kullanıcı').toString().split(' ').first;
+                _showBlockDialog(context, friendUid, friendName, friendshipId);
               } else if (value == 'remove') {
-                _showRemoveFriendDialog(context, friendData['name'] ?? 'Bu kullanıcı', friendshipId);
+                final friendName = (friendData['name'] ?? 'Bu kullanıcı').toString().split(' ').first;
+                _showRemoveFriendDialog(context, friendName, friendshipId);
               }
             },
             itemBuilder: (context) => [
@@ -849,7 +851,7 @@ class _RequestsTab extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    senderData['name'] ?? 'İsimsiz',
+                                    (senderData['name'] ?? 'İsimsiz').toString().split(' ').first,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
@@ -985,7 +987,7 @@ class _RequestsTab extends StatelessWidget {
         'type': 'friend_request_accepted',
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
-        'senderName': myData?['name'] ?? 'İsimsiz',
+        'senderName': (myData?['name'] ?? 'İsimsiz').toString().split(' ').first,
         'senderUsername': myData?['username'] ?? '',
         'senderPhotoUrl': myData?['photoUrl'],
       });

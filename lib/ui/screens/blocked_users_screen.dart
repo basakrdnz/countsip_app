@@ -240,7 +240,7 @@ class BlockedUsersScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                userData['name'] ?? 'İsimsiz',
+                                (userData['name'] ?? 'İsimsiz').toString().split(' ').first,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,

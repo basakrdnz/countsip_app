@@ -3587,7 +3587,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildFriendTag(String friendId) {
     final data = _taggedFriendData[friendId];
-    final name = data?['name'] ?? 'Arkadaş';
+    final name = (data?['name'] ?? 'Arkadaş').toString().split(' ').first;
     final photoUrl = data?['photoUrl'];
 
     return Container(
@@ -3840,7 +3840,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              friendData['name'] ?? 'İsimsiz',
+                                              (friendData['name'] ?? 'İsimsiz').toString().split(' ').first,
                                               style: GoogleFonts.inter(
                                                 fontWeight: FontWeight.w700,
                                                 color: Colors.white,

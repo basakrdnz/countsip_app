@@ -284,7 +284,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             final isCurrentUser = docs[index].id == currentUserId;
             final anon = Map<String, dynamic>.from(user);
             if (!isCurrentUser) {
-              final name = user['name'] as String? ?? 'Kullanıcı';
+              final name = (user['name'] as String? ?? 'Kullanıcı').split(' ').first;
               anon['name'] = '${name[0]}${'*' * (name.length - 1)}';
               anon['photoUrl'] = null;
             }
@@ -410,7 +410,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 if (isFrozen && !isCurrentUser) return const SizedBox();
                 final displayUser = {...profile, ...userData};
                 if (!isCurrentUser) {
-                  final name = profile['name'] as String? ?? 'Kullanıcı';
+                  final name = (profile['name'] as String? ?? 'Kullanıcı').split(' ').first;
                   displayUser['name'] = '${name[0]}${'*' * (name.length - 1)}';
                   displayUser['photoUrl'] = null;
                 }
@@ -566,7 +566,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           // Name
           Expanded(
             child: Text(
-              user['name'] ?? 'İsimsiz',
+              (user['name'] ?? 'İsimsiz').toString().split(' ').first,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,

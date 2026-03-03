@@ -240,7 +240,7 @@ class _NotificationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = notification['type'] as String;
     final fromUid = notification['from'] as String;
-    final name = notification['senderName'] ?? 'İsimsiz';
+    final name = (notification['senderName'] ?? 'İsimsiz').toString().split(' ').first;
     final username = notification['senderUsername'] ?? '';
     final photoUrl = notification['senderPhotoUrl'] as String?;
     final createdAt = notification['createdAt'] as Timestamp?;
@@ -477,7 +477,7 @@ class _NotificationItem extends StatelessWidget {
         'type': 'friend_request_accepted',
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
-        'senderName': myData?['name'] ?? 'İsimsiz',
+        'senderName': (myData?['name'] ?? 'İsimsiz').toString().split(' ').first,
         'senderUsername': myData?['username'] ?? '',
         'senderPhotoUrl': myData?['photoUrl'],
       });

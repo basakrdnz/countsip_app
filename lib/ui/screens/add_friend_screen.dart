@@ -197,7 +197,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         'type': 'friend_request_received',
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
-        'senderName': _myProfile?['name'] ?? 'İsimsiz',
+        'senderName': (_myProfile?['name'] ?? 'İsimsiz').toString().split(' ').first,
         'senderUsername': _myProfile?['username'] ?? '',
         'senderPhotoUrl': _myProfile?['photoUrl'],
       });
@@ -718,7 +718,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                     Text(
-                                      user['name'] ?? 'İsimsiz',
+                                      (user['name'] ?? 'İsimsiz').toString().split(' ').first,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 14,

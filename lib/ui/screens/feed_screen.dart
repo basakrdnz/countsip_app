@@ -351,7 +351,8 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildUserName(item['userId']),
+                        _buildFeedHeader(item['userId'], drinkType, portion, timestamp?.toDate()),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(Icons.access_time_rounded, size: 10, color: AppColors.textPrimary.withOpacity(0.3)),
@@ -362,19 +363,6 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                       ],
                     ),
                   ),
-                  
-                  if (isOwnPost && !_isExpanded)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        drinkType,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          color: AppColors.primary.withOpacity(0.8),
-                        ),
-                      ),
-                    ),
 
                   // Portion or Cheers Chip
                   if (isOwnPost && !_isExpanded)
@@ -456,17 +444,13 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                   
                   // Post Details
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          drinkType,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.textPrimary),
-                        ),
                         if (item['locationName'] != null && item['locationName'].isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: Row(
                               children: [
                                 const Icon(Icons.location_on_rounded, size: 12, color: AppColors.primary),
@@ -476,12 +460,9 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                             ),
                           ),
                         if (item['note'] != null && item['note'].isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              item['note'], 
-                              style: TextStyle(color: AppColors.textPrimary.withOpacity(0.6), fontSize: 13, height: 1.4),
-                            ),
+                          Text(
+                            item['note'], 
+                            style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 14, height: 1.5),
                           ),
                       ],
                     ),
@@ -565,13 +546,113 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
     );
   }
 
+  Widget _buildFeedHeader(String userId, String drinkType, String portion, DateTime? timestamp) {
+    if (timestamp == null) return Container();
+    
+    final startOfDay = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final nextDay = startOfDay.add(const Duration(days: 1));
+
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('entries')
+          .where('userId', isEqualTo: userId)
+          .where('drinkType', isEqualTo: drinkType)
+          .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
+          .where('timestamp', isLessThan: nextDay)
+          .orderBy('timestamp', descending: false)
+          .get(),
+      builder: (context, drinkSnapshot) {
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+          builder: (context, userSnapshot) {
+            final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
+            final fullName = userData?['name'] ?? '...';
+            final name = fullName.split(' ').first;
+            
+            // Calculate which drink this was in sequence
+            int sequence = 0;
+            if (drinkSnapshot.hasData) {
+              final docs = drinkSnapshot.data!.docs;
+              for (int i = 0; i < docs.length; i++) {
+                if (docs[i].id == widget.item['id']) {
+                  sequence = i + 1;
+                  break;
+                }
+              }
+            }
+
+            // Simplified natural language logic
+            String action = 'bir';
+            if (portion.toLowerCase().contains('kadeh')) action = 'bir kadeh';
+            if (portion.toLowerCase().contains('shot')) action = 'bir shot';
+            if (portion.toLowerCase().contains('duble')) action = 'bir duble';
+            
+            return Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
+                      height: 1.3,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(text: ' '),
+                      TextSpan(
+                        text: action,
+                        style: TextStyle(color: AppColors.textPrimary.withOpacity(0.6), fontWeight: FontWeight.w500),
+                      ),
+                      const TextSpan(text: ' '),
+                      TextSpan(
+                        text: drinkType,
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                      TextSpan(
+                        text: ' içti',
+                        style: TextStyle(color: AppColors.textPrimary.withOpacity(0.6), fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+                if (sequence > 1) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Bugün $sequence.',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildUserName(String userId) {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final name = (data?['name'] ?? 'Yükleniyor...').split(' ').first;
         return Text(
-          data?['name'] ?? 'Yükleniyor...',
+          name,
           style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13),
         );
       },
@@ -627,10 +708,11 @@ class _FeedItemWidgetState extends State<_FeedItemWidget> {
                       future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
                       builder: (context, snapshot) {
                         final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                        final name = (userData?['name'] ?? '...').split(' ').first;
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                           leading: _buildUserAvatar(userId, size: 36),
-                          title: Text(userData?['name'] ?? '...', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text('@${userData?['username'] ?? ''}', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
                         );
                       },
