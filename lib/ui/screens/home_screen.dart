@@ -498,8 +498,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           final entry = entries[index];
                           final entryId = entry['id'] as String;
                           final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-                          final String categoryId = entry['categoryId'] as String? ?? 'cocktail';
-                          final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
+                          final String? categoryId = entry['categoryId'] as String?;
+                          final drinkData = DrinkDataService.instance.smartResolve(categoryId: categoryId, drinkType: drinkType);
                           final portion = entry['portion'] as String? ?? '';
                           final quantity = entry['quantity'] as int? ?? 1;
                           final points = (entry['points'] ?? 0).toDouble();
@@ -1197,8 +1197,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     final entry = entries[index];
                     final entryId = entry['id'] as String;
                     final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-                    final String categoryId = entry['categoryId'] as String? ?? 'cocktail';
-                    final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
+                    final String? categoryId = entry['categoryId'] as String?;
+                    final drinkData = DrinkDataService.instance.smartResolve(categoryId: categoryId, drinkType: drinkType);
                     final portion = entry['portion'] as String? ?? '';
                     final quantity = entry['quantity'] as int? ?? 1;
                     final points = (entry['points'] ?? 0).toDouble();
@@ -1244,21 +1244,29 @@ class _HomeScreenState extends State<HomeScreen> {
                             
                             const SizedBox(width: 12),
 
-                            // 3. Info
+                            // 3. Icon pill + Info
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        drinkData.icon,
-                                        size: 14,
-                                        color: AppColors.primary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
+                                  drinkData.imagePath != null
+                                      ? Image.asset(
+                                          drinkData.imagePath!,
+                                          width: 32,
+                                          height: 32,
+                                          fit: BoxFit.contain,
+                                        )
+                                      : Icon(
+                                          drinkData.icon,
+                                          size: 20,
+                                          color: AppColors.primary,
+                                        ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
                                           '$quantity x $drinkType',
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 14,
@@ -1268,23 +1276,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (portion.isNotEmpty || note.isNotEmpty || locationName.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 2, left: 22), // Align with text start
-                                      child: Text(
-                                        [portion, if (locationName.isNotEmpty) '📍'].where((s) => s.isNotEmpty).join(' • '),
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 12,
-                                          color: AppColors.textSecondary.withOpacity(0.6),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                        if (portion.isNotEmpty || note.isNotEmpty || locationName.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 2),
+                                            child: Text(
+                                              [portion, if (locationName.isNotEmpty) '📍'].where((s) => s.isNotEmpty).join(' • '),
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 12,
+                                                color: AppColors.textSecondary.withOpacity(0.6),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                      ],
                                     ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -1452,8 +1460,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showEntryDetails(Map<String, dynamic> entry) {
     HapticFeedback.lightImpact();
     final drinkType = entry['drinkType'] as String? ?? 'Diğer';
-    final String categoryId = entry['categoryId'] as String? ?? 'cocktail';
-    final drinkData = DrinkDataService.instance.resolveFromId(categoryId);
+    final String? categoryId = entry['categoryId'] as String?;
+    final drinkData = DrinkDataService.instance.smartResolve(categoryId: categoryId, drinkType: drinkType);
     final portion = entry['portion'] as String? ?? '';
     final quantity = entry['quantity'] as int? ?? 1;
     final points = (entry['points'] ?? 0).toDouble();
@@ -1468,126 +1476,129 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.background.withOpacity(0.95),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(2),
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF12151C),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(20),
+                const SizedBox(height: 28),
+
+                // Icon + Name + Points row
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Drink image
+                    SizedBox(
+                      width: 52,
+                      height: 52,
+                      child: drinkData.imagePath != null
+                          ? Image.asset(drinkData.imagePath!, fit: BoxFit.contain)
+                          : Icon(drinkData.icon, size: 28, color: AppColors.primary),
                     ),
-                    child: Center(child: Icon(drinkData.icon, size: 32, color: AppColors.primary)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          drinkType,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
-                        ),
-                        Text(
-                          '$time • $quantity Adet • $portion',
-                          style: TextStyle(fontSize: 14, color: AppColors.textSecondary.withOpacity(0.6), fontWeight: FontWeight.w700),
-                        ),
-                      ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            drinkType,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            [time, '$quantity Adet', if (portion.isNotEmpty) portion].join(' · '),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withOpacity(0.4),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
+                    Text(
                       '+${points.toStringAsFixed(1)}',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (note.isNotEmpty || locationName.isNotEmpty || (hasImage && imagePath != null)) ...[
+                  const SizedBox(height: 24),
+                  Divider(color: Colors.white.withOpacity(0.07), height: 1),
+                  const SizedBox(height: 20),
+                ],
+
+                if (note.isNotEmpty) ...[
+                  Text('Not', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: Colors.white.withOpacity(0.3))),
+                  const SizedBox(height: 8),
+                  Text(note, style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.75), height: 1.5)),
+                  const SizedBox(height: 20),
+                ],
+
+                if (locationName.isNotEmpty) ...[
+                  Text('Konum', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: Colors.white.withOpacity(0.3))),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_rounded, size: 15, color: Colors.white.withOpacity(0.5)),
+                      const SizedBox(width: 6),
+                      Text(locationName, style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.75), fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                if (hasImage && imagePath != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(File(imagePath), width: double.infinity, height: 200, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () async {
+                        HapticFeedback.lightImpact();
+                        await Share.shareXFiles([XFile(imagePath)], text: 'Check out my $drinkType from Countsip!');
+                      },
+                      child: Text(
+                        'Paylaş',
+                        style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.4), fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 32),
-              if (note.isNotEmpty) ...[
-                const Text('NOTLAR', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textSecondary, letterSpacing: 1.2)),
-                const SizedBox(height: 12),
-                Text(note, style: const TextStyle(fontSize: 16, color: AppColors.textPrimary, height: 1.5, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 24),
               ],
-              if (locationName.isNotEmpty) ...[
-                const Text('KONUM', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textSecondary, letterSpacing: 1.2)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 18),
-                    const SizedBox(width: 8),
-                    Text(locationName, style: const TextStyle(fontSize: 16, color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
-              if (hasImage && imagePath != null) ...[
-                const Text('GÖRSEL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textSecondary, letterSpacing: 1.2)),
-                const SizedBox(height: 12),
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.file(
-                        File(imagePath),
-                        width: double.infinity,
-                        height: 250,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: InkWell(
-                        onTap: () async {
-                          HapticFeedback.mediumImpact();
-                          await Share.shareXFiles([XFile(imagePath)], text: 'Check out my $drinkType from Countsip!');
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
-                          ),
-                          child: const Icon(Icons.download_rounded, color: AppColors.primary, size: 20),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
         ),
       ),
@@ -1637,5 +1648,44 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+
+  Widget _infoPill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.primary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.5,
+        color: Colors.white.withOpacity(0.3),
+      ),
+    );
+  }
 
 }

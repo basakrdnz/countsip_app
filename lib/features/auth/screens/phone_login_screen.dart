@@ -204,12 +204,11 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
-                  
+
                   // Error Message
                   if (_error != null)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.only(top: 16, bottom: 8),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
@@ -235,36 +234,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                         ),
                       ),
                     ),
-
-                  // Divider + Social Buttons (outside card)
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'veya',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.3),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildSocialButton(Icons.apple, 'Apple', () {}),
-                      const SizedBox(width: 16),
-                      _buildSocialButton(Icons.g_mobiledata, 'Google', () {}, iconSize: 28),
-                    ],
-                  ),
 
                   const SizedBox(height: 24),
 
@@ -529,29 +498,4 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(IconData icon, String label, VoidCallback onTap, {double iconSize = 24}) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.white.withValues(alpha: 0.1),
-          highlightColor: Colors.white.withValues(alpha: 0.05),
-          child: Center(
-            child: Icon(icon, color: Colors.white, size: iconSize),
-          ),
-        ),
-      ),
-    );
-  }
 }

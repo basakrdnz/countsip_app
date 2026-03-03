@@ -13,6 +13,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/services/feed_service.dart';
+import '../widgets/empty_state_widget.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -221,18 +222,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.notifications_none_rounded, size: 120, color: Colors.white10),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz bildirim yok',
-            style: TextStyle(fontSize: 18, color: Colors.white24),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.notifications_none_rounded,
+      message: 'Henüz bildirim yok',
     );
   }
 

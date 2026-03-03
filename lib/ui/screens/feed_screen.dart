@@ -15,6 +15,7 @@ import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/services/feed_service.dart';
 import '../../core/services/drink_data_service.dart';
+import '../widgets/empty_state_widget.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -237,24 +238,10 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.glassCheers, size: 80, color: Colors.white10),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz akışta bir şey yok',
-            style: TextStyle(fontSize: 18, color: Colors.white24),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Arkadaşlarının paylaşımlarını burada görebilirsin',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.white24, height: 1.4),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.local_drink_rounded,
+      message: 'Henüz akışta bir şey yok',
+      subtitle: 'Arkadaşlarının paylaşımlarını burada görebilirsin',
     );
   }
 }

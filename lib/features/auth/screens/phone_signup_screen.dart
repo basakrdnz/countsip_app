@@ -417,40 +417,6 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                   // Action Button
                   _buildStepButton(),
 
-                  // Social Sign Up (only on first step, outside card)
-                  if (_currentStep == 0) ...[
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'veya',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.3),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSocialButton(Icons.apple, 'Apple', () {}),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSocialButton(Icons.g_mobiledata, 'Google', () {}, iconSize: 28),
-                        ),
-                      ],
-                    ),
-                  ],
-
                   const SizedBox(height: 24),
 
                   // Login Link
@@ -880,41 +846,6 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                       letterSpacing: 0.5,
                     ),
                   ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton(IconData icon, String label, VoidCallback onTap, {double iconSize = 24}) {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: iconSize),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
           ),
         ),
       ),

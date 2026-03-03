@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_decorations.dart';
+import '../widgets/empty_state_widget.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -274,6 +275,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             return !isFrozen || doc.id == currentUserId;
           }).toList();
 
+          if (docs.isEmpty) {
+            return _buildEmpty('Henüz kayıt bulunmuyor');
+          }
+
           return _buildList(docs.length, (index) {
             final user = docs[index].data() as Map<String, dynamic>;
             final isCurrentUser = docs[index].id == currentUserId;
@@ -333,6 +338,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 final isFrozen = u['isFrozen'] ?? false;
                 return !isFrozen || u['uid'] == currentUserId;
               }).toList();
+
+              if (users.isEmpty) {
+                return _buildEmpty('Henüz sıralama yapılamadı');
+              }
+
               users.sort((a, b) => (b[_rankingType] ?? 0).compareTo(a[_rankingType] ?? 0));
 
               return _buildList(users.length, (index) {
@@ -447,6 +457,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   totals[userId]!['totalDrinks'] += 1;
                 }
               }
+
+              if (totals.isEmpty) {
+                return _buildEmpty('Bu dönemde kayıt yok');
+              }
+
               final sorted = totals.values.toList()
                 ..sort((a, b) => (b[_rankingType] ?? 0).compareTo(a[_rankingType] ?? 0));
 
@@ -492,8 +507,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildEmpty(String message) {
-    return Center(
-      child: Text(message, style: TextStyle(color: AppColors.textTertiary.withOpacity(0.5))),
+    return EmptyStateWidget(
+      icon: AppIcons.emojiChart,
+      message: message,
     );
   }
 

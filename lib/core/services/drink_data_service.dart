@@ -83,5 +83,44 @@ class DrinkDataService {
   DrinkDisplayData resolveFromId(String id) {
     return resolve({'categoryId': id});
   }
+
+  /// Resolves by Turkish display name (e.g. 'Şarap', 'Bira').
+  /// Falls back to resolveFromId if name is not recognized.
+  DrinkDisplayData resolveFromName(String name) {
+    const nameToId = <String, String>{
+      'bira': 'beer',
+      'şarap': 'wine',
+      'rakı': 'raki',
+      'viski': 'whiskey',
+      'votka': 'vodka',
+      'cin': 'gin',
+      'cin tonik': 'gin',
+      'tekila': 'tequila',
+      'rom': 'rum',
+      'kokteyl': 'cocktail',
+      'likör': 'liqueur',
+    };
+    final id = nameToId[name.toLowerCase().trim()] ?? '';
+    if (id.isNotEmpty) return resolveFromId(id);
+    // Last resort: search categories by name
+    final match = drinkCategories.where(
+      (c) => c.name.toLowerCase() == name.toLowerCase().trim(),
+    ).firstOrNull;
+    if (match != null) return resolveFromId(match.id);
+    return resolveFromId('cocktail');
+  }
+
+  /// Smart resolve: tries categoryId first, then falls back to drinkType name.
+  /// Pass the RAW categoryId (may be null for old entries).
+  DrinkDisplayData smartResolve({required String? categoryId, required String drinkType}) {
+    // If categoryId is a known id, use it directly
+    if (categoryId != null) {
+      final known = drinkCategories.any((c) => c.id == categoryId);
+      if (known) return resolveFromId(categoryId);
+    }
+    // Otherwise resolve by Turkish display name
+    return resolveFromName(drinkType);
+  }
 }
+
 

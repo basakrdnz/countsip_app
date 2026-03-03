@@ -23,6 +23,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/dual_camera_widget.dart';
 import '../widgets/custom_drink_request_form.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/empty_state_widget.dart';
 import '../../core/services/badge_service.dart';
 import '../../data/models/badge_model.dart' as model;
 import '../../core/services/preferences_service.dart';
@@ -87,6 +88,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   List<Map<String, dynamic>> _tempQuickAddConfigs = [];
  // For cancel logic
 
+  // Drink Request State
+  int _currentRequestStep = 0;
+  late final TextEditingController _customNameController;
+  late final TextEditingController _customAbvController;
+  late final TextEditingController _customVolumeController;
+  late final TextEditingController _customDescController;
+
+  final List<String> _taggedFriendIds = [];
+  final Map<String, Map<String, dynamic>> _taggedFriendData = {};
   // --- Premium Accents ---
   Color get _accentColor {
     if (_feelingScale < 5) {
@@ -158,6 +168,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     _searchFocusNode.addListener(_onSearchFocusChange);
     _loadSearchHistory();
     _loadQuickAddPreferences();
+    _initRequestControllers();
     _scrollController.addListener(() {
       if (!mounted) return;
       setState(() {
@@ -243,6 +254,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     _searchController.dispose();
     _noteController.dispose();
     _locationController.dispose();
+    _customNameController.dispose();
+    _customAbvController.dispose();
+    _customVolumeController.dispose();
+    _customDescController.dispose();
     _scrollController.dispose();
     _sheetScrollController.dispose();
     _animationController.dispose();
@@ -264,6 +279,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   Future<void> _loadSearchHistory() async {
     final history = PreferencesService.instance.getSearchHistory();
     setState(() => _recentSearches = history);
+  }
+
+  void _initRequestControllers() {
+    _customNameController = TextEditingController();
+    _customAbvController = TextEditingController();
+    _customVolumeController = TextEditingController();
+    _customDescController = TextEditingController();
   }
 
   void _loadQuickAddPreferences() {
@@ -766,9 +788,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  final List<String> _taggedFriendIds = [];
-  final Map<String, Map<String, dynamic>> _taggedFriendData = {}; // Store friend profiles for display
-
   Future<void> _showBadgeNotification(model.Badge badge) async {
     if (!mounted) return;
     final color = Color(int.parse(badge.colorHex.replaceFirst('#', '0xFF')));
@@ -1135,16 +1154,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                           left: -35, // Offset to make it half-visible
                           top: -15,
                           bottom: -15,
-                          child: category.image != null
+                          child: item['image'] != null
                               ? Image.asset(
-                                  category.image!,
+                                  item['image'] as String,
                                   width: 120, // Oversized for artistic look
                                   fit: BoxFit.contain,
                                   opacity: const AlwaysStoppedAnimation(0.8),
                                 )
                               : Center(
                                   child: Icon(
-                                    DrinkDataService.instance.resolveFromId(category.id).icon,
+                                    DrinkDataService.instance.resolveFromId(item['id'] as String).icon,
                                     size: 60,
                                     color: Colors.white.withOpacity(0.15),
                                   ),
@@ -1213,8 +1232,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                               onTap: () {
                                 HapticFeedback.mediumImpact();
                                 setState(() {
-                                  _quickAddConfigs.removeWhere((c) => c['categoryId'] == category.id);
-                                  _quickAddIds.remove(category.id);
+                                  _quickAddConfigs.removeWhere((c) => c['categoryId'] == item['id']);
+                                  _quickAddIds.remove(item['id']);
                                 });
                               },
                               child: Container(
@@ -1245,20 +1264,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }).toList();
 
     if (filteredCategories.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 60),
-            child: Column(
-              children: [
-                Icon(UIcons.regularStraight.search, size: 48, color: Colors.grey.shade300),
-                const SizedBox(height: 16),
-                Text(
-                  'İçecek bulunamadı',
-                  style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(top: 40),
+          child: EmptyStateWidget(
+            icon: Icons.search_off_rounded,
+            message: 'İçecek bulunamadı',
           ),
         ),
       );
@@ -3761,18 +3772,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
                       final friendships = snapshot.data?.docs ?? [];
                       if (friendships.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.people_outline, size: 48, color: Colors.white.withOpacity(0.2)),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Henüz arkadaşın yok',
-                                style: TextStyle(color: Colors.white.withOpacity(0.4)),
-                              ),
-                            ],
-                          ),
+                        return const EmptyStateWidget(
+                          icon: Icons.people_outline_rounded,
+                          message: 'Henüz arkadaşın yok',
                         );
                       }
 

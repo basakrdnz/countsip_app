@@ -244,53 +244,6 @@ class AuthController extends AsyncNotifier<User?> {
         return error.message ?? 'Bir hata oluştu';
     }
   }
-
-  // ============================================
-  // DEPRECATED - Kept for compatibility
-  // ============================================
-
-  @Deprecated('Use signInWithPhone instead')
-  Future<void> signInWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      // ignore: deprecated_member_use
-      await _repository.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return _repository.currentUser;
-    });
-  }
-
-  @Deprecated('Use signUpWithPhone instead')
-  Future<void> signUpWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      // ignore: deprecated_member_use
-      await _repository.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return _repository.currentUser;
-    });
-  }
-
-  @Deprecated('Use resetPasswordWithPhone instead')
-  Future<void> sendPasswordResetEmail(String email) async {
-    // ignore: deprecated_member_use
-    await _repository.sendPasswordResetEmail(email);
-  }
-
-  @Deprecated('Google Sign-In removed')
-  Future<void> signInWithGoogle() async {
-    throw UnimplementedError('Google Sign-In kaldırıldı');
-  }
 }
 
 /// Provider for AuthController

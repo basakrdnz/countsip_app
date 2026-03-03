@@ -9,6 +9,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/empty_state_widget.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -329,13 +330,11 @@ class _FriendsListTabState extends State<_FriendsListTab> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppIcons.users, size: 80, color: Colors.white10),
-          const SizedBox(height: 16),
-          const Text(
-            'Henüz arkadaşın yok',
-            style: TextStyle(fontSize: 18, color: Colors.white24),
+          const EmptyStateWidget(
+            icon: Icons.people_outline_rounded,
+            message: 'Henüz arkadaşın yok',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           GestureDetector(
             onTap: () => context.push('/add-friend'),
             child: Container(
@@ -377,18 +376,9 @@ class _FriendsListTabState extends State<_FriendsListTab> {
   }
 
   Widget _buildEmptySearchState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.search, size: 80, color: Colors.white10),
-          const SizedBox(height: 16),
-          const Text(
-            'Sonuç bulunamadı',
-            style: TextStyle(fontSize: 18, color: Colors.white24),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.search_off_rounded,
+      message: 'Sonuç bulunamadı',
     );
   }
 
@@ -802,18 +792,9 @@ class _RequestsTab extends StatelessWidget {
         final requests = snapshot.data?.docs ?? [];
 
         if (requests.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(AppIcons.envelope, size: 80, color: Colors.white10),
-                const SizedBox(height: 16),
-                const Text(
-                  'Bekleyen istek yok',
-                  style: TextStyle(fontSize: 18, color: Colors.white24),
-                ),
-              ],
-            ),
+          return const EmptyStateWidget(
+            icon: Icons.mail_outline_rounded,
+            message: 'Bekleyen istek yok',
           );
         }
 
