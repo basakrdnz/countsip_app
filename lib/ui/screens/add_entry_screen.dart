@@ -674,11 +674,19 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
           
           final uploadTask = storageRef.putFile(File(_pickedImage!.path));
-          final snapshot = await uploadTask.timeout(const Duration(seconds: 15));
+          final snapshot = await uploadTask.timeout(const Duration(seconds: 60));
           imageUrl = await snapshot.ref.getDownloadURL();
           debugPrint('Image uploaded successfully: $imageUrl');
         } catch (e) {
-          debugPrint('Error uploading image (skipping image): $e');
+          debugPrint('Error uploading image: $e');
+          if (mounted) {
+            Fluttertoast.showToast(
+              msg: 'Fotoğraf yüklenemedi, kayıt yine de kaydedildi.',
+              backgroundColor: Colors.orange,
+              textColor: Colors.white,
+              toastLength: Toast.LENGTH_LONG,
+            );
+          }
         }
       }
 
@@ -702,7 +710,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         'createdAt': FieldValue.serverTimestamp(),
         'hasImage': imageUrl != null,
         'imageUrl': imageUrl,
-        'imagePath': _pickedImage?.path,
         'taggedFriendIds': _taggedFriendIds,
       });
 
@@ -984,10 +991,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             Text(
               'HIZLI EKLE',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFFFF8902).withOpacity(0.6),
-                letterSpacing: 1.5,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textTertiary,
+                letterSpacing: 1.2,
               ),
             ),
             const Spacer(),
@@ -1079,8 +1086,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.12),
-                        width: 1.2,
+                        color: Colors.white.withOpacity(0.25),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -1844,18 +1851,104 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
 
   void _pickImage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          body: DualCameraWidget(
-            onCaptured: (mainPath, pipPath) {
-              setState(() {
-                _pickedImage = XFile(mainPath);
-              });
-              Navigator.pop(context);
-            },
-          ),
+    _showImageSourceSheet();
+  }
+
+  Future<void> _showImageSourceSheet() async {
+    final picker = ImagePicker();
+    XFile? photo;
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF12151C),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text('Fotoğraf Ekle',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSourceOption(
+              icon: Icons.camera_alt_rounded,
+              label: 'Kameradan Çek',
+              color: const Color(0xFFFF8902),
+              onTap: () async {
+                Navigator.pop(ctx);
+                photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildSourceOption(
+              icon: Icons.photo_library_rounded,
+              label: 'Galeriden Seç',
+              color: const Color(0xFF4ECDC4),
+              onTap: () async {
+                Navigator.pop(ctx);
+                photo = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (photo != null && mounted) {
+      setState(() {
+        _tempPickedImage = photo;
+        _pickedImage = photo;
+      });
+    }
+  }
+
+  Widget _buildSourceOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Text(label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -3071,13 +3164,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           const SizedBox(width: 8),
           _buildSimpleChip(
             icon: Icons.camera_alt_outlined,
-            label: hasPhoto ? 'Fotograf' : 'Fotograf',
+            label: hasPhoto ? 'Fotoğraf eklendi ✓' : 'Fotoğraf',
             isActive: hasPhoto,
             activeColor: const Color(0xFFFF8902),
             onTap: () async {
               final picker = ImagePicker();
               final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-              if (photo != null) setState(() => _tempPickedImage = photo);
+              if (photo != null && mounted) {
+                setState(() {
+                  _tempPickedImage = photo;
+                  _pickedImage = photo;
+                });
+              }
             },
             onClear: hasPhoto ? () => setState(() => _tempPickedImage = null) : null,
           ),
@@ -3219,7 +3317,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     return Column(
       children: [
         _buildAdditionItem(
-          icon: Icons.camera_alt,
+          icon: AppIcons.galleryFilled,
           label: _tempPickedImage != null ? 'Fotoğraf eklendi' : 'Fotoğraf Ekle',
           isActive: _tempPickedImage != null,
           color: const Color(0xFFFF8902),
@@ -3237,7 +3335,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         ),
         const SizedBox(height: 12),
         _buildAdditionItem(
-          icon: Icons.location_on,
+          icon: AppIcons.markerFilled,
           label: _tempLocationName ?? 'Konum Ekle',
           isActive: _tempLocationName != null,
           color: const Color(0xFF4ECDC4),
@@ -3253,7 +3351,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         ),
         const SizedBox(height: 12),
         _buildAdditionItem(
-          icon: Icons.edit_note,
+          icon: AppIcons.noteFilled,
           label: _tempNote != null ? 'Not: $_tempNote' : 'Not Ekle',
           isActive: _tempNote != null,
           color: const Color(0xFFFFE66D),
@@ -3794,8 +3892,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         ),
         child: Row(
           children: [
-            Icon(Icons.add, size: 16, color: AppColors.primary),
-            const SizedBox(width: 4),
+            Icon(AppIcons.peopleFilled, size: 16, color: AppColors.primary),
+            const SizedBox(width: 6),
             Text(
               'Arkadaş Ekle',
               style: GoogleFonts.inter(

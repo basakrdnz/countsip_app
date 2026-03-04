@@ -178,7 +178,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       children: [
         // Ranking toggle (Puan / İçecek) — compact pill group
         _buildChipGroup(
-          items: [(AppIcons.emojiCrown, 'Puan', 'totalPoints'), (AppIcons.drinkBeer, 'İçecek', 'totalDrinks')],
+          items: [(null, 'Puan', 'totalPoints'), (null, 'İçecek', 'totalDrinks')],
           selected: _rankingType,
           onSelect: (v) => setState(() => _rankingType = v),
         ),

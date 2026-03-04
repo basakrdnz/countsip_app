@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -26,6 +25,7 @@ import '../../core/services/navigation_service.dart';
 import '../../core/services/preferences_service.dart';
 import '../../core/services/drink_data_service.dart';
 import '../../data/models/drink_entry_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1208,23 +1208,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     final note = entry['note'] as String? ?? '';
                     final timestamp = entry['timestamp'] as Timestamp?;
                     final hasImage = entry['hasImage'] as bool? ?? false;
+                    final taggedFriendIds = entry['taggedFriendIds'] as List? ?? [];
                     final time = timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '';
 
                     return GestureDetector(
                       onTap: () => _showEntryDetails(entry),
                       child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4), // Added margin for breathability
+                        margin: const EdgeInsets.symmetric(vertical: 2), // Azaltıldı
                         color: Colors.transparent, // Hit test
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // 1. Time
                             SizedBox(
-                              width: 40,
+                              width: 36, // Azaltıldı
                               child: Text(
                                 time,
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
+                                  fontSize: 11, // Azaltıldı
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textTertiary.withOpacity(0.7),
                                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -1232,11 +1233,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4), // Azaltıldı
 
                             // 2. Minimal Line/Dot
                             Container(
-                              height: 28,
+                              height: 24, // Azaltıldı
                               width: 2,
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.15),
@@ -1244,7 +1245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8), // Azaltıldı
 
                             // 3. Icon pill + Info
                             Expanded(
@@ -1254,42 +1255,45 @@ class _HomeScreenState extends State<HomeScreen> {
                                   drinkData.imagePath != null
                                       ? Image.asset(
                                           drinkData.imagePath!,
-                                          width: 32,
-                                          height: 32,
+                                          width: 24, // Azaltıldı
+                                          height: 24, // Azaltıldı
                                           fit: BoxFit.contain,
                                         )
                                       : Icon(
                                           drinkData.icon,
-                                          size: 20,
+                                          size: 16, // Azaltıldı
                                           color: AppColors.primary,
                                         ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8), // Azaltıldı
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          '$quantity x $drinkType',
+                                          portion.isNotEmpty ? '$drinkType - $portion' : drinkType,
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14,
+                                            fontSize: 13, // Azaltıldı
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.textPrimary,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        if (portion.isNotEmpty || note.isNotEmpty || locationName.isNotEmpty)
+                                        if (note.isNotEmpty || locationName.isNotEmpty || taggedFriendIds.isNotEmpty || hasImage)
                                           Padding(
-                                            padding: const EdgeInsets.only(top: 2),
-                                            child: Text(
-                                              [portion, if (locationName.isNotEmpty) '📍'].where((s) => s.isNotEmpty).join(' • '),
-                                              style: GoogleFonts.plusJakartaSans(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary.withOpacity(0.6),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (locationName.isNotEmpty)
+                                                  _buildSmallEmoji('📍', isFirst: true),
+                                                if (taggedFriendIds.isNotEmpty)
+                                                  _buildSmallEmoji('👥', isFirst: !locationName.isNotEmpty),
+                                                if (note.isNotEmpty)
+                                                  _buildSmallEmoji('📝', isFirst: !locationName.isNotEmpty && !taggedFriendIds.isNotEmpty),
+                                                if (hasImage)
+                                                  _buildSmallEmoji('🖼️', isFirst: !locationName.isNotEmpty && !taggedFriendIds.isNotEmpty && !note.isNotEmpty),
+                                              ],
                                             ),
                                           ),
                                       ],
@@ -1306,18 +1310,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   '+${points.toStringAsFixed(1)}',
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
+                                    fontSize: 13, // Azaltıldı
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primary,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4), // Azaltıldı
                                 InkWell(
                                   onTap: () => _showDeleteConfirmation(entryId, points, quantity),
                                   borderRadius: BorderRadius.circular(20),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(6),
-                                    child: Icon(Icons.close_rounded, size: 14, color: Colors.white.withOpacity(0.2)),
+                                    padding: const EdgeInsets.all(4), // Azaltıldı
+                                    child: Icon(Icons.close_rounded, size: 12, color: Colors.white.withOpacity(0.2)), // Azaltıldı
                                   ),
                                 ),
                               ],
@@ -1471,7 +1475,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final note = entry['note'] as String? ?? '';
     final timestamp = entry['timestamp'] as Timestamp?;
     final hasImage = entry['hasImage'] as bool? ?? false;
-    final imagePath = entry['imagePath'] as String?;
+    final imageUrl = entry['imageUrl'] as String?;
     final time = timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '';
 
     showModalBottomSheet(
@@ -1553,7 +1557,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
 
-                if (note.isNotEmpty || locationName.isNotEmpty || (hasImage && imagePath != null)) ...[
+                if (note.isNotEmpty || locationName.isNotEmpty || (hasImage && imageUrl != null)) ...[
                   const SizedBox(height: 24),
                   Divider(color: Colors.white.withOpacity(0.07), height: 1),
                   const SizedBox(height: 20),
@@ -1579,10 +1583,86 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                 ],
 
-                if (hasImage && imagePath != null) ...[
+                if (entry['taggedFriendIds'] != null && (entry['taggedFriendIds'] as List).isNotEmpty) ...[
+                  Text('Arkadaşlar', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: Colors.white.withOpacity(0.3))),
+                  const SizedBox(height: 8),
+                  FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .where(FieldPath.documentId, whereIn: entry['taggedFriendIds'] as List)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)));
+                      }
+                      
+                      final friends = snapshot.data!.docs;
+                      if (friends.isEmpty) return const SizedBox.shrink();
+
+                      return SizedBox(
+                        height: 50,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: friends.length,
+                          separatorBuilder: (context, index) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final friendData = friends[index].data() as Map<String, dynamic>;
+                            final photoUrl = friendData['photoUrl'] as String?;
+                            final name = friendData['name'] as String? ?? 'İsimsiz';
+                            final firstName = name.split(' ').first;
+
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: AppColors.primary.withOpacity(0.2),
+                                  backgroundImage: photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null,
+                                  child: photoUrl == null
+                                      ? Text(
+                                          firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+                                          style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  firstName,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                if (hasImage && imageUrl != null) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.file(File(imagePath), width: double.infinity, height: 200, fit: BoxFit.cover),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        height: 200,
+                        color: Colors.white.withOpacity(0.05),
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 200,
+                        color: Colors.white.withOpacity(0.05),
+                        child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white38)),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Align(
@@ -1590,7 +1670,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: GestureDetector(
                       onTap: () async {
                         HapticFeedback.lightImpact();
-                        await Share.shareXFiles([XFile(imagePath)], text: 'Check out my $drinkType from Countsip!');
+                        await Share.shareUri(Uri.parse(imageUrl));
                       },
                       child: Text(
                         'Paylaş',
@@ -1686,6 +1766,16 @@ class _HomeScreenState extends State<HomeScreen> {
         fontWeight: FontWeight.w800,
         letterSpacing: 1.5,
         color: Colors.white.withOpacity(0.3),
+      ),
+    );
+  }
+
+  Widget _buildSmallEmoji(String emoji, {bool isFirst = false}) {
+    return Padding(
+      padding: EdgeInsets.only(left: isFirst ? 0 : 6), // Azaltıldı
+      child: Text(
+        emoji,
+        style: const TextStyle(fontSize: 11), // Azaltıldı
       ),
     );
   }

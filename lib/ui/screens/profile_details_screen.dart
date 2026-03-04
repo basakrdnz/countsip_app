@@ -1028,8 +1028,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                             ],
                           ),
                           child: Container(
-                            width: 110,
-                            height: 110,
+                            width: 90,
+                            height: 90,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: AppColors.surface,
@@ -1047,7 +1047,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                             child: _isUploadingPhoto
                                 ? const Center(child: CircularProgressIndicator())
                                 : _photoUrl == null
-                                    ? Icon(AppIcons.user, size: 50, color: AppColors.textTertiary)
+                                    ? Icon(AppIcons.user, size: 40, color: AppColors.textTertiary)
                                     : null,
                           ),
                         ),
@@ -1151,8 +1151,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           focusNode: _nameFocusNode,
                           enabled: _isEditingName,
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
                           decoration: InputDecoration(
@@ -1264,8 +1264,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                 focusNode: _usernameFocusNode,
                                 enabled: _isEditingUsername,
                                 style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
                                 ),
                                 decoration: InputDecoration(
@@ -1476,14 +1476,14 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           children: [
             Icon(
               icon,
-              size: 22,
+              size: 18,
               color: AppColors.primary,
             ),
             const SizedBox(height: 12),
             Text(
               label,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textTertiary,
                 letterSpacing: 1,
@@ -1493,7 +1493,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),

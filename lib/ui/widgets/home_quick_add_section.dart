@@ -105,10 +105,10 @@ class _HomeQuickAddSectionState extends State<HomeQuickAddSection> {
               Text(
                 'HIZLI EKLE',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFFF8902).withOpacity(0.6),
-                  letterSpacing: 1.5,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 1.2,
                 ),
               ),
             ],

@@ -95,4 +95,10 @@ class AppIcons {
   static const IconData emojiChart = Icons.show_chart_rounded;
   static const IconData emojiHeart = Icons.favorite_rounded;
   static const IconData emojiTarget = Icons.track_changes_rounded;
+  // Filled/Rounded Detail Icons (User preferred style)
+  static const IconData markerFilled = Icons.location_on_rounded;
+  static const IconData peopleFilled = Icons.people_alt_rounded;
+  static const IconData documentFilled = Icons.description_rounded;
+  static const IconData galleryFilled = Icons.image_rounded;
+  static const IconData noteFilled = Icons.sticky_note_2_rounded;
 }

@@ -298,47 +298,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: Column(
                           children: [
-                            // Stats Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _buildStatTile(label: 'TOPLAM İÇECEK', value: '$totalDrinks'),
-                                Container(width: 1, height: 36, color: Colors.white.withOpacity(0.08)),
-                                _buildStatTile(label: 'TOPLAM PUAN', value: totalPoints.toStringAsFixed(1)),
-                                Container(width: 1, height: 36, color: Colors.white.withOpacity(0.08)),
-                                _buildStatTile(label: 'SEVİYE', value: '$level', isHighlighted: true),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // Level Progress
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('Seviye $level', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white54)),
-                                    Text('${pointsToNext.toStringAsFixed(1)} puan kaldı', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: Colors.white24)),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Stack(children: [
-                                    Container(height: 4, width: double.infinity, color: Colors.white.withOpacity(0.06)),
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 1200),
-                                      curve: Curves.easeOutCubic,
-                                      height: 4,
-                                      width: (MediaQuery.of(context).size.width - 96) * progress,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(colors: [AppColors.primary, AppColors.primary.withOpacity(0.6)]),
-                                        boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 4)],
+                            GestureDetector(
+                              onTap: () => context.push('/profile-details'),
+                              behavior: HitTestBehavior.opaque,
+                              child: Column(
+                                children: [
+                                  // Level Progress
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Seviye $level',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${pointsToNext.toStringAsFixed(1)} puan kaldı',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              color: Colors.white24,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ]),
-                                ),
-                              ],
+                                      const SizedBox(height: 12),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Stack(
+                                          children: [
+                                            Container(
+                                              height: 8,
+                                              width: double.infinity,
+                                              color: Colors.white.withOpacity(0.06),
+                                            ),
+                                            AnimatedContainer(
+                                              duration: const Duration(milliseconds: 1200),
+                                              curve: Curves.easeOutCubic,
+                                              height: 8,
+                                              width: (MediaQuery.of(context).size.width - 96) * progress,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.6)],
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: AppColors.primary.withOpacity(0.4),
+                                                    blurRadius: 4,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
