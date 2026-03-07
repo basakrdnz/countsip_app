@@ -699,7 +699,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
     });
   }
 
-  Future<void> _save() async {
+  Future<bool> _save() async {
     if (_selectedPortion == null) {
       HapticFeedback.vibrate();
       Fluttertoast.showToast(
@@ -707,7 +707,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
-      return;
+      return false;
     }
 
     HapticFeedback.mediumImpact();
@@ -717,7 +717,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         setState(() => _isLoading = false);
-        return;
+        return false;
       }
 
       debugPrint('Step 1: Checking daily entries...');
@@ -737,10 +737,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
         debugPrint('Daily entries check skipped: $e');
       }
 
-      final totalScore = _calculateScore(
-        _selectedPortion!.volume,
-        _selectedPortion!.abv,
-      );
+      final totalScore = _getTotalScore();
       final category = _categories.firstWhere(
         (c) => c.id == _focusedCategoryId,
       );
@@ -787,7 +784,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
         'portion': portionName,
         'volume': _selectedPortion!.volume,
         'abv': _selectedPortion!.abv,
-        'quantity': 1,
+        'quantity': _quantity,
         'points': totalScore,
         'note': _noteController.text.trim(),
         'locationName': _locationController.text.trim(),
@@ -813,10 +810,9 @@ class _AddEntryScreenState extends State<AddEntryScreen>
 
       if (mounted) {
         HapticFeedback.heavyImpact();
-        _showSuccessToast(totalScore);
         _runBackgroundTasks(user.uid, entriesCountToday);
-        _resetForm();
       }
+      return true;
     } catch (e) {
       debugPrint('Critical error saving entry: $e');
       if (mounted) {
@@ -826,6 +822,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
           textColor: Colors.white,
         );
       }
+      return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -2852,24 +2849,6 @@ class _AddEntryScreenState extends State<AddEntryScreen>
     });
   }
 
-  // This method is assumed to be where the change for _saveDetailed should occur.
-  // As _saveDetailed was not provided, this is a placeholder for where it would be.
-  // If _saveDetailed existed and had a hard state reset, it would be replaced with _closeSheet().
-  // Example of how _saveDetailed might be changed:
-  /*
-  Future<void> _saveDetailed() async {
-    // ... existing logic ...
-    // Instead of:
-    // setState(() {
-    //   _focusedCategoryId = null;
-    //   _sheetDragY = 0;
-    // });
-    // Call:
-    _closeSheet();
-    // ... rest of existing logic ...
-  }
-  */
-
   Widget _buildHUDCentralUnit() {
     final category = _categories.firstWhere((c) => c.id == _focusedCategoryId);
     final currentPortion = _selectedPortion;
@@ -3147,7 +3126,7 @@ class _AddEntryScreenState extends State<AddEntryScreen>
         _buildHUDIconBtn(
           AppIcons.memoPad,
           "Not",
-          _noteController.text.isNotEmpty,
+          _noteController.text.isNotEmpty || (_tempNote?.isNotEmpty ?? false),
           () => _showNoteDialog(),
         ),
         const SizedBox(width: 16),
@@ -3386,9 +3365,10 @@ class _AddEntryScreenState extends State<AddEntryScreen>
   Widget _buildHUDInitiateButton(double aps) {
     return CountSipButton(
       text: "EKLE",
-      onPressed: () => _saveDetailed(aps),
+      onPressed: _isLoading ? null : () => _saveDetailed(aps),
+      isLoading: _isLoading,
       borderRadius: 24,
-      height: 64, // Slightly taller for the main action
+      height: 64,
     );
   }
 
@@ -4495,15 +4475,10 @@ class _AddEntryScreenState extends State<AddEntryScreen>
   }
 
   Future<void> _saveDetailed(double totalAPS) async {
-    if (_tempNote != null) _noteController.text = _tempNote!;
-    if (_tempLocationName != null)
-      _locationController.text = _tempLocationName!;
-    if (_tempPickedImage != null) _pickedImage = _tempPickedImage;
-
-    await _save();
-    if (!_isLoading) {
+    final success = await _save();
+    if (success && mounted) {
       _showSuccessToast(totalAPS);
-      _closeSheet();
+      _resetForm();
     }
   }
 
