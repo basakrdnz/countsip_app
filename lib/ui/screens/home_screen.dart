@@ -9,23 +9,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:go_router/go_router.dart';
-import '../widgets/animated_notification_bell.dart';
-import '../widgets/durum_meter_widget.dart';
-import '../widgets/home_quick_add_section.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/services/badge_service.dart';
+import '../widgets/countsip_button.dart';
 import '../../core/services/bac_service.dart';
 import '../../core/services/navigation_service.dart';
 import '../../core/services/preferences_service.dart';
 import '../../core/services/drink_data_service.dart';
 import '../../data/models/drink_entry_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import '../widgets/durum_meter_widget.dart';
+import '../widgets/home_quick_add_section.dart';
+import '../widgets/animated_notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,23 +297,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      TextButton(
+                      CountSipButton(
                         onPressed: () {
                           setState(() {
                             _focusedDay = DateTime(selectedYear, selectedMonth, 1);
                           });
                           Navigator.pop(context);
                         },
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        ),
-                        child: Text(
-                          'Tamam',
-                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-                        ),
+                        text: 'Tamam',
+                        width: 100,
+                        height: 36,
+                        borderRadius: 12,
                       ),
                     ],
                   ),
@@ -838,7 +832,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const Spacer(),
                                         if (!isSameDay(_focusedDay, DateTime.now()))
-                                          TextButton(
+                                          CountSipButton(
                                              onPressed: () {
                                                setState(() {
                                                  final now = DateTime.now();
@@ -847,20 +841,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                  _selectedDay = today;
                                                });
                                              },
-                                            style: TextButton.styleFrom(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                              minimumSize: Size.zero,
-                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                            ),
-                                            child: Text(
-                                              'BUGÜN',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                fontSize: 10, 
-                                                fontWeight: FontWeight.bold, 
-                                                color: AppColors.primary,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
+                                            text: 'BUGÜN',
+                                            variant: CountSipButtonVariant.ghost,
+                                            width: 70,
+                                            height: 28,
+                                            fontSize: 10,
+                                            textColor: AppColors.primary,
                                           ),
                                         IconButton(
                                           onPressed: () {
@@ -1413,44 +1399,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          child: Text(
-                            'VAZGEÇ',
-                            style: TextStyle(
-                              color: AppColors.textSecondary.withOpacity(0.7),
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
+                      child: CountSipButton(
+                        onPressed: () => Navigator.pop(context),
+                        text: 'VAZGEÇ',
+                        variant: CountSipButtonVariant.secondary,
+                        borderRadius: 16,
+                        height: 52,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
+                      child: CountSipButton(
                         onPressed: () {
                           Navigator.pop(context);
                           _deleteEntry(entryId, points, quantity);
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: const Text('SİL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                        text: 'SİL',
+                        variant: CountSipButtonVariant.danger,
+                        borderRadius: 16,
+                        height: 52,
                       ),
                     ),
                   ],

@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/auth_background.dart';
+import '../../../ui/widgets/countsip_button.dart';
 
 class PhoneLoginScreen extends ConsumerStatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -175,29 +176,25 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                             // Forgot Password
                             Align(
                               alignment: Alignment.centerRight,
-                              child: TextButton(
+                              child: CountSipButton(
                                 onPressed: () => context.go('/forgot-password'),
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  foregroundColor: Colors.white.withValues(alpha: 0.5),
-                                ),
-                                child: Text(
-                                  'Şifremi Unuttum?',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                  ),
-                                ),
+                                text: 'Şifremi Unuttum?',
+                                variant: CountSipButtonVariant.ghost,
+                                width: 120,
+                                height: 32,
+                                fontSize: 12,
+                                textColor: Colors.white.withValues(alpha: 0.5),
                               ),
                             ),
                             
                             const SizedBox(height: 32),
                             
                             // Action Button
-                            _buildPremiumButton('Giriş Yap', _login),
+                            CountSipButton(
+                              text: 'Giriş Yap',
+                              onPressed: _login,
+                              isLoading: _isLoading,
+                            ),
                           ],
                         ),
                       ),
@@ -448,54 +445,5 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
     );
   }
 
-  Widget _buildPremiumButton(String text, VoidCallback onPressed) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.accentPrimary],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : onPressed,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
-          child: Center(
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    text,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
 
 }

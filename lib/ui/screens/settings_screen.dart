@@ -1,14 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
+import '../../core/theme/app_spacing.dart';
+import '../widgets/countsip_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -139,33 +141,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7), 
-                            fontWeight: FontWeight.w800, 
-                            fontSize: 13, 
-                            letterSpacing: 1
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context, false),
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'ONAYLA',
                       onPressed: () {
                         if (emailController.text.trim().toLowerCase() == user.email?.toLowerCase()) {
                           Navigator.pop(context, true);
@@ -176,17 +163,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: Text(
-                        'ONAYLA',
-                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1),
-                      ),
+                      variant: CountSipButtonVariant.danger,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                 ],
@@ -334,53 +313,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context, false),
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'ONAYLA',
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDestructive ? AppColors.error : AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'ONAYLA',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      variant: isDestructive ? CountSipButtonVariant.danger : CountSipButtonVariant.primary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                 ],
@@ -415,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -452,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             
-            const SizedBox(height: AppSpacing.xl),
+            SizedBox(height: AppSpacing.xl),
             
             // Coming Soon Section
             _buildSectionTitle('Yakında'),
@@ -481,7 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             
-            const SizedBox(height: AppSpacing.xl),
+            SizedBox(height: AppSpacing.xl),
             
             // Account Management Section
             _buildSectionTitle('Hesap Yönetimi'),
@@ -585,16 +533,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed: _cancelDelete,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.green,
-                                    side: const BorderSide(color: Colors.green),
-                                  ),
-                                  child: const Text('Silmeyi İptal Et'),
-                                ),
+                              CountSipButton(
+                                onPressed: _cancelDelete,
+                                text: 'Silmeyi İptal Et',
+                                variant: CountSipButtonVariant.secondary,
+                                borderRadius: 12,
+                                height: 48,
                               ),
                             ],
                           ),

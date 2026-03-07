@@ -1,14 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/services/theme_service.dart';
+import '../widgets/countsip_button.dart';
 
 class RootShellPage extends StatefulWidget {
   const RootShellPage({super.key, required this.navigationShell});
@@ -132,59 +134,27 @@ class _RootShellPageState extends State<RootShellPage> {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () async {
-                          await FirebaseAuth.instance.signOut();
-                          if (mounted) {
-                            Navigator.pop(context, false);
-                            context.go('/onboarding');
-                          }
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'ÇIKIŞ YAP',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      onPressed: () async {
+                        await FirebaseAuth.instance.signOut();
+                        if (mounted) {
+                          Navigator.pop(context, false);
+                          context.go('/onboarding');
+                        }
+                      },
+                      text: 'ÇIKIŞ YAP',
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'GERİ AÇ',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      text: 'GERİ AÇ',
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                 ],
@@ -386,15 +356,14 @@ class _RootShellPageState extends State<RootShellPage> {
               ),
             ),
           ),
+          ),
         ),
-      ),
       ),
     );
   },
 );
+  }
 }
-}
-
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final IconData selectedIcon;

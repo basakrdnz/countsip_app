@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/drink_categories.dart';
 import '../../data/models/drink_category_model.dart';
+import 'countsip_button.dart';
 
 /// Standalone widget for the custom drink request wizard.
 /// Extracted from AddEntryScreen to reduce file size.
@@ -159,46 +160,28 @@ class _CustomDrinkRequestFormState extends State<CustomDrinkRequestForm> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: OutlinedButton(
+              child: CountSipButton(
                 onPressed: () => setState(() => _currentStep--),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: const Text(
-                  'GERİ',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
+                text: 'GERİ',
+                variant: CountSipButtonVariant.outlined,
+                borderRadius: 20,
+                height: 56,
               ),
             ),
           ),
         Expanded(
           flex: 2,
-          child: ElevatedButton(
-            onPressed: _isSubmitting
-                ? null
-                : (_currentStep < 3
-                    ? () {
-                        if (_currentStep == 0 && _nameController.text.isEmpty) return;
-                        setState(() => _currentStep++);
-                      }
-                    : _submitRequest),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(
-                    _currentStep < 3 ? 'DEVAM ET' : 'TALEBİ GÖNDER',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+          child: CountSipButton(
+            onPressed: (_currentStep < 3
+                ? () {
+                    if (_currentStep == 0 && _nameController.text.isEmpty) return;
+                    setState(() => _currentStep++);
+                  }
+                : _submitRequest),
+            text: _currentStep < 3 ? 'DEVAM ET' : 'TALEBİ GÖNDER',
+            isLoading: _isSubmitting,
+            borderRadius: 20,
+            height: 56,
           ),
         ),
       ],

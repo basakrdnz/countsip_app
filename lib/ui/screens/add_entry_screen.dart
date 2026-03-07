@@ -1,4 +1,5 @@
 import 'dart:ui';
+import '../widgets/countsip_button.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ import '../../core/services/drink_data_service.dart';
 import '../../data/drink_categories.dart';
 import '../../data/models/drink_category_model.dart';
 import '../../core/utils/text_search.dart';
+import 'location_picker_screen.dart';
 
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({super.key});
@@ -39,7 +41,8 @@ class AddEntryScreen extends StatefulWidget {
   State<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
-class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStateMixin {
+class _AddEntryScreenState extends State<AddEntryScreen>
+    with TickerProviderStateMixin {
   // Drink data is imported from lib/data/drink_categories.dart
   static const List<DrinkCategory> _categories = drinkCategories;
 
@@ -52,7 +55,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   bool _isLoading = false;
   late AnimationController _animationController;
   late AnimationController _entranceController;
-  
+
   // Interaction State
   double _cardDragX = 0; // Keeping for now to avoid broken refs, will replace
   double _cardDragY = 0;
@@ -62,18 +65,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   final FocusNode _searchFocusNode = FocusNode();
   List<String> _recentSearches = [];
   bool _isSearchFocused = false;
-  
+
   XFile? _pickedImage;
   int _quantity = 1;
   String? _focusedCategoryId;
   String? _selectedVarietyName;
   DrinkPortion? _selectedPortion;
-  
+
   // Modern Animations State
   late AnimationController _scoreAnimationController;
   late Animation<double> _scoreAnimation;
   double _previousScore = 0.0;
-  
+
   bool _isButtonPressed = false;
   bool _showLocalToast = false;
   double _toastAPS = 0.0;
@@ -86,7 +89,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   List<Map<String, dynamic>> _quickAddConfigs = [];
   bool _isEditingQuickAdd = false;
   List<Map<String, dynamic>> _tempQuickAddConfigs = [];
- // For cancel logic
+  // For cancel logic
 
   // Drink Request State
   int _currentRequestStep = 0;
@@ -100,11 +103,21 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   // --- Premium Accents ---
   Color get _accentColor {
     if (_feelingScale < 5) {
-      return Color.lerp(Colors.red.shade400, Colors.orange.shade400, (_feelingScale - 1) / 4) ?? Colors.red.shade400;
+      return Color.lerp(
+            Colors.red.shade400,
+            Colors.orange.shade400,
+            (_feelingScale - 1) / 4,
+          ) ??
+          Colors.red.shade400;
     } else if (_feelingScale == 5) {
       return Colors.orange.shade400;
     } else {
-      return Color.lerp(Colors.orange.shade400, Colors.green.shade500, (_feelingScale - 5) / 5) ?? Colors.green.shade500;
+      return Color.lerp(
+            Colors.orange.shade400,
+            Colors.green.shade500,
+            (_feelingScale - 5) / 5,
+          ) ??
+          Colors.green.shade500;
     }
   }
 
@@ -137,14 +150,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   List<Map<String, dynamic>> _getSmartSuggestions(String query) =>
       TextSearch.smartSearch(query, _categories);
 
-
   final ScrollController _scrollController = ScrollController();
   final ScrollController _sheetScrollController = ScrollController();
   double _scrollOffset = 0;
   late AnimationController _bounceController;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  
+
   final List<Map<String, dynamic>> _timeShortcuts = [
     {'label': 'Şimdi', 'value': 0},
     {'label': '-10dk', 'value': 10},
@@ -189,9 +201,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    
+
     // Listen for navigation events from Home Screen
-    NavigationService.instance.navigationEventNotifier.addListener(_handleNavigationEvent);
+    NavigationService.instance.navigationEventNotifier.addListener(
+      _handleNavigationEvent,
+    );
     // Check if there's already a value (in case it was set before this screen built)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleNavigationEvent();
@@ -201,10 +215,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   void _handleNavigationEvent() {
     final event = NavigationService.instance.navigationEventNotifier.value;
     if (event != null && mounted) {
-      debugPrint('AddEntryScreen: Received navigation event for ${event.categoryId}');
+      debugPrint(
+        'AddEntryScreen: Received navigation event for ${event.categoryId}',
+      );
       // Clear the value so it doesn't re-trigger
       NavigationService.instance.navigationEventNotifier.value = null;
-      
+
       final categoryId = event.categoryId;
       final category = _categories.where((c) => c.id == categoryId).firstOrNull;
 
@@ -221,7 +237,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         _animationController.forward(from: 0);
       }
     }
-    
+
     _guidanceArrowAnimation = Tween<double>(begin: 0, end: 10).animate(
       CurvedAnimation(parent: _guidanceController, curve: Curves.easeInOut),
     );
@@ -230,7 +246,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _scoreAnimation = Tween<double>(begin: 0, end: 0).animate(_scoreAnimationController);
+    _scoreAnimation = Tween<double>(
+      begin: 0,
+      end: 0,
+    ).animate(_scoreAnimationController);
 
     _bounceController = AnimationController(
       vsync: this,
@@ -243,7 +262,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -293,11 +312,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     setState(() {
       _quickAddConfigs = List<Map<String, dynamic>>.from(configs);
       _quickAddIds = configs.map((c) => c['categoryId'] as String).toList();
-      
+
       // Migration from old IDs if configs are empty
       if (_quickAddConfigs.isEmpty) {
         final ids = PreferencesService.instance.getQuickAddIds();
-        _quickAddConfigs = ids.map((id) => <String, dynamic>{'categoryId': id}).toList();
+        _quickAddConfigs = ids
+            .map((id) => <String, dynamic>{'categoryId': id})
+            .toList();
         _quickAddIds = List<String>.from(ids);
       }
     });
@@ -308,7 +329,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     setState(() {
       _isEditingQuickAdd = !_isEditingQuickAdd;
       if (_isEditingQuickAdd) {
-        _tempQuickAddConfigs = List<Map<String, dynamic>>.from(_quickAddConfigs.map((e) => Map<String, dynamic>.from(e)));
+        _tempQuickAddConfigs = List<Map<String, dynamic>>.from(
+          _quickAddConfigs.map((e) => Map<String, dynamic>.from(e)),
+        );
       }
     });
   }
@@ -334,8 +357,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   void _cancelQuickAddCustomization() {
     HapticFeedback.lightImpact();
     setState(() {
-      _quickAddConfigs = List<Map<String, dynamic>>.from(_tempQuickAddConfigs.map((e) => Map<String, dynamic>.from(e)));
-      _quickAddIds = _quickAddConfigs.map((c) => c['categoryId'] as String).toList();
+      _quickAddConfigs = List<Map<String, dynamic>>.from(
+        _tempQuickAddConfigs.map((e) => Map<String, dynamic>.from(e)),
+      );
+      _quickAddIds = _quickAddConfigs
+          .map((c) => c['categoryId'] as String)
+          .toList();
       _isEditingQuickAdd = false;
     });
   }
@@ -378,17 +405,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   void _showFavoriteConfigDialog(DrinkCategory category) {
     final portions = category.portions;
-    final varieties = portions.map((p) => p.variety).where((v) => v != null).toSet().toList();
+    final varieties = portions
+        .map((p) => p.variety)
+        .where((v) => v != null)
+        .toSet()
+        .toList();
 
-    String? tempVariety = varieties.isNotEmpty ? varieties.first.toString() : null;
+    String? tempVariety = varieties.isNotEmpty
+        ? varieties.first.toString()
+        : null;
     DrinkPortion tempPortion = varieties.isNotEmpty
         ? portions.firstWhere((p) => p.variety == tempVariety)
         : portions.first;
 
     if (category.id == 'beer') {
       final p500 = portions.firstWhere(
-        (p) => (tempVariety == null || p.variety == tempVariety) && p.volume == 500,
-        orElse: () => tempPortion
+        (p) =>
+            (tempVariety == null || p.variety == tempVariety) &&
+            p.volume == 500,
+        orElse: () => tempPortion,
       );
       tempPortion = p500;
     }
@@ -406,7 +441,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           return SafeArea(
             bottom: false,
             child: Container(
-              padding: EdgeInsets.fromLTRB(24, 32, 24, 40 + MediaQuery.of(context).padding.bottom + 80),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                32,
+                24,
+                40 + MediaQuery.of(context).padding.bottom + 80,
+              ),
               decoration: const BoxDecoration(
                 color: Color(0xFF0A0E14),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -415,156 +455,193 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                Text(
-                  '${category.name.toUpperCase()} KISAYOLU',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Favoriye eklerken hazır seçimlerinizi belirleyin',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.5),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (varieties.isNotEmpty) ...[
-                  Text(
-                    'ÇEŞİT',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.4),
-                      letterSpacing: 1.5,
+                    Text(
+                      '${category.name.toUpperCase()} KISAYOLU',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: varieties.map((vObj) {
-                        final v = vObj.toString();
-                        final isSel = tempVariety == v;
-                        return ChoiceChip(
-                          label: Text(v),
-                          selected: isSel,
-                          onSelected: (val) {
-                            if (!val) return;
-                            setDialogState(() {
-                              tempVariety = v;
-                              tempPortion = portions.firstWhere((p) => p.variety == v);
-                              if (category.id == 'beer') {
-                                tempPortion = portions.firstWhere((p) => p.variety == v && p.volume == 500, orElse: () => tempPortion);
-                              }
-                            });
-                          },
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          selectedColor: const Color(0xFFFF8902).withOpacity(0.15),
-                          labelStyle: GoogleFonts.plusJakartaSans(
-                            color: isSel ? const Color(0xFFFF8902) : Colors.white60,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12), 
-                            side: BorderSide(
-                              color: isSel ? const Color(0xFFFF8902).withOpacity(0.4) : Colors.white.withOpacity(0.1),
-                              width: 1.5,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Favoriye eklerken hazır seçimlerinizi belirleyin',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    if (varieties.isNotEmpty) ...[
+                      Text(
+                        'ÇEŞİT',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withOpacity(0.4),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: varieties.map((vObj) {
+                            final v = vObj.toString();
+                            final isSel = tempVariety == v;
+                            return ChoiceChip(
+                              label: Text(v),
+                              selected: isSel,
+                              onSelected: (val) {
+                                if (!val) return;
+                                setDialogState(() {
+                                  tempVariety = v;
+                                  tempPortion = portions.firstWhere(
+                                    (p) => p.variety == v,
+                                  );
+                                  if (category.id == 'beer') {
+                                    tempPortion = portions.firstWhere(
+                                      (p) => p.variety == v && p.volume == 500,
+                                      orElse: () => tempPortion,
+                                    );
+                                  }
+                                });
+                              },
+                              backgroundColor: Colors.white.withOpacity(0.05),
+                              selectedColor: const Color(
+                                0xFFFF8902,
+                              ).withOpacity(0.15),
+                              labelStyle: GoogleFonts.plusJakartaSans(
+                                color: isSel
+                                    ? const Color(0xFFFF8902)
+                                    : Colors.white60,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: isSel
+                                      ? const Color(0xFFFF8902).withOpacity(0.4)
+                                      : Colors.white.withOpacity(0.1),
+                                  width: 1.5,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    if (category.id != 'wine' &&
+                        filteredPortions
+                                .map(
+                                  (p) =>
+                                      '${p.name.toLowerCase().trim()}-${p.volume}',
+                                )
+                                .toSet()
+                                .length >
+                            1) ...[
+                      Text(
+                        'MİKTAR',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withOpacity(0.4),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: filteredPortions.map((p) {
+                          final isSel =
+                              tempPortion.name == p.name &&
+                              tempPortion.volume == p.volume;
+                          return ChoiceChip(
+                            label: Text(p.name),
+                            selected: isSel,
+                            onSelected: (val) {
+                              if (!val) return;
+                              setDialogState(() => tempPortion = p);
+                            },
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            selectedColor: const Color(
+                              0xFFFF8902,
+                            ).withOpacity(0.15),
+                            labelStyle: GoogleFonts.plusJakartaSans(
+                              color: isSel
+                                  ? const Color(0xFFFF8902)
+                                  : Colors.white60,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSel
+                                    ? const Color(0xFFFF8902).withOpacity(0.4)
+                                    : Colors.white.withOpacity(0.1),
+                                width: 1.5,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 40),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.heavyImpact();
+                        setState(() {
+                          final config = {
+                            'categoryId': category.id,
+                            'variety': tempVariety,
+                            'portion': tempPortion.toJson(),
+                          };
+                          _quickAddConfigs.add(config);
+                          _quickAddIds.add(category.id);
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF8902).withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF8902).withOpacity(0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            'FAVORİ EKLE',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                Text(
-                  'MİKTAR',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withOpacity(0.4),
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: filteredPortions.map((p) {
-                    final isSel = tempPortion.name == p.name && tempPortion.volume == p.volume;
-                    return ChoiceChip(
-                      label: Text(p.name),
-                      selected: isSel,
-                      onSelected: (val) {
-                        if (!val) return;
-                        setDialogState(() => tempPortion = p);
-                      },
-                      backgroundColor: Colors.white.withOpacity(0.05),
-                      selectedColor: const Color(0xFFFF8902).withOpacity(0.15),
-                      labelStyle: GoogleFonts.plusJakartaSans(
-                        color: isSel ? const Color(0xFFFF8902) : Colors.white60,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12), 
-                        side: BorderSide(
-                          color: isSel ? const Color(0xFFFF8902).withOpacity(0.4) : Colors.white.withOpacity(0.1),
-                          width: 1.5,
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.heavyImpact();
-                    setState(() {
-                      final config = {
-                        'categoryId': category.id,
-                        'variety': tempVariety,
-                        'portion': tempPortion.toJson(),
-                      };
-                      _quickAddConfigs.add(config);
-                      _quickAddIds.add(category.id);
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF8902).withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF8902).withOpacity(0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: Center(
-                      child: Text('FAVORİ EKLE', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
-                    ),
-                  ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
-          ),
-        ),
-      );
+          );
         },
       ),
     );
@@ -594,13 +671,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   double _getTotalScore() {
     if (_selectedPortion == null) return 0.0;
-    return _calculateScore(_selectedPortion!.volume, _selectedPortion!.abv) * _quantity;
+    return _calculateScore(_selectedPortion!.volume, _selectedPortion!.abv) *
+        _quantity;
   }
 
   int _getTotalCount() {
     return _selectedPortion != null ? _quantity : 0;
   }
-
 
   void _resetForm() {
     setState(() {
@@ -635,7 +712,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
-    
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -648,7 +725,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       try {
         final now = DateTime.now();
         final todayStart = DateTime(now.year, now.month, now.day);
-        
+
         final todayEntries = await FirebaseFirestore.instance
             .collection('entries')
             .where('userId', isEqualTo: user.uid)
@@ -660,8 +737,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         debugPrint('Daily entries check skipped: $e');
       }
 
-      final totalScore = _calculateScore(_selectedPortion!.volume, _selectedPortion!.abv);
-      final category = _categories.firstWhere((c) => c.id == _focusedCategoryId);
+      final totalScore = _calculateScore(
+        _selectedPortion!.volume,
+        _selectedPortion!.abv,
+      );
+      final category = _categories.firstWhere(
+        (c) => c.id == _focusedCategoryId,
+      );
       final portionName = _selectedPortion!.name;
 
       String? imageUrl;
@@ -671,10 +753,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           final storageRef = FirebaseStorage.instance
               .ref()
               .child('drink_images')
-              .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-          
+              .child(
+                '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              );
+
           final uploadTask = storageRef.putFile(File(_pickedImage!.path));
-          final snapshot = await uploadTask.timeout(const Duration(seconds: 60));
+          final snapshot = await uploadTask.timeout(
+            const Duration(seconds: 60),
+          );
           imageUrl = await snapshot.ref.getDownloadURL();
           debugPrint('Image uploaded successfully: $imageUrl');
         } catch (e) {
@@ -693,7 +779,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       debugPrint('Step 3: Committing Firestore batch...');
       final batch = FirebaseFirestore.instance.batch();
       final entryRef = FirebaseFirestore.instance.collection('entries').doc();
-      
+
       batch.set(entryRef, {
         'userId': user.uid,
         'drinkType': category.name,
@@ -750,7 +836,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       // 1. Badge Check
       debugPrint('🏅 Starting badge check for user: $userId');
       final unlockedBadges = await BadgeService.checkBadges(userId);
-      debugPrint('🏅 Badge check complete. Newly unlocked: ${unlockedBadges.length}');
+      debugPrint(
+        '🏅 Badge check complete. Newly unlocked: ${unlockedBadges.length}',
+      );
       if (unlockedBadges.isNotEmpty && mounted) {
         for (var badge in unlockedBadges) {
           if (!mounted) break;
@@ -761,9 +849,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
       // 2. Water Reminder
       if (entriesCountToday >= 2) {
-        await FirebaseFirestore.instance.collection('users').doc(userId).update({
-          'showWaterReminder': true,
-        });
+        await FirebaseFirestore.instance.collection('users').doc(userId).update(
+          {'showWaterReminder': true},
+        );
       }
     } catch (e, stack) {
       debugPrint('❌ Background tasks error: $e');
@@ -779,7 +867,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           children: [
             Icon(Icons.water_drop, color: Colors.blue),
             SizedBox(width: 12),
-            Expanded(child: Text('Dengeyi hatırla! Bir bardak su içmeye ne dersin? 💧')),
+            Expanded(
+              child: Text(
+                'Dengeyi hatırla! Bir bardak su içmeye ne dersin? 💧',
+              ),
+            ),
           ],
         ),
         duration: const Duration(seconds: 5),
@@ -805,84 +897,53 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     final bool isFocused = _focusedCategoryId != null;
-    
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: GestureDetector(
-        onVerticalDragUpdate: (details) {
-          // Only trigger if we are at the top of the scroll or pulling down
-          if (!isFocused && (_scrollController.offset <= 0 || _screenDragY > 0)) {
-            setState(() {
-              _screenDragY = (_screenDragY + details.delta.dy).clamp(0.0, MediaQuery.of(context).size.height);
-            });
-          }
-        },
-        onVerticalDragEnd: (details) {
-          if (_screenDragY > 150 || details.velocity.pixelsPerSecond.dy > 800) {
-            Navigator.pop(context);
-          } else {
-            setState(() {
-              _screenDragY = 0;
-            });
-          }
-        },
-        child: Transform.translate(
-          offset: Offset(0, _screenDragY),
-          child: Container(
-            color: AppColors.background,
-            child: Scaffold(
-              backgroundColor: Colors.transparent, // Let Container handle it
-              body: Stack(
-                children: [
-                  // Index 0: Main List View (Always present, dimmed when focused)
-                  Opacity(
-                    opacity: isFocused ? 0.4 : 1.0,
-                    child: _buildMainListView(),
-                  ),
-                  
-                  // Title Bar (Overlay on list view)
-                  if (!isFocused)
-                    _buildFloatingTitleBar(),
-        
-                  // Dark overlay when sheet is open to prevent clicks on list
-                  if (isFocused)
-                    GestureDetector(
-                      onTap: () => _closeSheet(),
-                      child: Container(
-                        color: Colors.black.withOpacity(0.4),
-                      ),
-                    ),
-        
-                  // Detail View Overlay (Draggable Sheet)
-                  if (isFocused)
-                    _buildFocusedSheet(),
-        
-                  // Search Suggestions & History Overlay
-                  if (_isSearchFocused && !isFocused)
-                    _buildSearchOverlay(),
-        
-                  // Local Success Toast
-                  if (_showLocalToast)
-                    _SuccessToastWidget(
-                      aps: _toastAPS,
-                      onDismiss: () => setState(() => _showLocalToast = false),
-                    ),
-                    
-                  // Local Badge Notification
-                  if (_showLocalBadge && _activeBadge != null)
-                    _BadgeNotificationWidget(
-                      badgeSource: _activeBadge!,
-                      color: _activeBadgeColor ?? Colors.orange,
-                      onDismiss: () => setState(() => _showLocalBadge = false),
-                    ),
-                ],
-              ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            // Index 0: Main List View (Always present, dimmed when focused)
+            Opacity(
+              opacity: isFocused ? 0.4 : 1.0,
+              child: _buildMainListView(),
             ),
-          ),
+
+            // Title Bar (Overlay on list view)
+            if (!isFocused) _buildFloatingTitleBar(),
+
+            // Dark overlay when sheet is open to prevent clicks on list
+            if (isFocused)
+              GestureDetector(
+                onTap: () => _closeSheet(),
+                child: Container(color: Colors.black.withOpacity(0.4)),
+              ),
+
+            // Detail View Overlay (Glass Floating Dialog)
+            if (isFocused) _buildFocusedSheet(),
+
+            // Search Suggestions & History Overlay
+            if (_isSearchFocused && !isFocused) _buildSearchOverlay(),
+
+            // Local Success Toast
+            if (_showLocalToast)
+              _SuccessToastWidget(
+                aps: _toastAPS,
+                onDismiss: () => setState(() => _showLocalToast = false),
+              ),
+
+            // Local Badge Notification
+            if (_showLocalBadge && _activeBadge != null)
+              _BadgeNotificationWidget(
+                badgeSource: _activeBadge!,
+                color: _activeBadgeColor ?? Colors.orange,
+                onDismiss: () => setState(() => _showLocalBadge = false),
+              ),
+          ],
         ),
       ),
     );
@@ -915,35 +976,39 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             SliverToBoxAdapter(child: _buildSearchBar()),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
             if (_searchQuery.isEmpty) ...[
-               SliverToBoxAdapter(child: _buildSuggestionsSection()),
-               const SliverToBoxAdapter(child: SizedBox(height: 24)),
-               SliverToBoxAdapter(
-                 child: Padding(
-                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                   child: Row(
-                     children: [
-                       Container(
-                         width: 3,
-                         height: 16,
-                         decoration: BoxDecoration(
-                           color: const Color(0xFFFF8902),
-                           borderRadius: BorderRadius.circular(2),
-                         ),
-                       ),
-                       const SizedBox(width: 8),
-                       Text(
-                         'TÜM İÇECEKLER',
-                         style: GoogleFonts.plusJakartaSans(
-                           fontSize: 12,
-                           fontWeight: FontWeight.w600,
-                           color: AppColors.textTertiary, // Lighter, matches profile
-                           letterSpacing: 1.2,
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
-               ),
+              SliverToBoxAdapter(child: _buildSuggestionsSection()),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF8902),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'TÜM İÇECEKLER',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors
+                              .textTertiary, // Lighter, matches profile
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -970,94 +1035,82 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     }).toList();
     final glowColor = const Color(0xFFFF8902);
 
-    if (suggestions.isEmpty && !_isEditingQuickAdd) return const SizedBox.shrink();
+    if (suggestions.isEmpty && !_isEditingQuickAdd)
+      return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 3,
-              height: 16,
-              decoration: BoxDecoration(
-                color: glowColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'HIZLI EKLE',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textTertiary,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const Spacer(),
-            if (_isEditingQuickAdd) ...[
-              TextButton(
-                onPressed: _cancelQuickAddCustomization,
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'VAZGEÇ',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withOpacity(0.4),
-                    letterSpacing: 1,
-                  ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: glowColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: _saveQuickAddCustomization,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: glowColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: glowColor.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    'BITTI',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: glowColor,
-                      letterSpacing: 1,
+              const SizedBox(width: 8),
+              Text(
+                'HIZLI EKLE',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const Spacer(),
+              if (_isEditingQuickAdd) ...[
+                CountSipButton(
+                  onPressed: _cancelQuickAddCustomization,
+                  text: 'VAZGEÇ',
+                  variant: CountSipButtonVariant.ghost,
+                  height: 28,
+                  fontSize: 10,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  textColor: Colors.white.withOpacity(0.4),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: _saveQuickAddCustomization,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: glowColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: glowColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      'BITTI',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: glowColor,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ] else
-              TextButton(
-                onPressed: _toggleQuickAddEdit,
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ] else
+                CountSipButton(
+                  onPressed: _toggleQuickAddEdit,
+                  text: 'DÜZENLE',
+                  variant: CountSipButtonVariant.ghost,
+                  height: 28,
+                  fontSize: 10,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  textColor: glowColor.withOpacity(0.6),
                 ),
-                child: Text(
-                  'DÜZENLE',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: glowColor.withOpacity(0.6),
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
         const SizedBox(height: 8),
         SizedBox(
           height: 110, // Shorter height for a chic look
@@ -1070,7 +1123,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               final item = suggestions[index];
               final category = item;
               final config = item['favConfig'] as Map<String, dynamic>?;
-              
+
               String categoryTitle = (item['name'] as String).toUpperCase();
               String? subtitle = item['subtitle'] as String?;
               return Padding(
@@ -1079,7 +1132,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   onTap: () {
                     if (_isEditingQuickAdd) return;
                     final config = item['favConfig'] as Map<String, dynamic>?;
-                    _onCategorySelected(category, preSelectedPortion: config?['portion']);
+                    _onCategorySelected(
+                      category,
+                      preSelectedPortion: config?['portion'],
+                    );
                   },
                   child: Container(
                     width: 155, // Wider for half-image layout
@@ -1170,7 +1226,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                 )
                               : Center(
                                   child: Icon(
-                                    DrinkDataService.instance.resolveFromId(item['id'] as String).icon,
+                                    DrinkDataService.instance
+                                        .resolveFromId(item['id'] as String)
+                                        .icon,
                                     size: 60,
                                     color: Colors.white.withOpacity(0.15),
                                   ),
@@ -1179,54 +1237,55 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
                         Positioned(
                           right: 12,
+                          left:
+                              60, // Sınırlamayı iki taraflı verip otomatik hesaplamasını sağlıyoruz
                           top: 0,
                           bottom: 0,
                           child: Center(
-                            child: Container(
-                              width: 85, // Constrain width for long names
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  categoryTitle,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: categoryTitle.length > 10
+                                        ? 11
+                                        : 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (subtitle != null) ...[
+                                  const SizedBox(height: 1),
                                   Text(
-                                    categoryTitle,
+                                    subtitle,
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: categoryTitle.length > 10 ? 11 : 13,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: 0.2,
+                                      fontSize: subtitle.length > 12 ? 8 : 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white.withOpacity(0.6),
+                                      letterSpacing: 0.1,
                                     ),
                                     textAlign: TextAlign.right,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (subtitle != null) ...[
-                                    const SizedBox(height: 1),
-                                    Text(
-                                      subtitle,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: subtitle.length > 12 ? 8 : 9,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white.withOpacity(0.6),
-                                        letterSpacing: 0.1,
-                                      ),
-                                      textAlign: TextAlign.right,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'EKLE',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      color: glowColor.withOpacity(0.7),
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
                                 ],
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'EKLE',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: glowColor.withOpacity(0.7),
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -1239,7 +1298,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                               onTap: () {
                                 HapticFeedback.mediumImpact();
                                 setState(() {
-                                  _quickAddConfigs.removeWhere((c) => c['categoryId'] == item['id']);
+                                  _quickAddConfigs.removeWhere(
+                                    (c) => c['categoryId'] == item['id'],
+                                  );
                                   _quickAddIds.remove(item['id']);
                                 });
                               },
@@ -1249,7 +1310,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   color: Colors.red,
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.remove, size: 14, color: Colors.white),
+                                child: const Icon(
+                                  Icons.remove,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -1289,25 +1354,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return AnimationConfiguration.staggeredGrid(
-            position: index,
-            duration: const Duration(milliseconds: 500),
-            columnCount: 2,
-            child: ScaleAnimation(
-              child: FadeInAnimation(
-                child: _buildCategoryCard(filteredCategories[index]),
-              ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return AnimationConfiguration.staggeredGrid(
+          position: index,
+          duration: const Duration(milliseconds: 500),
+          columnCount: 2,
+          child: ScaleAnimation(
+            child: FadeInAnimation(
+              child: _buildCategoryCard(filteredCategories[index]),
             ),
-          );
-        },
-        childCount: filteredCategories.length,
-      ),
+          ),
+        );
+      }, childCount: filteredCategories.length),
     );
   }
 
-  void _onCategorySelected(Map<String, dynamic> categoryMap, {Map<String, dynamic>? preSelectedPortion}) {
+  void _onCategorySelected(
+    Map<String, dynamic> categoryMap, {
+    Map<String, dynamic>? preSelectedPortion,
+  }) {
     HapticFeedback.mediumImpact();
 
     // Resolve the typed category from _categories
@@ -1315,24 +1380,36 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     final portions = category.portions;
 
     String? initialVariety;
-    DrinkPortion? initialPortion = preSelectedPortion != null ? DrinkPortion.fromJson(preSelectedPortion) : null;
+    DrinkPortion? initialPortion = preSelectedPortion != null
+        ? DrinkPortion.fromJson(preSelectedPortion)
+        : null;
 
     if (initialPortion == null) {
-      final varieties = portions.map((p) => p.variety).where((v) => v != null).toSet().toList();
+      final varieties = portions
+          .map((p) => p.variety)
+          .where((v) => v != null)
+          .toSet()
+          .toList();
 
       if (varieties.isNotEmpty) {
         initialVariety = varieties.first.toString();
-        final candidates = portions.where((p) => p.variety == initialVariety).toList();
+        final candidates = portions
+            .where((p) => p.variety == initialVariety)
+            .toList();
 
         if (category.id == 'beer') {
           initialPortion = candidates.firstWhere(
             (p) => p.volume == 500,
-            orElse: () => candidates.isNotEmpty ? candidates.first : portions.first,
+            orElse: () =>
+                candidates.isNotEmpty ? candidates.first : portions.first,
           );
         } else {
-          initialPortion = candidates.isNotEmpty ? candidates.first : portions.first;
+          initialPortion = candidates.isNotEmpty
+              ? candidates.first
+              : portions.first;
         }
       } else if (portions.isNotEmpty) {
+        // Find best default for other categories
         if (category.id == 'beer') {
           initialPortion = portions.firstWhere(
             (p) => p.volume == 500,
@@ -1343,6 +1420,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         }
       }
     } else {
+      initialVariety = initialPortion.variety;
+    }
+
+    // FINAL GUARD: If still null but portions exist, pick the first one
+    if (initialPortion == null && portions.isNotEmpty) {
+      initialPortion = portions.first;
       initialVariety = initialPortion.variety;
     }
 
@@ -1364,257 +1447,304 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildCategoryCard(DrinkCategory category) {
     final portions = category.portions;
-    final varieties = portions.map((p) => p.variety).where((v) => v != null).toSet();
-    final int displayCount = varieties.isNotEmpty ? varieties.length : portions.length;
+    final varieties = portions
+        .map((p) => p.variety)
+        .where((v) => v != null)
+        .toSet();
+    final int displayCount = varieties.isNotEmpty
+        ? varieties.length
+        : portions.length;
     // Force Orange/Gold glow for all categories as per 'turuncu ağırlıklı' request
     final glowColor = const Color(0xFFFF8902);
 
     final bool isFavorite = _quickAddIds.contains(category.id);
-    
+
     return GestureDetector(
       onTap: () {
         if (_isEditingQuickAdd) {
-           HapticFeedback.mediumImpact();
-           if (isFavorite) {
-              setState(() {
-                _quickAddConfigs.removeWhere((c) => c['categoryId'] == category.id);
-                _quickAddIds.remove(category.id);
-              });
-           } else {
-              if (_quickAddConfigs.length < 5) {
-                _showFavoriteConfigDialog(category);
-              } else {
-                _showProminentLimitWarning();
-              }
-           }
-           return;
+          HapticFeedback.mediumImpact();
+          if (isFavorite) {
+            setState(() {
+              _quickAddConfigs.removeWhere(
+                (c) => c['categoryId'] == category.id,
+              );
+              _quickAddIds.remove(category.id);
+            });
+          } else {
+            if (_quickAddConfigs.length < 5) {
+              _showFavoriteConfigDialog(category);
+            } else {
+              _showProminentLimitWarning();
+            }
+          }
+          return;
         }
-        _onCategorySelected({'id': category.id, 'name': category.name, 'emoji': category.emoji, 'image': category.image});
+        _onCategorySelected({
+          'id': category.id,
+          'name': category.name,
+          'emoji': category.emoji,
+          'image': category.image,
+        });
       },
       child: ColorFiltered(
         colorFilter: _isEditingQuickAdd && !isFavorite
             ? const ColorFilter.matrix([
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0,      0,      0,      1, 0,
+                0.2126,
+                0.7152,
+                0.0722,
+                0,
+                0,
+                0.2126,
+                0.7152,
+                0.0722,
+                0,
+                0,
+                0.2126,
+                0.7152,
+                0.0722,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
               ])
             : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
         child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(
-            color: _isEditingQuickAdd && isFavorite 
-                ? glowColor 
-                : Colors.white.withOpacity(0.15),
-            width: _isEditingQuickAdd && isFavorite ? 2.5 : 1.2,
-          ),
-          boxShadow: [
-            if (_isEditingQuickAdd && isFavorite)
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: _isEditingQuickAdd && isFavorite
+                  ? glowColor
+                  : Colors.white.withOpacity(0.15),
+              width: _isEditingQuickAdd && isFavorite ? 2.5 : 1.2,
+            ),
+            boxShadow: [
+              if (_isEditingQuickAdd && isFavorite)
+                BoxShadow(
+                  color: glowColor.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
               BoxShadow(
-                color: glowColor.withOpacity(0.3),
-                blurRadius: 20,
-                spreadRadius: 2,
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
               ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 32,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        clipBehavior: (category.id == 'tequila' || category.id == 'rum') ? Clip.none : Clip.antiAlias,
-        child: Stack(
-          children: [
-            // 1. Nebula Ambient Aura (Orange) - Broad and very subtle
-            Positioned(
-              top: -100,
-              right: -100,
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      glowColor.withOpacity(0.08), // Even more subtle
-                      glowColor.withOpacity(0.0),
-                    ],
+            ],
+          ),
+          clipBehavior: (category.id == 'tequila' || category.id == 'rum')
+              ? Clip.none
+              : Clip.antiAlias,
+          child: Stack(
+            children: [
+              // 1. Nebula Ambient Aura (Orange) - Broad and very subtle
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 320,
+                  height: 320,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        glowColor.withOpacity(0.08), // Even more subtle
+                        glowColor.withOpacity(0.0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            
-            // 2. Secondary Nebula (Indigo) - Very broad and subtle
-            Positioned(
-              bottom: -80,
-              left: -80,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF3F51B5).withOpacity(0.06), // Barely there
-                      const Color(0xFF3F51B5).withOpacity(0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
-            // 3. True Glassmorphism Blur Layer
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              // 2. Secondary Nebula (Indigo) - Very broad and subtle
+              Positioned(
+                bottom: -80,
+                left: -80,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(
+                          0xFF3F51B5,
+                        ).withOpacity(0.06), // Barely there
+                        const Color(0xFF3F51B5).withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 3. True Glassmorphism Blur Layer
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.03),
+                          Colors.black.withOpacity(0.1),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 4. Glass Shine (Reflective Sweep) - Overlaying the blur
+              Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      begin: const Alignment(-1.5, -1.2),
+                      end: const Alignment(1.5, 1.2),
                       colors: [
-                        Colors.white.withOpacity(0.03), 
-                        Colors.black.withOpacity(0.1),
+                        Colors.white.withOpacity(0.0),
+                        Colors.white.withOpacity(0.06), // Shine
+                        Colors.white.withOpacity(0.0),
+                      ],
+                      stops: const [0.35, 0.45, 0.55],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 5. Top-Left Highlight
+              Positioned(
+                top: 0,
+                left: 40,
+                child: Container(
+                  width: 80,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.0),
+                        Colors.white.withOpacity(0.12),
+                        Colors.white.withOpacity(0.0),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
 
-            // 4. Glass Shine (Reflective Sweep) - Overlaying the blur
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: const Alignment(-1.5, -1.2),
-                    end: const Alignment(1.5, 1.2),
-                    colors: [
-                      Colors.white.withOpacity(0.0),
-                      Colors.white.withOpacity(0.06), // Shine
-                      Colors.white.withOpacity(0.0),
-                    ],
-                    stops: const [0.35, 0.45, 0.55],
+              // 6. Interaction Indicator (Check or Plus)
+              if (_isEditingQuickAdd)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isFavorite
+                          ? glowColor
+                          : Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        if (isFavorite)
+                          BoxShadow(
+                            color: glowColor.withOpacity(0.4),
+                            blurRadius: 12,
+                          ),
+                      ],
+                    ),
+                    child: Icon(
+                      isFavorite ? Icons.check : Icons.add,
+                      size: 20,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // 5. Top-Left Highlight
-            Positioned(
-              top: 0,
-              left: 40,
-              child: Container(
-                width: 80,
-                height: 2,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.0),
-                      Colors.white.withOpacity(0.12),
-                      Colors.white.withOpacity(0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // 6. Interaction Indicator (Check or Plus)
-            if (_isEditingQuickAdd)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isFavorite ? glowColor : Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      if (isFavorite)
-                        BoxShadow(
-                          color: glowColor.withOpacity(0.4),
-                          blurRadius: 12,
-                        ),
-                    ],
-                  ),
-                  child: Icon(
-                    isFavorite ? Icons.check : Icons.add,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-          
-            // 3. Content
-            Align(
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Floating Image with centered glow
-                  Stack(
-                    alignment: Alignment.center,
+              // 3. Content
+              Align(
+                alignment: Alignment.center,
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Focused Soft Glow exactly behind the image
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: glowColor.withOpacity(0.12),
-                              blurRadius: 35,
-                              spreadRadius: 5,
+                      // Floating Image with centered glow
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Focused Soft Glow exactly behind the image
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: glowColor.withOpacity(0.12),
+                                  blurRadius: 35,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                          ),
+                          category.image != null
+                              ? Image.asset(
+                                  category.image!,
+                                  width:
+                                      (category.id == 'tequila' ||
+                                          category.id == 'rum')
+                                      ? 180
+                                      : 135,
+                                  height:
+                                      (category.id == 'tequila' ||
+                                          category.id == 'rum')
+                                      ? 180
+                                      : 135,
+                                  fit: BoxFit.contain,
+                                )
+                              : Icon(
+                                  DrinkDataService.instance
+                                      .resolveFromId(category.id)
+                                      .icon,
+                                  size: 100,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Title
+                      Text(
+                        category.name,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
                             ),
                           ],
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                      category.image != null
-                          ? Image.asset(
-                              category.image!,
-                              width: (category.id == 'tequila' || category.id == 'rum') ? 180 : 135,
-                              height: (category.id == 'tequila' || category.id == 'rum') ? 180 : 135,
-                              fit: BoxFit.contain,
-                            )
-                          : Icon(
-                              DrinkDataService.instance.resolveFromId(category.id).icon,
-                              size: 100,
-                              color: Colors.white.withOpacity(0.3),
-                            ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 16),
-
-                  // Title
-                  Text(
-                    category.name,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                      shadows: [
-                         Shadow(
-                          color: Colors.black.withOpacity(0.5),
-                          offset: const Offset(0, 2),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                  textAlign: TextAlign.center,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 
   Widget _buildFloatingTitleBar() {
     return Positioned(
@@ -1650,7 +1780,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       _toastAPS = aps;
       _showLocalToast = true;
     });
-    
+
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() => _showLocalToast = false);
@@ -1668,9 +1798,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         decoration: BoxDecoration(
           color: AppColors.background.withOpacity(0.95),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border(top: BorderSide(color: AppColors.primary.withOpacity(0.2), width: 1.5)),
+          border: Border(
+            top: BorderSide(
+              color: AppColors.primary.withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
           ],
         ),
         child: Column(
@@ -1696,7 +1835,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Picker
             SizedBox(
               height: 200,
@@ -1720,58 +1859,33 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 ),
               ),
             ),
-            
+
             Padding(
-              padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                MediaQuery.of(context).padding.bottom + 24,
+              ),
               child: Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary.withOpacity(0.7),
-                          padding: const EdgeInsets.symmetric(vertical: 16), // Reduced height
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        child: Text(
-                          'VAZGEÇ', 
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w800, 
-                            fontSize: 12, 
-                            letterSpacing: 1.2
-                          )
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context),
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 20,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'DÜZENLE',
                       onPressed: () {
                         HapticFeedback.mediumImpact();
                         Navigator.pop(context);
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(vertical: 16), // Reduced height
-                      ),
-                      child: Text(
-                        'DÜZENLE', 
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800, 
-                          fontSize: 12, 
-                          letterSpacing: 1.2
-                        )
-                      ),
+                      borderRadius: 20,
                     ),
                   ),
                 ],
@@ -1790,21 +1904,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: _isSearchFocused ? const Color(0xFF1E2433).withOpacity(0.7) : const Color(0xFF1A1F2E).withOpacity(0.8),
+          color: _isSearchFocused
+              ? const Color(0xFF1E2433).withOpacity(0.7)
+              : const Color(0xFF1A1F2E).withOpacity(0.8),
           borderRadius: BorderRadius.circular(_isSearchFocused ? 20 : 16),
           border: Border.all(
-            color: _isSearchFocused 
-                ? const Color(0xFFFF8902).withOpacity(0.6) 
+            color: _isSearchFocused
+                ? const Color(0xFFFF8902).withOpacity(0.6)
                 : Colors.white.withOpacity(0.12),
             width: _isSearchFocused ? 2.0 : 1.4, // Thicker chic border
           ),
-          boxShadow: _isSearchFocused ? [
-            BoxShadow(
-              color: const Color(0xFFFF8902).withOpacity(0.15),
-              blurRadius: 30,
-              spreadRadius: -2,
-            )
-          ] : [],
+          boxShadow: _isSearchFocused
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFF8902).withOpacity(0.15),
+                    blurRadius: 30,
+                    spreadRadius: -2,
+                  ),
+                ]
+              : [],
         ),
         child: TextField(
           controller: _searchController,
@@ -1830,82 +1948,38 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               size: 22,
               color: Color(0xFFFF8902),
             ),
-            suffixIcon: _searchQuery.isNotEmpty 
-              ? IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white54),
-                  onPressed: () {
-                    setState(() {
-                      _searchQuery = '';
-                      _searchController.clear();
-                    });
-                    _searchFocusNode.unfocus();
-                  },
-                )
-              : null,
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                      _searchFocusNode.unfocus();
+                    },
+                  )
+                : null,
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 14,
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _pickImage() {
-    _showImageSourceSheet();
-  }
-
-  Future<void> _showImageSourceSheet() async {
+  Future<void> _pickImage() async {
     final picker = ImagePicker();
-    XFile? photo;
-
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF12151C),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36, height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Text('Fotoğraf Ekle',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildSourceOption(
-              icon: Icons.camera_alt_rounded,
-              label: 'Kameradan Çek',
-              color: const Color(0xFFFF8902),
-              onTap: () async {
-                Navigator.pop(ctx);
-                photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildSourceOption(
-              icon: Icons.photo_library_rounded,
-              label: 'Galeriden Seç',
-              color: const Color(0xFF4ECDC4),
-              onTap: () async {
-                Navigator.pop(ctx);
-                photo = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-              },
-            ),
-          ],
-        ),
-      ),
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
     );
 
     if (photo != null && mounted) {
@@ -1914,44 +1988,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         _pickedImage = photo;
       });
     }
-  }
-
-  Widget _buildSourceOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 16),
-            Text(label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildSearchOverlay() {
@@ -1964,10 +2000,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
     final List<DrinkCategory> suggestions = _searchQuery.isEmpty
         ? []
-        : _categories.where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+        : _categories
+              .where(
+                (c) =>
+                    c.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+              )
+              .toList();
 
     return Positioned.fill(
-      top: MediaQuery.of(context).padding.top + 180, // Position below the search bar
+      top:
+          MediaQuery.of(context).padding.top +
+          180, // Position below the search bar
       child: GestureDetector(
         onTap: () {
           _searchFocusNode.unfocus();
@@ -1988,11 +2031,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                     child: Container(
                       width: double.infinity,
-                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.5,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1E2433).withOpacity(0.85),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.2),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                          width: 1.2,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.3),
@@ -2005,11 +2053,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_searchQuery.isEmpty && _recentSearches.isNotEmpty) ...[
+                          if (_searchQuery.isEmpty &&
+                              _recentSearches.isNotEmpty) ...[
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                20,
+                                20,
+                                10,
+                              ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'SON ARAMALAR',
@@ -2020,16 +2075,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                       letterSpacing: 1.2,
                                     ),
                                   ),
-                                  TextButton(
+                                  CountSipButton(
                                     onPressed: _clearHistory,
-                                    child: Text(
-                                      'TEMİZLE',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFFFF8902),
-                                      ),
-                                    ),
+                                    text: 'TEMİZLE',
+                                    variant: CountSipButtonVariant.ghost,
+                                    width: 80,
+                                    height: 32,
+                                    fontSize: 10,
+                                    textColor: const Color(0xFFFF8902),
                                   ),
                                 ],
                               ),
@@ -2042,22 +2095,37 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                 itemBuilder: (context, index) {
                                   final query = _recentSearches[index];
                                   return ListTile(
-                                    leading: const Icon(Icons.history_rounded, size: 20, color: Colors.white30),
+                                    leading: const Icon(
+                                      Icons.history_rounded,
+                                      size: 20,
+                                      color: Colors.white30,
+                                    ),
                                     title: Text(
                                       query,
-                                      style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 14),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                     trailing: IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white24),
-                                      onPressed: () => _removeFromHistory(query),
+                                      icon: const Icon(
+                                        Icons.close_rounded,
+                                        size: 16,
+                                        color: Colors.white24,
+                                      ),
+                                      onPressed: () =>
+                                          _removeFromHistory(query),
                                     ),
                                     onTap: () {
                                       setState(() {
                                         _searchQuery = query;
                                         _searchController.text = query;
-                                        _searchController.selection = TextSelection.fromPosition(
-                                          TextPosition(offset: query.length),
-                                        );
+                                        _searchController.selection =
+                                            TextSelection.fromPosition(
+                                              TextPosition(
+                                                offset: query.length,
+                                              ),
+                                            );
                                       });
                                       _addToHistory(query);
                                     },
@@ -2070,7 +2138,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                             // Deep Search Logic: Filter categories AND their portions
                             Builder(
                               builder: (context) {
-                                final List<Map<String, dynamic>> deepSuggestions = [];
+                                final List<Map<String, dynamic>>
+                                deepSuggestions = [];
                                 final query = _searchQuery.toLowerCase();
 
                                 for (var cat in _categories) {
@@ -2079,7 +2148,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   // 1. Direct Category Match
                                   if (catName.contains(query)) {
                                     deepSuggestions.add({
-                                      'id': cat.id, 'name': cat.name, 'emoji': cat.emoji, 'image': cat.image,
+                                      'id': cat.id,
+                                      'name': cat.name,
+                                      'emoji': cat.emoji,
+                                      'image': cat.image,
                                       'portions': cat.portions,
                                     });
                                   }
@@ -2087,14 +2159,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   else {
                                     for (var p in cat.portions) {
                                       final pName = p.name.toLowerCase();
-                                      final pVariety = (p.variety ?? '').toLowerCase();
+                                      final pVariety = (p.variety ?? '')
+                                          .toLowerCase();
 
-                                      if (pName.contains(query) || pVariety.contains(query)) {
+                                      if (pName.contains(query) ||
+                                          pVariety.contains(query)) {
                                         // Create a combined entry for the portion match
                                         deepSuggestions.add({
-                                          'id': cat.id, 'name': cat.name, 'emoji': cat.emoji, 'image': cat.image,
+                                          'id': cat.id,
+                                          'name': cat.name,
+                                          'emoji': cat.emoji,
+                                          'image': cat.image,
                                           'portions': cat.portions,
-                                          'displayName': "${cat.name} - ${p.name}",
+                                          'displayName':
+                                              "${cat.name} - ${p.name}",
                                           'isPortionMatch': true,
                                           'selectedPortion': p.toJson(),
                                         });
@@ -2103,129 +2181,191 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   }
                                 }
 
-                                final fuzzySuggestions = _getSmartSuggestions(_searchQuery);
+                                final fuzzySuggestions = _getSmartSuggestions(
+                                  _searchQuery,
+                                );
 
                                 if (deepSuggestions.isEmpty) {
                                   return SizedBox(
                                     width: double.infinity,
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
-                                      const SizedBox(height: 40),
-                                      // Subtle Gray Icon & Text (Matching Notification Screen)
-                                      Icon(
-                                        Icons.search_off_rounded,
-                                        size: 64,
-                                        color: Colors.white.withOpacity(0.1),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'İçecek bulunamadı',
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white.withOpacity(0.24),
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500,
+                                        const SizedBox(height: 40),
+                                        // Subtle Gray Icon & Text (Matching Notification Screen)
+                                        Icon(
+                                          Icons.search_off_rounded,
+                                          size: 64,
+                                          color: Colors.white.withOpacity(0.1),
                                         ),
-                                      ),
-                                      if (fuzzySuggestions.isNotEmpty) ...[
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
                                         Text(
-                                          'BUNU MU DEMEK İSTEDİN?',
+                                          'İçecek bulunamadı',
                                           textAlign: TextAlign.center,
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            color: const Color(0xFFFF8902).withOpacity(0.6),
-                                            letterSpacing: 1.5,
+                                            color: Colors.white.withOpacity(
+                                              0.24,
+                                            ),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                        const SizedBox(height: 12),
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 8,
-                                          alignment: WrapAlignment.center,
-                                          children: fuzzySuggestions.map((cat) {
-                                            return GestureDetector(
-                                              onTap: () {
-                                                if (cat['isPortionMatch'] == true) {
-                                                  _onCategorySelected(cat, preSelectedPortion: cat['selectedPortion']);
-                                                } else {
-                                                  _onCategorySelected(cat);
-                                                }
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFFF8902).withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(color: const Color(0xFFFF8902).withOpacity(0.2)),
-                                                ),
-                                                child: Text(
-                                                  cat['displayName'] ?? cat['name'],
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    color: const Color(0xFFFF8902),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
+                                        if (fuzzySuggestions.isNotEmpty) ...[
+                                          const SizedBox(height: 24),
+                                          Text(
+                                            'BUNU MU DEMEK İSTEDİN?',
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(
+                                                0xFFFF8902,
+                                              ).withOpacity(0.6),
+                                              letterSpacing: 1.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            alignment: WrapAlignment.center,
+                                            children: fuzzySuggestions.map((
+                                              cat,
+                                            ) {
+                                              return GestureDetector(
+                                                onTap: () {
+                                                  if (cat['isPortionMatch'] ==
+                                                      true) {
+                                                    _onCategorySelected(
+                                                      cat,
+                                                      preSelectedPortion:
+                                                          cat['selectedPortion'],
+                                                    );
+                                                  } else {
+                                                    _onCategorySelected(cat);
+                                                  }
+                                                },
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 14,
+                                                        vertical: 8,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFFFF8902,
+                                                    ).withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: const Color(
+                                                        0xFFFF8902,
+                                                      ).withOpacity(0.2),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    cat['displayName'] ??
+                                                        cat['name'],
+                                                    style:
+                                                        GoogleFonts.plusJakartaSans(
+                                                          color: const Color(
+                                                            0xFFFF8902,
+                                                          ),
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
                                                   ),
                                                 ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ],
-                                      const SizedBox(height: 32),
-                                      // Proactive Suggestions
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              'ŞUNLARI MI DEMEK İSTEDİN?',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                color: Colors.white.withOpacity(0.2),
-                                                letterSpacing: 1.5,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 12),
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              alignment: WrapAlignment.center,
-                                              children: ['Bira', 'Rakı', 'Votka', 'Viski'].map((pop) {
-                                                return GestureDetector(
-                                                  onTap: () => setState(() => _searchQuery = pop),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white.withOpacity(0.05),
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 32),
+                                        // Proactive Suggestions
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                'ŞUNLARI MI DEMEK İSTEDİN?',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      color: Colors.white
+                                                          .withOpacity(0.2),
+                                                      letterSpacing: 1.5,
                                                     ),
-                                                    child: Text(
-                                                      pop,
-                                                      style: GoogleFonts.plusJakartaSans(
-                                                        color: Colors.white.withOpacity(0.35),
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w600,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                alignment: WrapAlignment.center,
+                                                children: ['Bira', 'Rakı', 'Votka', 'Viski'].map((
+                                                  pop,
+                                                ) {
+                                                  return GestureDetector(
+                                                    onTap: () => setState(
+                                                      () => _searchQuery = pop,
+                                                    ),
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 14,
+                                                            vertical: 8,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white
+                                                            .withOpacity(0.05),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                0.08,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        pop,
+                                                        style:
+                                                            GoogleFonts.plusJakartaSans(
+                                                              color: Colors
+                                                                  .white
+                                                                  .withOpacity(
+                                                                    0.35,
+                                                                  ),
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
                                                       ),
                                                     ),
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-                                          ],
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 40),
-                                    ],
-                                  ),
-                                );
-                              }
+                                        const SizedBox(height: 40),
+                                      ],
+                                    ),
+                                  );
+                                }
 
                                 return Flexible(
                                   child: ListView.builder(
@@ -2234,20 +2374,28 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                     itemCount: deepSuggestions.length,
                                     itemBuilder: (context, index) {
                                       final cat = deepSuggestions[index];
-                                      final isPortion = cat['isPortionMatch'] == true;
-                                      
+                                      final isPortion =
+                                          cat['isPortionMatch'] == true;
+
                                       return InkWell(
                                         onTap: () {
                                           _addToHistory(cat['name']);
                                           if (isPortion) {
-                                            _onCategorySelected(cat, preSelectedPortion: cat['selectedPortion']);
+                                            _onCategorySelected(
+                                              cat,
+                                              preSelectedPortion:
+                                                  cat['selectedPortion'],
+                                            );
                                           } else {
                                             _onCategorySelected(cat);
                                           }
                                         },
                                         borderRadius: BorderRadius.circular(16),
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 16,
+                                          ),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
@@ -2255,40 +2403,67 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                                 width: 50,
                                                 height: 50,
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withOpacity(0.05),
-                                                  borderRadius: BorderRadius.circular(14),
+                                                  color: Colors.white
+                                                      .withOpacity(0.05),
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
                                                 ),
                                                 alignment: Alignment.center,
-                                                child: cat['image'] != null 
-                                                  ? Image.asset(cat['image'], width: 30)
-                                                  : Icon(DrinkDataService.instance.resolveFromId(cat['id']).icon, size: 24, color: Colors.white.withOpacity(0.6)),
+                                                child: cat['image'] != null
+                                                    ? Image.asset(
+                                                        cat['image'],
+                                                        width: 30,
+                                                      )
+                                                    : Icon(
+                                                        DrinkDataService
+                                                            .instance
+                                                            .resolveFromId(
+                                                              cat['id'],
+                                                            )
+                                                            .icon,
+                                                        size: 24,
+                                                        color: Colors.white
+                                                            .withOpacity(0.6),
+                                                      ),
                                               ),
                                               const SizedBox(height: 12),
                                               Text(
-                                                cat['displayName'] ?? cat['name'],
+                                                cat['displayName'] ??
+                                                    cat['name'],
                                                 textAlign: TextAlign.center,
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  color: Colors.white, 
-                                                  fontSize: 16,
-                                                  fontWeight: isPortion ? FontWeight.w500 : FontWeight.w700,
-                                                ),
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      color: Colors.white,
+                                                      fontSize: 16,
+                                                      fontWeight: isPortion
+                                                          ? FontWeight.w500
+                                                          : FontWeight.w700,
+                                                    ),
                                               ),
                                               if (isPortion) ...[
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   'Kategori: ${cat['name']}',
                                                   textAlign: TextAlign.center,
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    color: Colors.white.withOpacity(0.3),
-                                                    fontSize: 12,
-                                                  ),
+                                                  style:
+                                                      GoogleFonts.plusJakartaSans(
+                                                        color: Colors.white
+                                                            .withOpacity(0.3),
+                                                        fontSize: 12,
+                                                      ),
                                                 ),
                                               ],
                                               const SizedBox(height: 8),
                                               Icon(
-                                                isPortion ? Icons.add_circle_outline_rounded : Icons.chevron_right_rounded, 
-                                                size: 20, 
-                                                color: Colors.white.withOpacity(0.15),
+                                                isPortion
+                                                    ? Icons
+                                                          .add_circle_outline_rounded
+                                                    : Icons
+                                                          .chevron_right_rounded,
+                                                size: 20,
+                                                color: Colors.white.withOpacity(
+                                                  0.15,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -2321,10 +2496,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         const Text(
           'GÖRSEL EKLE',
           style: TextStyle(
-            fontWeight: FontWeight.w900, 
-            fontSize: 12, 
-            color: AppColors.textSecondary, 
-            letterSpacing: 1.2
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(height: 12),
@@ -2342,22 +2517,26 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   color: AppColors.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.15), 
-                    width: 1.5
+                    color: AppColors.primary.withOpacity(0.15),
+                    width: 1.5,
                   ),
                 ),
                 child: _pickedImage == null
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(UIcons.regularStraight.camera, color: AppColors.primary.withOpacity(0.4), size: 32),
+                          Icon(
+                            UIcons.regularStraight.camera,
+                            color: AppColors.primary.withOpacity(0.4),
+                            size: 32,
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Bir fotoğraf ekle',
                             style: TextStyle(
-                              color: AppColors.textSecondary.withOpacity(0.6), 
-                              fontWeight: FontWeight.w700, 
-                              fontSize: 13
+                              color: AppColors.textSecondary.withOpacity(0.6),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
                             ),
                           ),
                         ],
@@ -2367,7 +2546,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(22),
-                            child: Image.file(File(_pickedImage!.path), fit: BoxFit.cover),
+                            child: Image.file(
+                              File(_pickedImage!.path),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                           Positioned(
                             top: 12,
@@ -2376,8 +2558,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                               onTap: () => setState(() => _pickedImage = null),
                               child: Container(
                                 padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                                child: const Icon(Icons.close, size: 16, color: Colors.red),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
                               ),
                             ),
                           ),
@@ -2393,68 +2582,257 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   // Code cleanup: removed obsolete UI helpers.
 
   Widget _buildFocusedSheet() {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        // Animation drives from 0.0 (bottom) to 1.0 (top)
-        // sheetDragY is added on top of the animation offset
-        final double screenHeight = MediaQuery.of(context).size.height;
-        final double topMargin = 80.0; // Margin from top when fully opened
-        final curvedValue = Curves.easeOutExpo.transform(_animationController.value);
-        final double animationOffset = screenHeight - (screenHeight - topMargin) * curvedValue;
-        final double totalOffset = (animationOffset + _sheetDragY).clamp(0.0, screenHeight);
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          final curvedValue = Curves.easeOutExpo.transform(
+            _animationController.value,
+          );
+          final opacityValue = curvedValue;
 
-        return Positioned(
-          top: totalOffset,
-          left: 0,
-          right: 0,
-          bottom: -totalOffset,
-          child: GestureDetector(
-            onVerticalDragUpdate: (details) {
-              if (details.delta.dy > 0 || _sheetDragY > 0) {
-                setState(() {
-                  _sheetDragY = (_sheetDragY + details.delta.dy).clamp(0, screenHeight);
-                });
-              }
-            },
-            onVerticalDragEnd: (details) {
-            if (_sheetDragY > 80 || details.velocity.pixelsPerSecond.dy > 500) {
-                _closeSheet();
-              } else {
-                setState(() => _sheetDragY = 0);
-              }
-            },
-            child: child,
+          if (opacityValue == 0) return const SizedBox.shrink();
+
+          final topPadding = MediaQuery.of(context).padding.top + 60;
+
+          return Stack(
+            children: [
+              Positioned(
+                top: topPadding + (100 * (1 - opacityValue)) + _sheetDragY,
+                left: 0,
+                right: 0,
+                bottom: -_sheetDragY,
+                child: Opacity(
+                  opacity:
+                      opacityValue * (1 - (_sheetDragY / 500).clamp(0.0, 0.5)),
+                  child: opacityValue == 0
+                      ? const SizedBox.shrink()
+                      : GestureDetector(
+                          onVerticalDragUpdate: (details) {
+                            if (_isSheetClosing) return;
+                            setState(() {
+                              _sheetDragY += details.delta.dy;
+                              if (_sheetDragY < 0) _sheetDragY = 0;
+
+                              // Haptic feedback when passing a major threshold
+                              if (_sheetDragY > 80 &&
+                                  _sheetDragY - details.delta.dy <= 80) {
+                                HapticFeedback.mediumImpact();
+                              }
+                            });
+                          },
+                          onVerticalDragEnd: (details) {
+                            if (_isSheetClosing) return;
+                            // Close if dragged enough or flicked fast down
+                            if (_sheetDragY > 150 ||
+                                details.primaryVelocity! > 500) {
+                              _closeSheet();
+                            } else {
+                              // Snap back
+                              setState(() {
+                                _sheetDragY = 0;
+                              });
+                            }
+                          },
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(36),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black54,
+                                  blurRadius: 40,
+                                  spreadRadius: 10,
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Stack(
+                              children: [
+                                _buildHUDGridEffect(),
+                                _buildHUDScanlinesEffect(),
+                                // --- THE HUD CONTENT ---
+                                Positioned.fill(
+                                  child: Column(
+                                    children: [
+                                      // 1. Refined Drag Handle area
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        child: Center(
+                                          child: Container(
+                                            width: 36,
+                                            height: 4,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.25,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(2),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      // 2. Scrollable Content Area
+                                      Expanded(
+                                        child: ListView(
+                                          padding: EdgeInsets.only(
+                                            bottom:
+                                                MediaQuery.of(
+                                                  context,
+                                                ).padding.bottom +
+                                                100,
+                                          ),
+                                          physics:
+                                              const BouncingScrollPhysics(),
+                                          children: [
+                                            _buildHUDHeader(),
+                                            const SizedBox(height: 20),
+                                            _focusedCategoryId == 'custom'
+                                                ? _buildCustomFocusedView()
+                                                : _buildHUDCentralUnit(),
+                                            if (_focusedCategoryId != 'custom')
+                                              _buildHUDControls(),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _buildHUDCloseButton(),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHUDGridEffect() {
+    return Opacity(
+      opacity: 0.1,
+      child: CustomPaint(painter: HUDGridPainter(), size: Size.infinite),
+    );
+  }
+
+  Widget _buildHUDScanlinesEffect() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount:
+              150, // Static high count is fine for ListView.builder as it's lazy and clipped
+          itemBuilder: (context, index) => Container(
+            height: 1,
+            width: double.infinity,
+            color: Colors.white.withOpacity(0.03),
+            margin: const EdgeInsets.only(bottom: 4),
           ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0A0E14),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 40,
-              spreadRadius: 10,
-            ),
-          ],
         ),
-        child: Column(
-          children: [
-            // Drag Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 20),
-              width: 80,
-              height: 6,
+      ),
+    );
+  }
+
+  Widget _buildHUDHeader() {
+    final now = DateTime.now();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const SizedBox(width: 40), // Spacer instead of SYSTEM: ONLINE
+          _buildHUDTechnicalLabel(
+            DateFormat('HH:mm:ss').format(now),
+            DateFormat('yyyy-MM-dd').format(now),
+            alignment: CrossAxisAlignment.end,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHUDTechnicalLabel(
+    String main,
+    String sub, {
+    CrossAxisAlignment alignment = CrossAxisAlignment.start,
+  }) {
+    return Column(
+      crossAxisAlignment: alignment,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          main,
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFFFF8902),
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
+          ),
+        ),
+        Text(
+          sub,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withOpacity(0.3),
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHUDCloseButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 16,
+      right: 16,
+      child: GestureDetector(
+        onTap: _closeSheet,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            shape: BoxShape.circle,
+            color: Colors.black.withOpacity(0.5),
+          ),
+          child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDragHandleOrCloseButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          GestureDetector(
+            onTap: _closeSheet,
+            child: Container(
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(3),
+                color: Colors.white.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: Colors.white54,
+                size: 20,
               ),
             ),
-            Expanded(child: _buildFocusedDrinkView()),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2492,189 +2870,525 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }
   */
 
-  Widget _buildFocusedDrinkView() {
-    if (_focusedCategoryId == null) return const SizedBox.shrink();
-    if (_focusedCategoryId == 'custom') return _buildCustomFocusedView();
-    
+  Widget _buildHUDCentralUnit() {
+    final category = _categories.firstWhere((c) => c.id == _focusedCategoryId);
+    final currentPortion = _selectedPortion;
+    final double calculatedAPS = currentPortion != null
+        ? (currentPortion.volume * currentPortion.abv / 100.0) * _quantity
+        : 0.0;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // --- SCANNING RINGS ---
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // Middle Technical Ring - Now thinner, gray and slower
+            _RotatingHUDCircle(
+              size: 240,
+              rotationSpeed: -20, // Slower (Increased duration)
+              opacity: 0.15,
+              color: Colors.white, // Grayish look with low opacity
+              isDashed: true,
+            ),
+
+            // Drink Content
+            ScaleTransition(
+              scale: _pulseAnimation,
+              child: category.image != null
+                  ? Image.asset(
+                      category.image!,
+                      width: 140,
+                      height: 140,
+                      fit: BoxFit.contain,
+                    )
+                  : Icon(
+                      DrinkDataService.instance.resolveFromId(category.id).icon,
+                      size: 100,
+                      color: Colors.white,
+                    ),
+            ),
+
+            // "ANALYZING..." Indicator - Adjusted position to breathe
+            Positioned(
+              bottom:
+                  24, // Moved down slightly to avoid being "too stuck" to the image
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
+                color: Colors.black,
+                child: Text(
+                  category.name.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFFFF8902),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 40),
+
+        // --- TECHNICAL DATA DISPLAY ---
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildHUDDataItem(
+              "ALKOL (%)",
+              "${currentPortion?.abv.toStringAsFixed(1) ?? category.portions.first.abv.toStringAsFixed(1)}",
+            ),
+            _buildHUDDivider(),
+            _buildHUDDataItem(
+              "HACİM (ML)",
+              "${currentPortion?.volume ?? category.portions.first.volume}",
+            ),
+            _buildHUDDivider(),
+            _buildHUDDataItem(
+              "PUAN (APS)",
+              calculatedAPS.toStringAsFixed(1),
+              highlight: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHUDDataItem(
+    String label,
+    String value, {
+    bool highlight = false,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withOpacity(0.35),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.plusJakartaSans(
+            color: highlight ? const Color(0xFFFF8902) : Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHUDDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Colors.white.withOpacity(0.1),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+    );
+  }
+
+  Widget _buildHUDVarietySelector(DrinkCategory category) {
+    final varieties = category.portions
+        .map((p) => p.variety)
+        .where((v) => v != null)
+        .toSet()
+        .toList();
+    if (varieties.length <= 1) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: varieties.map((v) {
+        final isSelected = _selectedVarietyName == v;
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() {
+              _selectedVarietyName = v;
+              final filtered = category.portions
+                  .where((p) => p.variety == v)
+                  .toList();
+              if (filtered.isNotEmpty) _selectedPortion = filtered.first;
+            });
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFFFF8902).withOpacity(0.12)
+                  : Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              v!.toUpperCase(),
+              style: GoogleFonts.plusJakartaSans(
+                color: isSelected
+                    ? const Color(0xFFFF8902)
+                    : Colors.white.withOpacity(0.3),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildHUDPortionSelector(DrinkCategory category) {
+    var portions = category.portions.toList();
+    if (_selectedVarietyName != null) {
+      portions = portions
+          .where((p) => p.variety == _selectedVarietyName)
+          .toList();
+    }
+    if (category.id == 'wine' ||
+        portions
+                .map((p) => '${p.name.toLowerCase().trim()}-${p.volume}')
+                .toSet()
+                .length <=
+            1) {
+      return const SizedBox.shrink();
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: portions.map((p) {
+          final isSelected = _selectedPortion?.name == p.name;
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _selectedPortion = p);
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected
+                        ? const Color(0xFFFF8902)
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+              ),
+              child: Text(
+                p.name.toUpperCase(),
+                style: GoogleFonts.plusJakartaSans(
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.2),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildHUDControls() {
+    final currentPortion = _selectedPortion;
+    final double calculatedAPS = currentPortion != null
+        ? (currentPortion.volume * currentPortion.abv / 100.0) * _quantity
+        : 0.0;
     final category = _categories.firstWhere((c) => c.id == _focusedCategoryId);
 
-    // Calculate APS dynamically for display
-    final currentPortion = _selectedPortion;
-    final double calculatedAPS = currentPortion != null ? (currentPortion.volume * currentPortion.abv / 100.0) * _quantity : 0.0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 48), // Top margin below the data display
+          // 1. Variety Selector (Bira tipi vb.)
+          _buildHUDVarietySelector(category),
+          const SizedBox(height: 32), // Equal spacing
+          // 2. Portion Selector (Standart, 500ml vb.)
+          _buildHUDPortionSelector(category),
+          const SizedBox(height: 32), // Equal spacing
+          // 3. Addition Action Icons
+          _buildHUDAdditionIcons(),
+          const SizedBox(height: 32), // Equal spacing
+          // 4. Action Button
+          _buildHUDInitiateButton(calculatedAPS),
+        ],
+      ),
+    );
+  }
 
-    final categoryPortions = category.portions;
-    final varieties = categoryPortions.map((p) => p.variety).where((v) => v != null).toSet();
-    final hasVarieties = varieties.length > 1;
-
-    return Stack(
+  Widget _buildHUDAdditionIcons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is ScrollUpdateNotification) {
-              final isAtTop = _sheetScrollController.offset <= 0;
-              final draggingDown = notification.scrollDelta! < 0;
-              
-              if ((isAtTop && draggingDown) || _sheetDragY > 0) {
-                setState(() {
-                  _sheetDragY = (_sheetDragY - notification.scrollDelta!).clamp(0.0, 500.0);
-                });
-                return true;
-              }
-            } else if (notification is ScrollEndNotification) {
-              if (_sheetDragY > 80) {
-                _closeSheet();
-              } else if (_sheetDragY > 0) {
-                Future.microtask(() => setState(() => _sheetDragY = 0));
-              }
-            }
-            return false;
-          },
-          child: SingleChildScrollView(
-            controller: _sheetScrollController,
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).padding.bottom + 160, // Increased bottom padding for shelf visibility
-            left: 24,
-            right: 24,
+        _buildHUDIconBtn(
+          AppIcons.users,
+          "Arkadaş",
+          _taggedFriendIds.isNotEmpty,
+          () => _showFriendPicker(),
+        ),
+        const SizedBox(width: 16),
+        _buildHUDIconBtn(
+          AppIcons.memoPad,
+          "Not",
+          _noteController.text.isNotEmpty,
+          () => _showNoteDialog(),
+        ),
+        const SizedBox(width: 16),
+        _buildHUDIconBtn(
+          AppIcons.marker,
+          "Konum",
+          _locationController.text.isNotEmpty,
+          () => _showLocationPicker(),
+        ),
+        const SizedBox(width: 16),
+        _buildHUDIconBtn(
+          AppIcons.gallery,
+          "Fotoğraf",
+          _pickedImage != null,
+          () => _pickImage(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHUDIconBtn(
+    IconData icon,
+    String label,
+    bool active,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54,
+        height: 54,
+        decoration: BoxDecoration(
+          color: active
+              ? const Color(0xFFFF8902).withOpacity(0.15)
+              : Colors.white.withOpacity(0.05),
+          border: Border.all(
+            color: active
+                ? const Color(0xFFFF8902)
+                : Colors.white.withOpacity(0.1),
+            width: 1,
           ),
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-          // Header Word
-          Text(
-            category.name,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white.withOpacity(0.5),
-              letterSpacing: 2,
-            ),
-          ),
-          
-          // --- Header Emoji + Glow ---
-                SizedBox(
-                  height: 200,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Glow effect
-                      Container(
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFFFF8902).withOpacity(0.35),
-                              const Color(0xFFFF8902).withOpacity(0.1),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.6, 1.0],
-                          ),
-                        ),
-                      ),
-                      // Pulsing Emoji or Image
-                      ScaleTransition(
-                        scale: _pulseAnimation,
-                        child: category.image != null
-                            ? Image.asset(
-                                category.image!,
-                                width: 140, // Smaller for minimalist look
-                                height: 140,
-                                fit: BoxFit.contain,
-                              )
-                            : Icon(
-                                DrinkDataService.instance.resolveFromId(category.id).icon,
-                                size: 120,
-                                color: Colors.white,
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-                Text(
-                  category.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // --- Summary Info (Prominent & Early) ---
-                if (currentPortion != null)
-                  _buildMinimalSummary(currentPortion, calculatedAPS),
-
-                const SizedBox(height: 24),
-
-                if (hasVarieties) ...[
-                  _buildSectionHeader('ÇEŞİT SEÇİN'),
-                  _buildVarietyToggle(category),
-                  const SizedBox(height: 24),
-                ],
-
-                if (!hasVarieties || _selectedVarietyName != null) ...[
-                  // Only show if there's actually a choice
-                  if (category.portions.where((p) => p.variety == _selectedVarietyName).length > 1 ||
-                      (!hasVarieties && category.portions.length > 1)) ...[
-                    _buildSectionHeader('MİKTAR SEÇİN'),
-                    _buildPortionToggle(category),
-                    const SizedBox(height: 24),
-                  ],
-                ],
-
-                // --- Final Steps ---
-                if (currentPortion != null) ...[
-                  _buildSectionHeader('İÇİLME ZAMANI'),
-                  _buildTimeSelector(),
-                  const SizedBox(height: 28),
-
-                  // Compact icon bar: friends + extras
-                  _buildCompactActionBar(),
-                  const SizedBox(height: 16),
-                ] else ...[
-                  // Guiding message based on current step
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          _selectedVarietyName == null ? Icons.tune_rounded : Icons.straighten_rounded,
-                          color: Colors.white.withOpacity(0.2),
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          (hasVarieties && _selectedVarietyName == null)
-                              ? 'Lütfen önce çeşit seçin' 
-                              : 'Lütfen miktar seçin',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withOpacity(0.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: active
+              ? const Color(0xFFFF8902)
+              : Colors.white.withOpacity(0.5),
         ),
       ),
+    );
+  }
 
-          // --- Bottom Action Button (Only show if selection is made) ---
-          if (currentPortion != null)
-            Positioned(
-              bottom: MediaQuery.of(context).padding.bottom + 110,
-              left: 24,
-              right: 24,
-              child: _buildPrimaryActionButton(calculatedAPS),
+  // --- HUD ACTION METHODS ---
+
+  void _showFriendPicker() => _showFriendSelectionSheet();
+
+  void _showNoteDialog() {
+    final controller = TextEditingController(text: _noteController.text);
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+        ), // Makes it 90% wide roughly
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color(0xFF151921),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.08),
+              width: 1.5,
             ),
-        ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF8902).withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        AppIcons.document,
+                        color: const Color(0xFFFF8902),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Not Ekle',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Input Field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    autofocus: true,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 15,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'İçecek hakkında notunuzu buraya yazın...',
+                      hintStyle: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withOpacity(0.2),
+                        fontSize: 14,
+                      ),
+                      contentPadding: const EdgeInsets.all(20),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Actions
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'İptal',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(
+                            () => _noteController.text = controller.text,
+                          );
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF8902).withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Kaydet',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLocationPicker() async {
+    final String? selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => LocationPickerScreen()),
+    );
+    if (selectedLocation != null) {
+      setState(() => _locationController.text = selectedLocation);
+    }
+  }
+
+  Widget _buildHUDInitiateButton(double aps) {
+    return CountSipButton(
+      text: "EKLE",
+      onPressed: () => _saveDetailed(aps),
+      borderRadius: 24,
+      height: 64, // Slightly taller for the main action
     );
   }
 
@@ -2688,7 +3402,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           onPressed: () => setState(() => _focusedCategoryId = null),
           icon: const Icon(Icons.arrow_back, color: Colors.white),
         ),
-        title: Text('Kendin Yarat', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Kendin Yarat',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -2711,8 +3428,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
     return Center(
       child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: 10,
+        runSpacing: 10,
         alignment: WrapAlignment.center,
         children: varieties.map<Widget>((v) {
           final isSelected = _selectedVarietyName == v;
@@ -2722,12 +3439,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               setState(() {
                 _selectedVarietyName = v;
                 final allPortions = category.portions;
-                final filtered = allPortions.where((p) => p.variety == v).toList();
+                final filtered = allPortions
+                    .where((p) => p.variety == v)
+                    .toList();
                 if (filtered.isNotEmpty) {
                   if (category.id == 'beer') {
                     _selectedPortion = filtered.firstWhere(
                       (p) => p.volume == 500,
-                      orElse: () => filtered.first
+                      orElse: () => filtered.first,
                     );
                   } else {
                     _selectedPortion = filtered.first;
@@ -2736,22 +3455,30 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               });
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutExpo,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
-                borderRadius: BorderRadius.circular(12),
+                color: isSelected
+                    ? const Color(0xFFFF8902).withOpacity(0.15)
+                    : const Color(0xFF16161E),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
-                  width: 1.2,
+                  color: isSelected
+                      ? const Color(0xFFFF8902)
+                      : Colors.white.withOpacity(0.04),
+                  width: 1.5,
                 ),
               ),
               child: Text(
                 v!,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected
+                      ? const Color(0xFFFF8902)
+                      : Colors.white.withOpacity(0.5),
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
@@ -2764,23 +3491,30 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   Widget _buildPortionToggle(DrinkCategory category) {
     var portions = category.portions.toList();
     if (_selectedVarietyName != null) {
-      portions = portions.where((p) => p.variety == _selectedVarietyName).toList();
+      portions = portions
+          .where((p) => p.variety == _selectedVarietyName)
+          .toList();
     }
 
     if (portions.length <= 1) return const SizedBox.shrink();
 
     return Center(
       child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: 10,
+        runSpacing: 10,
         alignment: WrapAlignment.center,
         children: portions.map<Widget>((p) {
-          final isSelected = _selectedPortion?.name == p.name &&
-                            _selectedPortion?.volume == p.volume &&
-                            _selectedPortion?.variety == p.variety;
+          final isSelected =
+              _selectedPortion?.name == p.name &&
+              _selectedPortion?.volume == p.volume &&
+              _selectedPortion?.variety == p.variety;
           String sizeLabel = p.name;
           if (_selectedVarietyName != null) {
-             sizeLabel = sizeLabel.replaceAll(_selectedVarietyName!, '').replaceAll('(', '').replaceAll(')', '').trim();
+            sizeLabel = sizeLabel
+                .replaceAll(_selectedVarietyName!, '')
+                .replaceAll('(', '')
+                .replaceAll(')', '')
+                .trim();
           }
 
           return GestureDetector(
@@ -2789,22 +3523,30 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               setState(() => _selectedPortion = p);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutExpo,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFF8902).withOpacity(0.12) : const Color(0xFF1A1F2E),
-                borderRadius: BorderRadius.circular(12),
+                color: isSelected
+                    ? const Color(0xFFFF8902).withOpacity(0.15)
+                    : const Color(0xFF16161E),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.06),
-                  width: 1.2,
+                  color: isSelected
+                      ? const Color(0xFFFF8902)
+                      : Colors.white.withOpacity(0.04),
+                  width: 1.5,
                 ),
               ),
               child: Text(
                 sizeLabel,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? const Color(0xFFFF8902) : Colors.white.withOpacity(0.4),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected
+                      ? const Color(0xFFFF8902)
+                      : Colors.white.withOpacity(0.5),
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
@@ -2818,197 +3560,255 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 4), // Aligned to 0 on horizontal left
-          child: Row(
-            children: _timeShortcuts.map((shortcut) {
-              final int value = shortcut['value'];
-              final String label = shortcut['label'];
-              
-              // Calculate if this shortcut represents current _selectedTime
-              bool isSelected = false;
-              if (value == 0) {
-                // "Şimdi" is selected if time is close to now
-                isSelected = DateTime.now().difference(_selectedTime).inMinutes.abs() < 1;
-              } else if (value == -1) {
-                // "Özel" is selected if it doesn't match shortcuts
-                isSelected = !_timeShortcuts.any((s) => 
-                  s['value'] > 0 && 
-                  DateTime.now().subtract(Duration(minutes: s['value'])).difference(_selectedTime).inMinutes.abs() < 2
-                ) && DateTime.now().difference(_selectedTime).inMinutes.abs() >= 1;
-              } else {
-                isSelected = DateTime.now().subtract(Duration(minutes: value)).difference(_selectedTime).inMinutes.abs() < 2;
-              }
+      padding: const EdgeInsets.symmetric(
+        vertical: 4,
+      ), // Aligned to 0 on horizontal left
+      child: Row(
+        children: _timeShortcuts.map((shortcut) {
+          final int value = shortcut['value'];
+          final String label = shortcut['label'];
 
-              return GestureDetector(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  if (value == -1) {
-                    // Scroll-wheel time picker bottom sheet
-                    final now = DateTime.now();
-                    int tempHour = _selectedTime.hour;
-                    int tempMinute = _selectedTime.minute;
-                    final hourController = FixedExtentScrollController(initialItem: tempHour);
-                    final minuteController = FixedExtentScrollController(initialItem: tempMinute);
+          // Calculate if this shortcut represents current _selectedTime
+          bool isSelected = false;
+          if (value == 0) {
+            // "Şimdi" is selected if time is close to now
+            isSelected =
+                DateTime.now().difference(_selectedTime).inMinutes.abs() < 1;
+          } else if (value == -1) {
+            // "Özel" is selected if it doesn't match shortcuts
+            isSelected =
+                !_timeShortcuts.any(
+                  (s) =>
+                      s['value'] > 0 &&
+                      DateTime.now()
+                              .subtract(Duration(minutes: s['value']))
+                              .difference(_selectedTime)
+                              .inMinutes
+                              .abs() <
+                          2,
+                ) &&
+                DateTime.now().difference(_selectedTime).inMinutes.abs() >= 1;
+          } else {
+            isSelected =
+                DateTime.now()
+                    .subtract(Duration(minutes: value))
+                    .difference(_selectedTime)
+                    .inMinutes
+                    .abs() <
+                2;
+          }
 
-                    await showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      useSafeArea: true,
-                      isScrollControlled: true,
-                      builder: (ctx) => StatefulBuilder(
-                        builder: (ctx, setSheetState) => Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1A1F2E),
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                          ),
-                          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Handle bar
-                              Container(
-                                width: 40, height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Text('Saat Seç',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16, fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              // Scroll pickers row
-                              SizedBox(
-                                height: 140,
-                                child: Row(
-                                  children: [
-                                    // Hour picker
-                                    Expanded(
-                                      child: CupertinoPicker(
-                                        scrollController: hourController,
-                                        itemExtent: 48,
-                                        selectionOverlay: const CupertinoPickerDefaultSelectionOverlay(
-                                          background: Color(0x22FFFFFF),
-                                        ),
-                                        onSelectedItemChanged: (i) {
-                                          tempHour = i;
-                                        },
-                                        children: List.generate(24, (i) => Center(
-                                          child: Text(
-                                            i.toString().padLeft(2, '0'),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 24, fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        )),
-                                      ),
-                                    ),
-                                    // Colon separator
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: Text(':',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 28, fontWeight: FontWeight.w900,
-                                          color: Colors.white.withOpacity(0.5),
-                                        ),
-                                      ),
-                                    ),
-                                    // Minute picker
-                                    Expanded(
-                                      child: CupertinoPicker(
-                                        scrollController: minuteController,
-                                        itemExtent: 48,
-                                        selectionOverlay: const CupertinoPickerDefaultSelectionOverlay(
-                                          background: Color(0x22FFFFFF),
-                                        ),
-                                        onSelectedItemChanged: (i) {
-                                          tempMinute = i;
-                                        },
-                                        children: List.generate(60, (i) => Center(
-                                          child: Text(
-                                            i.toString().padLeft(2, '0'),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 24, fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        )),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              // Confirm button
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    final n = DateTime.now();
-                                    setState(() {
-                                      _selectedTime = DateTime(n.year, n.month, n.day, tempHour, tempMinute);
-                                    });
-                                    Navigator.pop(ctx);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  ),
-                                  child: Text('Tamam', style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15)),
-                                ),
-                              ),
-                            ],
-                          ),
+          return GestureDetector(
+            onTap: () async {
+              HapticFeedback.lightImpact();
+              if (value == -1) {
+                // Scroll-wheel time picker bottom sheet
+                final now = DateTime.now();
+                int tempHour = _selectedTime.hour;
+                int tempMinute = _selectedTime.minute;
+                final hourController = FixedExtentScrollController(
+                  initialItem: tempHour,
+                );
+                final minuteController = FixedExtentScrollController(
+                  initialItem: tempMinute,
+                );
+
+                await showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  useSafeArea: true,
+                  isScrollControlled: true,
+                  builder: (ctx) => StatefulBuilder(
+                    builder: (ctx, setSheetState) => Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1A1F2E),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
                         ),
                       ),
-                    );
-                  } else {
-                    setState(() {
-                      _selectedTime = DateTime.now().subtract(Duration(minutes: value));
-                    });
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFFF8902).withOpacity(0.15) : const Color(0xFF1A1F2E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFFFF8902).withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        16,
+                        24,
+                        24 + MediaQuery.of(ctx).padding.bottom,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Handle bar
+                          Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Saat Seç',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Scroll pickers row
+                          SizedBox(
+                            height: 140,
+                            child: Row(
+                              children: [
+                                // Hour picker
+                                Expanded(
+                                  child: CupertinoPicker(
+                                    scrollController: hourController,
+                                    itemExtent: 48,
+                                    selectionOverlay:
+                                        const CupertinoPickerDefaultSelectionOverlay(
+                                          background: Color(0x22FFFFFF),
+                                        ),
+                                    onSelectedItemChanged: (i) {
+                                      tempHour = i;
+                                    },
+                                    children: List.generate(
+                                      24,
+                                      (i) => Center(
+                                        child: Text(
+                                          i.toString().padLeft(2, '0'),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Colon separator
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    ':',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ),
+                                // Minute picker
+                                Expanded(
+                                  child: CupertinoPicker(
+                                    scrollController: minuteController,
+                                    itemExtent: 48,
+                                    selectionOverlay:
+                                        const CupertinoPickerDefaultSelectionOverlay(
+                                          background: Color(0x22FFFFFF),
+                                        ),
+                                    onSelectedItemChanged: (i) {
+                                      tempMinute = i;
+                                    },
+                                    children: List.generate(
+                                      60,
+                                      (i) => Center(
+                                        child: Text(
+                                          i.toString().padLeft(2, '0'),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Confirm button
+                          CountSipButton(
+                            onPressed: () {
+                              final n = DateTime.now();
+                              setState(() {
+                                _selectedTime = DateTime(
+                                  n.year,
+                                  n.month,
+                                  n.day,
+                                  tempHour,
+                                  tempMinute,
+                                );
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            text: 'Tamam',
+                            height: 52,
+                            borderRadius: 16,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      if (isSelected) ...[
-                        const Icon(Icons.check_circle_rounded, color: Color(0xFFFF8902), size: 14),
-                        const SizedBox(width: 6),
-                      ],
-                      Text(
-                        value == -1 && isSelected 
-                          ? DateFormat('HH:mm').format(_selectedTime) 
-                          : label,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? const Color(0xFFFF8902) : const Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
+                );
+              } else {
+                setState(() {
+                  _selectedTime = DateTime.now().subtract(
+                    Duration(minutes: value),
+                  );
+                });
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutExpo,
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFFF8902).withOpacity(0.15)
+                    : const Color(0xFF16161E),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFFF8902)
+                      : Colors.white.withOpacity(0.04),
+                  width: 1.5,
                 ),
-              );
-            }).toList(),
-          ),
+              ),
+              child: Row(
+                children: [
+                  if (isSelected) ...[
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFFFF8902),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    value == -1 && isSelected
+                        ? DateFormat('HH:mm').format(_selectedTime)
+                        : label,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      color: isSelected
+                          ? const Color(0xFFFF8902)
+                          : Colors.white.withOpacity(0.5),
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -3049,14 +3849,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         const SizedBox(width: 40),
         GestureDetector(
           onTap: () {
-             HapticFeedback.lightImpact();
-             setState(() => _quantity++);
+            HapticFeedback.lightImpact();
+            setState(() => _quantity++);
           },
           child: Container(
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)],
+              ),
               shape: BoxShape.circle,
               boxShadow: null,
             ),
@@ -3069,15 +3871,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12), // Removed left: 24 padding, using parent container's padding
+      padding: const EdgeInsets.only(bottom: 12),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 10,
+          title.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withOpacity(0.4),
             letterSpacing: 1.5,
           ),
         ),
@@ -3087,11 +3889,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Widget _buildMinimalSummary(DrinkPortion portion, double aps) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: const Color(0xFF16161E),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.04), width: 1.0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -3107,7 +3909,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildMinimalInfoItem(String value, String label, {bool isBold = false}) {
+  Widget _buildMinimalInfoItem(
+    String value,
+    String label, {
+    bool isBold = false,
+  }) {
     return Column(
       children: [
         Text(
@@ -3155,11 +3961,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
         children: [
           _buildSimpleChip(
             icon: Icons.people_outline_rounded,
-            label: hasFriends ? '${_taggedFriendIds.length} Arkadas' : 'Arkadas',
+            label: hasFriends
+                ? '${_taggedFriendIds.length} Arkadas'
+                : 'Arkadas',
             isActive: hasFriends,
             activeColor: AppColors.primary,
             onTap: _showFriendSelectionSheet,
-            onClear: hasFriends ? () => setState(() => _taggedFriendIds.clear()) : null,
+            onClear: hasFriends
+                ? () => setState(() => _taggedFriendIds.clear())
+                : null,
           ),
           const SizedBox(width: 8),
           _buildSimpleChip(
@@ -3169,7 +3979,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             activeColor: const Color(0xFFFF8902),
             onTap: () async {
               final picker = ImagePicker();
-              final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+              final photo = await picker.pickImage(
+                source: ImageSource.camera,
+                imageQuality: 85,
+              );
               if (photo != null && mounted) {
                 setState(() {
                   _tempPickedImage = photo;
@@ -3177,7 +3990,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 });
               }
             },
-            onClear: hasPhoto ? () => setState(() => _tempPickedImage = null) : null,
+            onClear: hasPhoto
+                ? () => setState(() => _tempPickedImage = null)
+                : null,
           ),
           const SizedBox(width: 8),
           _buildSimpleChip(
@@ -3189,7 +4004,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
               final String? loc = await context.push('/location-picker');
               if (loc != null) setState(() => _tempLocationName = loc);
             },
-            onClear: hasLocation ? () => setState(() => _tempLocationName = null) : null,
+            onClear: hasLocation
+                ? () => setState(() => _tempLocationName = null)
+                : null,
           ),
           const SizedBox(width: 8),
           _buildSimpleChip(
@@ -3203,24 +4020,39 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 context: context,
                 builder: (context) => AlertDialog(
                   backgroundColor: const Color(0xFF1A1F2E),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                   contentPadding: const EdgeInsets.all(24),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Not', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Text(
+                        'Not',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: controller,
                         autofocus: true,
-                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Örn: Soğuk içilsin...',
                           hintStyle: const TextStyle(color: Colors.white24),
                           fillColor: Colors.white10,
                           filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                           contentPadding: const EdgeInsets.all(14),
                         ),
                         maxLines: 3,
@@ -3230,24 +4062,23 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                       Row(
                         children: [
                           Expanded(
-                            child: TextButton(
+                            child: CountSipButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text('VAZGEÇ', style: GoogleFonts.inter(color: Colors.white38, fontWeight: FontWeight.w700, fontSize: 12)),
+                              text: 'VAZGEÇ',
+                              variant: CountSipButtonVariant.secondary,
+                              height: 48,
+                              borderRadius: 12,
                             ),
                           ),
                           Expanded(
-                            child: ElevatedButton(
+                            child: CountSipButton(
+                              text: 'KAYDET',
                               onPressed: () {
                                 final t = controller.text.trim();
                                 if (t.isNotEmpty) Navigator.pop(context, t);
                               },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFE66D),
-                                foregroundColor: Colors.black,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: Text('KAYDET', style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 12)),
+                              borderRadius: 12,
+                              height: 48,
                             ),
                           ),
                         ],
@@ -3277,14 +4108,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       onTap: onTap,
       onLongPress: onClear,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutExpo,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: isActive ? activeColor.withOpacity(0.12) : const Color(0xFF1A1F2E),
-          borderRadius: BorderRadius.circular(12),
+          color: isActive
+              ? activeColor.withOpacity(0.15)
+              : const Color(0xFF16161E),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? activeColor.withOpacity(0.5) : Colors.white.withOpacity(0.06),
-            width: 1.2,
+            color: isActive ? activeColor : Colors.white.withOpacity(0.04),
+            width: 1.5,
           ),
         ),
         child: Row(
@@ -3293,15 +4127,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             Icon(
               icon,
               size: 16,
-              color: isActive ? activeColor : Colors.white.withOpacity(0.4),
+              color: isActive ? activeColor : Colors.white.withOpacity(0.5),
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? activeColor : Colors.white.withOpacity(0.4),
+                fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                color: isActive ? activeColor : Colors.white.withOpacity(0.5),
+                letterSpacing: 0.3,
               ),
             ),
           ],
@@ -3310,28 +4145,30 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     );
   }
 
-
-
-
   Widget _buildOptionalAdditions() {
     return Column(
       children: [
         _buildAdditionItem(
           icon: AppIcons.galleryFilled,
-          label: _tempPickedImage != null ? 'Fotoğraf eklendi' : 'Fotoğraf Ekle',
+          label: _tempPickedImage != null
+              ? 'Fotoğraf eklendi'
+              : 'Fotoğraf Ekle',
           isActive: _tempPickedImage != null,
           color: const Color(0xFFFF8902),
           onTap: () async {
             final picker = ImagePicker();
-            final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+            final photo = await picker.pickImage(
+              source: ImageSource.camera,
+              imageQuality: 85,
+            );
             if (photo != null) setState(() => _tempPickedImage = photo);
           },
-          onClear: _tempPickedImage != null 
-            ? () => setState(() => _tempPickedImage = null) 
-            : null,
-          preview: _tempPickedImage != null 
-            ? Image.file(File(_tempPickedImage!.path), fit: BoxFit.cover)
-            : null,
+          onClear: _tempPickedImage != null
+              ? () => setState(() => _tempPickedImage = null)
+              : null,
+          preview: _tempPickedImage != null
+              ? Image.file(File(_tempPickedImage!.path), fit: BoxFit.cover)
+              : null,
         ),
         const SizedBox(height: 12),
         _buildAdditionItem(
@@ -3340,14 +4177,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           isActive: _tempLocationName != null,
           color: const Color(0xFF4ECDC4),
           onTap: () async {
-            final String? selectedLocation = await context.push('/location-picker');
+            final String? selectedLocation = await context.push(
+              '/location-picker',
+            );
             if (selectedLocation != null) {
               setState(() => _tempLocationName = selectedLocation);
             }
           },
-          onClear: _tempLocationName != null 
-            ? () => setState(() => _tempLocationName = null) 
-            : null,
+          onClear: _tempLocationName != null
+              ? () => setState(() => _tempLocationName = null)
+              : null,
         ),
         const SizedBox(height: 12),
         _buildAdditionItem(
@@ -3413,15 +4252,38 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         TextField(
                           controller: controller,
                           autofocus: true,
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                           decoration: InputDecoration(
-                            hintText: 'Örn: Soğuk içilsin, çok şekerli olmasın...',
-                            hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.25)),
+                            hintText:
+                                'Örn: Soğuk içilsin, çok şekerli olmasın...',
+                            hintStyle: TextStyle(
+                              color: AppColors.textTertiary.withOpacity(0.25),
+                            ),
                             fillColor: Colors.white.withOpacity(0.03),
                             filled: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0xFFFFE66D), width: 1.5)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.1),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.1),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFFFE66D),
+                                width: 1.5,
+                              ),
+                            ),
                             contentPadding: const EdgeInsets.all(20),
                           ),
                           maxLines: 6,
@@ -3431,38 +4293,23 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         Row(
                           children: [
                             Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.2),
-                                  color: Colors.white.withOpacity(0.04),
-                                ),
-                                child: TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                                  ),
-                                  child: Text(
-                                    'VAZGEÇ',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: AppColors.textSecondary.withOpacity(0.8),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ),
+                              child: CountSipButton(
+                                text: 'VAZGEÇ',
+                                onPressed: () => Navigator.pop(context),
+                                variant: CountSipButtonVariant.secondary,
+                                borderRadius: 18,
                               ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
-                              child: ElevatedButton(
+                              child: CountSipButton(
+                                text: 'KAYDET',
                                 onPressed: () {
                                   final text = controller.text.trim();
                                   if (text.isEmpty) {
                                     Fluttertoast.showToast(
-                                      msg: "Lütfen bir not yazın veya vazgeçin.",
+                                      msg:
+                                          "Lütfen bir not yazın veya vazgeçin.",
                                       backgroundColor: Colors.redAccent,
                                       textColor: Colors.white,
                                       gravity: ToastGravity.CENTER,
@@ -3471,21 +4318,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   }
                                   Navigator.pop(context, text);
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFFE66D),
-                                  foregroundColor: Colors.black,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                                ),
-                                child: Text(
-                                  'KAYDET',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 13,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
+                                borderRadius: 18,
                               ),
                             ),
                           ],
@@ -3521,10 +4354,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF1A1F2E) : const Color(0xFF242938).withOpacity(0.5),
+        color: isActive
+            ? const Color(0xFF1A1F2E)
+            : const Color(0xFF242938).withOpacity(0.5),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isActive ? color.withOpacity(0.4) : Colors.white.withOpacity(0.08),
+          color: isActive
+              ? color.withOpacity(0.4)
+              : Colors.white.withOpacity(0.08),
           style: isActive ? BorderStyle.solid : BorderStyle.none,
         ),
       ),
@@ -3554,10 +4391,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: isActive ? color.withOpacity(0.15) : const Color(0xFF242938),
+                      color: isActive
+                          ? color.withOpacity(0.15)
+                          : const Color(0xFF242938),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: isActive ? color : const Color(0xFF94A3B8), size: 20),
+                    child: Icon(
+                      icon,
+                      color: isActive ? color : const Color(0xFF94A3B8),
+                      size: 20,
+                    ),
                   ),
                 if (preview == null) const SizedBox(width: 16),
                 Expanded(
@@ -3575,12 +4418,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 if (isActive && onClear != null)
                   IconButton(
                     onPressed: onClear,
-                    icon: Icon(Icons.close_rounded, color: Colors.white.withOpacity(0.4), size: 20),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Colors.white.withOpacity(0.4),
+                      size: 20,
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   )
                 else if (isActive)
-                  const Icon(Icons.check_circle, color: Color(0xFF4ECDC4), size: 22),
+                  const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF4ECDC4),
+                    size: 22,
+                  ),
               ],
             ),
           ),
@@ -3593,17 +4444,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     return GestureDetector(
       onTap: _isLoading ? null : () => _saveDetailed(aps),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutExpo,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 22),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFF8902), Color(0xFFEE5A6F)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: null,
+          color: const Color(0xFFFF8902).withOpacity(0.95),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF8902).withOpacity(0.3),
+              blurRadius: 30,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Center(
           child: _isLoading
@@ -3615,14 +4469,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     valueColor: AlwaysStoppedAnimation(Colors.white),
                   ),
                 )
-              : Text(
-                  'Hemen Ekle',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Hemen Ekle',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
                 ),
         ),
       ),
@@ -3631,13 +4496,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
   Future<void> _saveDetailed(double totalAPS) async {
     if (_tempNote != null) _noteController.text = _tempNote!;
-    if (_tempLocationName != null) _locationController.text = _tempLocationName!;
+    if (_tempLocationName != null)
+      _locationController.text = _tempLocationName!;
     if (_tempPickedImage != null) _pickedImage = _tempPickedImage;
 
     await _save();
     if (!_isLoading) {
-       _showSuccessToast(totalAPS);
-       _closeSheet();
+      _showSuccessToast(totalAPS);
+      _closeSheet();
     }
   }
 
@@ -3690,13 +4556,27 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
   Widget _buildCurrentStep() {
     switch (_currentRequestStep) {
       case 0:
-        return _buildRequestField('İçecek Adı', 'Örn: Hibiscus Gin Tonic', _customNameController);
+        return _buildRequestField(
+          'İçecek Adı',
+          'Örn: Hibiscus Gin Tonic',
+          _customNameController,
+        );
       case 1:
         return _buildCategoryPickerForRequest();
       case 2:
-        return _buildRequestField('Yaklaşık Hacim (ml)', 'Örn: 330', _customVolumeController, keyboardType: TextInputType.number);
+        return _buildRequestField(
+          'Yaklaşık Hacim (ml)',
+          'Örn: 330',
+          _customVolumeController,
+          keyboardType: TextInputType.number,
+        );
       case 3:
-        return _buildRequestField('İçecek Oranı (%)', 'Örn: 12.5', _customAbvController, keyboardType: TextInputType.number);
+        return _buildRequestField(
+          'İçecek Oranı (%)',
+          'Örn: 12.5',
+          _customAbvController,
+          keyboardType: TextInputType.number,
+        );
       default:
         return const SizedBox();
     }
@@ -3708,7 +4588,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       children: [
         const Text(
           'KATEGORİ SEÇİN',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Colors.white30, letterSpacing: 1.2),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            color: Colors.white30,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -3719,11 +4604,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             return GestureDetector(
               onTap: () => setState(() => _customDescController.text = c.name),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                  color: isSelected
+                      ? AppColors.primary.withOpacity(0.2)
+                      : Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1)),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.white.withOpacity(0.1),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -3731,12 +4625,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     Icon(
                       DrinkDataService.instance.resolveFromId(c.id).icon,
                       size: 16,
-                      color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.7),
+                      color: isSelected
+                          ? AppColors.primary
+                          : Colors.white.withOpacity(0.7),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       c.name,
-                      style: TextStyle(color: isSelected ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -3755,43 +4654,43 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: OutlinedButton(
+              child: CountSipButton(
+                text: 'GERİ',
                 onPressed: () => setState(() => _currentRequestStep--),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: const Text('GERİ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                variant: CountSipButtonVariant.secondary,
+                borderRadius: 20,
+                height: 56,
               ),
             ),
           ),
         Expanded(
           flex: 2,
-          child: ElevatedButton(
-            onPressed: _currentRequestStep < 3 
+          child: CountSipButton(
+            text: _currentRequestStep < 3 ? 'DEVAM ET' : 'TALEBİ GÖNDER',
+            onPressed: _currentRequestStep < 3
                 ? () {
                     // Validation
-                    if (_currentRequestStep == 0 && _customNameController.text.isEmpty) return;
+                    if (_currentRequestStep == 0 &&
+                        _customNameController.text.isEmpty)
+                      return;
                     setState(() => _currentRequestStep++);
                   }
                 : _submitRequest,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
-            child: Text(
-              _currentRequestStep < 3 ? 'DEVAM ET' : 'TALEBİ GÖNDER',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
+            borderRadius: 20,
+            height: 56,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRequestField(String label, String hint, TextEditingController controller, {TextInputType? keyboardType, int maxLines = 1}) {
+  Widget _buildRequestField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3815,12 +4714,19 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
             controller: controller,
             keyboardType: keyboardType,
             maxLines: maxLines,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Colors.white),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: Colors.white,
+            ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.white24, fontSize: 15),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
             ),
           ),
         ),
@@ -3856,7 +4762,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
       _customNameController.clear();
       _customAbvController.clear();
       _customDescController.clear();
-      
+
       setState(() {
         _focusedCategoryId = null;
         _isLoading = false;
@@ -3871,11 +4777,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-            children: [
-              _buildAddFriendTag(),
-              ..._taggedFriendIds.map((id) => _buildFriendTag(id)),
-            ],
-          ),
+        children: [
+          _buildAddFriendTag(),
+          ..._taggedFriendIds.map((id) => _buildFriendTag(id)),
+        ],
+      ),
     );
   }
 
@@ -3927,7 +4833,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
           if (photoUrl != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: CachedAvatar(photoUrl: photoUrl, size: 20, borderRadius: 10),
+              child: CachedAvatar(
+                photoUrl: photoUrl,
+                size: 20,
+                borderRadius: 10,
+              ),
             )
           else
             const Padding(
@@ -3950,7 +4860,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                 _taggedFriendData.remove(friendId);
               });
             },
-            child: Icon(Icons.close, size: 14, color: Colors.white.withOpacity(0.5)),
+            child: Icon(
+              Icons.close,
+              size: 14,
+              color: Colors.white.withOpacity(0.5),
+            ),
           ),
         ],
       ),
@@ -3963,7 +4877,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
 
     // Local copies for draft state
     final List<String> draftIds = List.from(_taggedFriendIds);
-    final Map<String, Map<String, dynamic>> draftData = Map.from(_taggedFriendData);
+    final Map<String, Map<String, dynamic>> draftData = Map.from(
+      _taggedFriendData,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -4004,9 +4920,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(draftIds.length >= 5 ? 1 : 0.1),
+                          color: AppColors.primary.withOpacity(
+                            draftIds.length >= 5 ? 1 : 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -4021,7 +4942,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                     ],
                   ),
                 ),
-                
+
                 // Horizontal Selection Bar
                 if (draftIds.isNotEmpty)
                   Container(
@@ -4050,7 +4971,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                     data?['name']?.split(' ').first ?? '...',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -4070,7 +4995,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                       color: Colors.redAccent,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.close, size: 10, color: Colors.white),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 10,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -4080,7 +5009,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                       },
                     ),
                   ),
-                
+
                 const SizedBox(height: 20),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
@@ -4090,7 +5019,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        );
                       }
 
                       final friendships = snapshot.data?.docs ?? [];
@@ -4112,8 +5045,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                             .where(FieldPath.documentId, whereIn: friendUids)
                             .get(),
                         builder: (context, userSnapshot) {
-                          if (userSnapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                          if (userSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            );
                           }
 
                           final usersDocs = userSnapshot.data?.docs ?? [];
@@ -4122,7 +5060,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                             itemCount: usersDocs.length,
                             itemBuilder: (context, index) {
                               final friendDoc = usersDocs[index];
-                              final friendData = friendDoc.data() as Map<String, dynamic>;
+                              final friendData =
+                                  friendDoc.data() as Map<String, dynamic>;
                               final friendId = friendDoc.id;
                               final isSelected = draftIds.contains(friendId);
 
@@ -4143,27 +5082,36 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                   margin: const EdgeInsets.only(bottom: 12),
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                                    color: isSelected
+                                        ? AppColors.primary.withOpacity(0.1)
+                                        : Colors.white.withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1),
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : Colors.white.withOpacity(0.1),
                                       width: isSelected ? 2 : 1,
                                     ),
                                   ),
                                   child: Row(
                                     children: [
                                       CachedAvatar(
-                                        photoUrl: friendData['photoUrl'] as String?,
+                                        photoUrl:
+                                            friendData['photoUrl'] as String?,
                                         size: 44,
                                         borderRadius: 20,
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              (friendData['name'] ?? 'İsimsiz').toString().split(' ').first,
+                                              (friendData['name'] ?? 'İsimsiz')
+                                                  .toString()
+                                                  .split(' ')
+                                                  .first,
                                               style: GoogleFonts.inter(
                                                 fontWeight: FontWeight.w700,
                                                 color: Colors.white,
@@ -4174,7 +5122,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                               '@${friendData['username'] ?? ''}',
                                               style: GoogleFonts.inter(
                                                 fontSize: 12,
-                                                color: Colors.white.withOpacity(0.5),
+                                                color: Colors.white.withOpacity(
+                                                  0.5,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -4187,10 +5137,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                                             color: AppColors.primary,
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.check, color: Colors.black, size: 16),
+                                          child: const Icon(
+                                            Icons.check,
+                                            color: Colors.black,
+                                            size: 16,
+                                          ),
                                         )
                                       else
-                                        Icon(Icons.add_circle_outline, color: Colors.white.withOpacity(0.3)),
+                                        Icon(
+                                          Icons.add_circle_outline,
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -4203,31 +5160,25 @@ class _AddEntryScreenState extends State<AddEntryScreen> with TickerProviderStat
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Commit drafts to main state
-                        setState(() {
-                          _taggedFriendIds.clear();
-                          _taggedFriendIds.addAll(draftIds);
-                          _taggedFriendData.clear();
-                          _taggedFriendData.addAll(draftData);
-                        });
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'TAMAM', 
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 1),
-                      ),
-                    ),
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    16,
+                    24,
+                    MediaQuery.of(context).padding.bottom + 24,
+                  ),
+                  child: CountSipButton(
+                    text: 'TAMAM',
+                    onPressed: () {
+                      // Commit drafts to main state
+                      setState(() {
+                        _taggedFriendIds.clear();
+                        _taggedFriendIds.addAll(draftIds);
+                        _taggedFriendData.clear();
+                        _taggedFriendData.addAll(draftData);
+                      });
+                      Navigator.pop(context);
+                    },
+                    height: 52,
                   ),
                 ),
               ],
@@ -4283,10 +5234,12 @@ class _BadgeNotificationWidget extends StatefulWidget {
   });
 
   @override
-  State<_BadgeNotificationWidget> createState() => _BadgeNotificationWidgetState();
+  State<_BadgeNotificationWidget> createState() =>
+      _BadgeNotificationWidgetState();
 }
 
-class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with SingleTickerProviderStateMixin {
+class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
   Timer? _timer;
@@ -4303,10 +5256,7 @@ class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with
     _offsetAnimation = Tween<Offset>(
       begin: const Offset(0, -1.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
 
@@ -4316,7 +5266,7 @@ class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with
   void _handleDismiss() {
     if (_isRemoved) return;
     if (!mounted) return;
-    
+
     _controller.reverse().then((value) {
       if (!_isRemoved && mounted) {
         _isRemoved = true;
@@ -4380,7 +5330,9 @@ class _BadgeNotificationWidgetState extends State<_BadgeNotificationWidget> with
                               decoration: BoxDecoration(
                                 color: widget.color.withOpacity(0.15),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: widget.color.withOpacity(0.3)),
+                                border: Border.all(
+                                  color: widget.color.withOpacity(0.3),
+                                ),
                               ),
                               child: Center(
                                 child: Icon(
@@ -4456,7 +5408,8 @@ class _SuccessToastWidget extends StatefulWidget {
   State<_SuccessToastWidget> createState() => _SuccessToastWidgetState();
 }
 
-class _SuccessToastWidgetState extends State<_SuccessToastWidget> with SingleTickerProviderStateMixin {
+class _SuccessToastWidgetState extends State<_SuccessToastWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -4482,17 +5435,18 @@ class _SuccessToastWidgetState extends State<_SuccessToastWidget> with SingleTic
     // Drift: Move to random offset during late fade
     _slideAnimation = TweenSequence<Offset>([
       TweenSequenceItem(
-        tween: Tween<Offset>(begin: const Offset(0, -300), end: Offset.zero)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween<Offset>(
+          begin: const Offset(0, -300),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 40,
       ),
+      TweenSequenceItem(tween: ConstantTween<Offset>(Offset.zero), weight: 30),
       TweenSequenceItem(
-        tween: ConstantTween<Offset>(Offset.zero),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween<Offset>(begin: Offset.zero, end: _randomDrift)
-            .chain(CurveTween(curve: Curves.easeInQuad)),
+        tween: Tween<Offset>(
+          begin: Offset.zero,
+          end: _randomDrift,
+        ).chain(CurveTween(curve: Curves.easeInQuad)),
         weight: 30,
       ),
     ]).animate(_controller);
@@ -4573,4 +5527,142 @@ class _SuccessToastWidgetState extends State<_SuccessToastWidget> with SingleTic
       ),
     );
   }
+}
+
+class HUDGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..strokeWidth = 0.5;
+
+    final step = 40.0;
+    for (double i = 0; i < size.width; i += step) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    for (double i = 0; i < size.height; i += step) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class _RotatingHUDCircle extends StatefulWidget {
+  final double size;
+  final double rotationSpeed;
+  final double opacity;
+  final Color color;
+  final bool isDashed;
+
+  const _RotatingHUDCircle({
+    required this.size,
+    required this.rotationSpeed,
+    required this.opacity,
+    required this.color,
+    this.isDashed = false,
+  });
+
+  @override
+  State<_RotatingHUDCircle> createState() => _RotatingHUDCircleState();
+}
+
+class _RotatingHUDCircleState extends State<_RotatingHUDCircle>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(
+        seconds: widget.rotationSpeed.abs().toInt().clamp(5, 60),
+      ),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle:
+              _controller.value * 2 * pi * (widget.rotationSpeed > 0 ? 1 : -1),
+          child: CustomPaint(
+            size: Size(widget.size, widget.size),
+            painter: _HUDRingPainter(
+              color: widget.color.withOpacity(widget.opacity),
+              isDashed: widget.isDashed,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HUDRingPainter extends CustomPainter {
+  final Color color;
+  final bool isDashed;
+
+  _HUDRingPainter({required this.color, this.isDashed = false});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    if (isDashed) {
+      const int numDashes = 3;
+      const double dashArc = 2 * pi * 0.22; // Balanced wide dashes
+      const double spaceArc = (2 * pi - (numDashes * dashArc)) / numDashes;
+
+      final arcColor = color.withOpacity(0.4); // Subtle visibility
+      final arcPaint = Paint()
+        ..color = arcColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth =
+            1.2 // Thin look
+        ..strokeCap = StrokeCap.round; // Rounded ends for premium feel
+
+      for (int i = 0; i < numDashes; i++) {
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius),
+          i * (dashArc + spaceArc),
+          dashArc,
+          false,
+          arcPaint,
+        );
+      }
+    } else {
+      canvas.drawCircle(center, radius, paint);
+
+      const notchCount = 4;
+      for (int i = 0; i < notchCount; i++) {
+        final angle = (i * 2 * pi) / notchCount;
+        final x1 = center.dx + (radius - 5) * cos(angle);
+        final y1 = center.dy + (radius - 5) * sin(angle);
+        final x2 = center.dx + (radius + 5) * cos(angle);
+        final y2 = center.dy + (radius + 5) * sin(angle);
+        canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint..strokeWidth = 2);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

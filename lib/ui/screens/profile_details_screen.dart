@@ -1,19 +1,22 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_decorations.dart';
+import '../widgets/countsip_button.dart';
+import '../widgets/cached_avatar.dart';
+import '../../core/theme/app_spacing.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_decorations.dart';
-import 'package:flutter/cupertino.dart';
 
 class ProfileDetailsScreen extends StatefulWidget {
   const ProfileDetailsScreen({super.key});
@@ -141,53 +144,21 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context, false),
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'DEĞİŞTİR',
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'DEĞİŞTİR',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                 ],
@@ -396,53 +367,21 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context, false),
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'DEVAM ET',
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'DEVAM ET',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                 ],
@@ -783,23 +722,14 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               const SizedBox(height: 24),
               
               // Save button - full width, minimal
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () {
-                    _updateField(field, value);
-                    Navigator.pop(context);
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.buttonPrimary,
-                    foregroundColor: AppColors.buttonOnPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Tamam', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
+              CountSipButton(
+                onPressed: () {
+                  _updateField(field, value);
+                  Navigator.pop(context);
+                },
+                text: 'Tamam',
+                borderRadius: 12,
+                height: 52,
               ),
             ],
           ),
@@ -879,28 +809,18 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             const SizedBox(height: 24),
             
             // Save button
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () {
-                  final age = DateTime.now().year - newDate.year;
-                  // Update both dob and age in one call to avoid double notifications
-                  _updateMultipleFields({
-                    'dob': Timestamp.fromDate(newDate),
-                    'age': age,
-                  });
-                  Navigator.pop(context);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.buttonPrimary,
-                  foregroundColor: AppColors.buttonOnPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Tamam', style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
+            CountSipButton(
+              onPressed: () {
+                final age = DateTime.now().year - newDate.year;
+                _updateMultipleFields({
+                  'dob': Timestamp.fromDate(newDate),
+                  'age': age,
+                });
+                Navigator.pop(context);
+              },
+              text: 'Tamam',
+              borderRadius: 12,
+              height: 52,
             ),
           ],
         ),
@@ -1007,7 +927,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
                   // Profile Picture Section with coral glow ring
@@ -1069,12 +989,12 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(height: AppSpacing.xl),
                   
                   // TEMEL BİLGİLER Section Header
                   _buildSectionHeader('TEMEL BİLGİLER'),
                   
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   
                   // Name Card
                   Container(
@@ -1178,7 +1098,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   
                   // Username - with edit button
                   // Username Card
@@ -1301,12 +1221,12 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(height: AppSpacing.xl),
                   
                   // FİZİKSEL ÖZELLİKLER Section Header
                   _buildSectionHeader('FİZİKSEL ÖZELLİKLER'),
                   
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   
                   // 2x2 Grid for Physical Stats
                   Row(
@@ -1321,7 +1241,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           onTap: _showGenderDialog,
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      SizedBox(width: AppSpacing.sm),
                       // Yaş
                       Expanded(
                         child: _buildStatCard(
@@ -1334,7 +1254,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(height: AppSpacing.sm),
                   
                   Row(
                     children: [
@@ -1347,7 +1267,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           onTap: () => _showEditNumberDialog('height', 'Boyunuz', 'cm', 100, 250),
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      SizedBox(width: AppSpacing.sm),
                       // Kilo
                       Expanded(
                         child: _buildStatCard(

@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../widgets/countsip_button.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key});
@@ -302,22 +303,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       bottom: MediaQuery.of(context).padding.bottom + 10,
                       top: 10
                     ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.pop('Haritadan seçilen konum');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF8902),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(
-                          'Bu Konumu Onayla',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'Bu Konumu Onayla',
+                      onPressed: () {
+                        context.pop('Haritadan seçilen konum');
+                      },
+                      borderRadius: 12,
                     ),
                   ),
                 ],

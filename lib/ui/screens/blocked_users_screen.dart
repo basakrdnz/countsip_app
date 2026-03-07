@@ -1,13 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_decorations.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/countsip_button.dart';
 
 class BlockedUsersScreen extends StatelessWidget {
   const BlockedUsersScreen({super.key});
@@ -67,53 +68,21 @@ class BlockedUsersScreen extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context, false),
+                      variant: CountSipButtonVariant.secondary,
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'ENGELİ KALDIR',
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'ENGELİ KALDIR',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      borderRadius: 16,
+                      height: 52,
                     ),
                   ),
                 ],
@@ -257,20 +226,13 @@ class BlockedUsersScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        OutlinedButton(
+                        CountSipButton(
                           onPressed: () => _unblockUser(context, block.id, blockedUid),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          child: const Text(
-                            'Kaldır',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          ),
+                          text: 'Kaldır',
+                          variant: CountSipButtonVariant.secondary,
+                          borderRadius: 12,
+                          height: 36,
+                          width: 80,
                         ),
                       ],
                     ),

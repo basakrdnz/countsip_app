@@ -11,6 +11,7 @@ import '../../../core/theme/app_icons.dart';
 import '../providers/auth_controller.dart';
 import '../../../l10n/app_localizations.dart';
 import '../widgets/auth_background.dart';
+import '../../../ui/widgets/countsip_button.dart';
 
 class PhoneSignupScreen extends ConsumerStatefulWidget {
   const PhoneSignupScreen({super.key});
@@ -586,18 +587,12 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                   'Tekrar gönder: $_resendCountdown sn',
                   style: GoogleFonts.plusJakartaSans(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
                 )
-              : TextButton(
+              : CountSipButton(
                   onPressed: _resendCode,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                  ),
-                  child: Text(
-                    'Kodu Tekrar Gönder',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
+                  text: 'Kodu Tekrar Gönder',
+                  variant: CountSipButtonVariant.ghost,
+                  fontSize: 13,
+                  textColor: AppColors.primary,
                 ),
         ),
       ],
@@ -803,52 +798,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       action = _createAccount;
     }
 
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.accentPrimary],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : action,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
-          child: Center(
-            child: _isLoading
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
-                    ),
-                  )
-                : Text(
-                    text,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-          ),
-        ),
-      ),
+    return CountSipButton(
+      text: text,
+      onPressed: action,
+      isLoading: _isLoading,
     );
   }
 }

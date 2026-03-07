@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../widgets/auth_background.dart';
+import '../../../ui/widgets/countsip_button.dart';
+import '../../../core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final int initialPage;
@@ -55,16 +56,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TextButton(
+                CountSipButton(
                   onPressed: () => context.go('/login'),
-                  child: Text(
-                    'Atla',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ),
+                  text: 'Atla',
+                  variant: CountSipButtonVariant.ghost,
+                  width: 60,
+                  height: 32,
+                  fontSize: 14,
+                  textColor: Colors.white.withValues(alpha: 0.6),
                 ),
                 
                 // PROGRESS INDICATORS (Moved here)
@@ -119,44 +118,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
           // 5. BUTTON
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-            child: Container(
-              width: double.infinity,
+            child: CountSipButton(
+              onPressed: _nextPage,
+              text: _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
               height: 56,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.primary, AppColors.accentPrimary],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _nextPage,
-                  borderRadius: BorderRadius.circular(16),
-                  splashColor: Colors.white.withValues(alpha: 0.2),
-                  highlightColor: Colors.white.withValues(alpha: 0.1),
-                  child: Center(
-                    child: Text(
-                      _currentPage == _totalPages - 1 ? 'Başla' : 'İleri',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              borderRadius: 16,
             ),
           ),
         ],

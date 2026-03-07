@@ -80,6 +80,15 @@ class BacService {
 
     final now = DateTime.now();
     
+    // Algoritma Optimizasyonu: Alkol vücuttan ortalama 24-48 saatte tamamen atıldığı için
+    // daha eski içecekleri dolaşmaya gerek yok. Bu, devasa bir performans artışı sağlar.
+    final fortyEightHoursAgo = now.subtract(const Duration(hours: 48));
+    final relevantDrinks = drinks.where((d) => d.timestamp.isAfter(fortyEightHoursAgo)).toList();
+
+    if (relevantDrinks.isEmpty) {
+      return BacResult(min: 0, max: 0, trend: BacTrend.stable);
+    }
+    
     // 1. Calculate Total Body Water (TBW) using Watson Formula
     double tbw;
     final isFemale = (gender.toLowerCase() == 'female' || gender.toLowerCase() == 'kadın');
@@ -97,21 +106,24 @@ class BacService {
       const double betaMax = 0.018;
 
       // 2. Calculate for Current and Trend
-      final currentRange = _calculateForTime(now, drinks, distributionVolume, betaMin, betaMax);
-      final pastRange = _calculateForTime(now.subtract(const Duration(minutes: 15)), drinks, distributionVolume, betaMin, betaMax);
+      final currentRange = _calculateForTime(now, relevantDrinks, distributionVolume, betaMin, betaMax);
+      final pastRange = _calculateForTime(now.subtract(const Duration(minutes: 15)), relevantDrinks, distributionVolume, betaMin, betaMax);
 
       // 3. Find Daily Peak
-      // We simulate from the first drink until now to find the maximum point
       var dailyPeak = currentRange;
       double maxAvg = (currentRange.min + currentRange.max) / 2;
 
-      if (drinks.isNotEmpty) {
-        final firstDrinkTime = drinks.map((d) => d.timestamp).reduce((a, b) => a.isBefore(b) ? a : b);
+      // En fazla son 24 saati baz alarak günlük zirveyi arıyoruz
+      final twentyFourHoursAgo = now.subtract(const Duration(hours: 24));
+      final recentDrinks = relevantDrinks.where((d) => d.timestamp.isAfter(twentyFourHoursAgo)).toList();
+
+      if (recentDrinks.isNotEmpty) {
+        final firstDrinkTime = recentDrinks.map((d) => d.timestamp).reduce((a, b) => a.isBefore(b) ? a : b);
         
-        // Step through time in 15-min intervals to find peak
+        // Zirveyi bulmak için zamanı 15 dakikalık dilimlerle ileri sar
         DateTime runner = firstDrinkTime;
         while (runner.isBefore(now)) {
-          final rangeAtTime = _calculateForTime(runner, drinks, distributionVolume, betaMin, betaMax);
+          final rangeAtTime = _calculateForTime(runner, relevantDrinks, distributionVolume, betaMin, betaMax);
           final avgAtTime = (rangeAtTime.min + rangeAtTime.max) / 2;
           if (avgAtTime > maxAvg) {
             maxAvg = avgAtTime;

@@ -25,9 +25,9 @@ const List<DrinkCategory> drinkCategories = [
     emoji: '🍷',
     image: 'assets/images/drinks/wine.png',
     portions: [
-      DrinkPortion(name: 'Standart Kadeh (150ml)', variety: 'Kırmızı', volume: 150, abv: 13.0),
-      DrinkPortion(name: 'Standart Kadeh (150ml)', variety: 'Beyaz', volume: 150, abv: 11.0),
-      DrinkPortion(name: 'Standart Kadeh (150ml)', variety: 'Rosé', volume: 150, abv: 12.0),
+      DrinkPortion(name: 'Kadeh (150ml)', variety: 'Kırmızı', volume: 150, abv: 13.0),
+      DrinkPortion(name: 'Kadeh (150ml)', variety: 'Beyaz', volume: 150, abv: 11.0),
+      DrinkPortion(name: 'Kadeh (150ml)', variety: 'Rosé', volume: 150, abv: 12.0),
     ],
   ),
   DrinkCategory(

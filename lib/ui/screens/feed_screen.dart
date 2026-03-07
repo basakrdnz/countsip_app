@@ -281,9 +281,8 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Widget _buildEmptyState() {
     return const EmptyStateWidget(
-      icon: Icons.local_drink_rounded,
-      message: 'Henüz akışta bir şey yok',
-      subtitle: 'Arkadaşlarının paylaşımlarını burada görebilirsin',
+      icon: Icons.bubble_chart_outlined,
+      message: 'Akışta henüz bir paylaşım yok',
     );
   }
 }

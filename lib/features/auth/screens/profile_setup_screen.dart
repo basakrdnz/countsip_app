@@ -1,13 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_decorations.dart';
+import '../../../ui/widgets/countsip_button.dart';
+import '../widgets/auth_background.dart';
 
 /// Profile Setup Screen - Collect user info after signup
 /// Height, Weight, Age, Gender (for BAC calculation)
@@ -233,13 +236,20 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             title: Text('Çıkış Yapılsın mı?', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800)),
             content: Text('Profil kurulumunu tamamlamadan çıkış yapmak üzeresin. Kaydetmediğin bilgiler silinebilir.', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.7))),
             actions: [
-              TextButton(
+              CountSipButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text('VAZGEÇ', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.5))),
+                text: 'VAZGEÇ',
+                variant: CountSipButtonVariant.secondary,
+                width: 100,
+                height: 48,
               ),
-              TextButton(
+              const SizedBox(width: 8),
+              CountSipButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('ÇIKIŞ YAP', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                text: 'ÇIKIŞ YAP',
+                variant: CountSipButtonVariant.danger,
+                width: 120,
+                height: 48,
               ),
             ],
           ),
@@ -393,21 +403,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       Expanded(child: _buildPremiumIndicator()),
                       if (_currentPage > 0) ...[
                         const SizedBox(width: 12),
-                        TextButton(
+                        CountSipButton(
                           onPressed: _skipAndFinish,
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white.withOpacity(0.5),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Şimdilik atla',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          text: 'Şimdilik atla',
+                          variant: CountSipButtonVariant.ghost,
+                          width: 90,
+                          height: 32,
+                          fontSize: 12,
+                          textColor: Colors.white.withValues(alpha: 0.5),
                         ),
                       ],
                       const SizedBox(width: 8),
@@ -1025,68 +1028,22 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Widget _buildPrimaryButton(String text, VoidCallback? onPressed) {
-    return Container(
-      width: double.infinity,
+    return CountSipButton(
+      text: text,
+      onPressed: onPressed,
+      isLoading: _isLoading,
       height: 60,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: AppColors.primaryGradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
-        child: _isLoading
-            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text(
-                text,
-                style: GoogleFonts.inter(
-                  fontSize: 17,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
-      ),
+      borderRadius: 20,
     );
   }
 
   Widget _buildSecondaryButton(String text, VoidCallback onPressed) {
-    return Container(
+    return CountSipButton(
+      text: text,
+      onPressed: onPressed,
+      variant: CountSipButtonVariant.secondary,
       height: 60,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
-        color: Colors.white.withOpacity(0.03),
-      ),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(20),
-        child: Center(
-          child: Text(
-            text,
-            style: GoogleFonts.inter(
-              color: Colors.white.withOpacity(0.9),
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ),
+      borderRadius: 20,
     );
   }
 }

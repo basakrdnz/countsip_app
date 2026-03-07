@@ -12,6 +12,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/services/theme_service.dart';
+import '../widgets/countsip_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -84,53 +85,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.2),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'VAZGEÇ',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                    child: CountSipButton(
+                      text: 'VAZGEÇ',
+                      onPressed: () => Navigator.pop(context, false),
+                      variant: CountSipButtonVariant.secondary,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CountSipButton(
+                      text: 'ÇIKIŞ YAP',
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'ÇIKIŞ YAP',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      variant: CountSipButtonVariant.danger,
                     ),
                   ),
                 ],

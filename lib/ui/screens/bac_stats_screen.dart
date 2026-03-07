@@ -387,12 +387,12 @@ class _BacStatsScreenState extends State<BacStatsScreen>
         trendLabel = 'YÜKSELİYOR';
         break;
       case BacTrend.falling:
-        trendColor = const Color(0xFFFFCA28);
+        trendColor = AppColors.primary; // Markanın ana turuncu rengi
         trendIcon = Icons.trending_down_rounded;
         trendLabel = 'DÜŞÜYOR';
         break;
       default:
-        trendColor = AppColors.primary;
+        trendColor = const Color(0xFF9E9E9E); // Gri
         trendIcon = Icons.trending_flat_rounded;
         trendLabel = 'STABİL';
     }
@@ -421,9 +421,9 @@ class _BacStatsScreenState extends State<BacStatsScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: trendColor.withOpacity(0.15),
+                    color: trendColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: trendColor.withOpacity(0.3)),
+                    border: Border.all(color: trendColor.withOpacity(0.30)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

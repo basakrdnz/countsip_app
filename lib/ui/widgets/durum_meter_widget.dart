@@ -64,10 +64,10 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
         progressColor = const Color(0xFFEF4444); // Kırmızı — yükseliyor
         break;
       case BacTrend.falling:
-        progressColor = const Color(0xFFF59E0B); // Sarı — düşüyor
+        progressColor = AppColors.primary; // Turuncu — düşüyor
         break;
       case BacTrend.stable:
-        progressColor = AppColors.primary; // Turuncu (brand) — stabil
+        progressColor = const Color(0xFF9E9E9E); // Gri — stabil
         break;
     }
 
@@ -313,12 +313,12 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
       case BacTrend.falling:
         icon = Icons.trending_down_rounded;
         label = 'DÜŞÜYOR';
-        trendColor = const Color(0xFF10B981); // Yeşil — düşüyor
+        trendColor = AppColors.primary; // Markanın ana turuncu rengi
         break;
       case BacTrend.stable:
         icon = Icons.trending_flat_rounded;
         label = 'STABİL';
-        trendColor = AppColors.primary; // Turuncu (brand) — stabil
+        trendColor = const Color(0xFF9E9E9E); // Stabil durumu Gri olarak ayarlayalım.
         break;
     }
 
@@ -329,7 +329,7 @@ class _DurumMeterWidgetState extends State<DurumMeterWidget> with SingleTickerPr
         decoration: BoxDecoration(
           color: trendColor.withOpacity(0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: trendColor.withOpacity(0.25)),
+          border: Border.all(color: trendColor.withOpacity(0.30)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
